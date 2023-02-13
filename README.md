@@ -1,1 +1,2 @@
-### A template for my typescript projects.
+## Solid Stream Aggregator
+
