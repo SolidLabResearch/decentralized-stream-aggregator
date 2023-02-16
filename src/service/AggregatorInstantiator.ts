@@ -19,7 +19,7 @@ export class AggregatorInstantiator {
     }
 
     async discoverLIL(solidServerURL: string) {
-        const bindingStrem = await linkTraversalEngine.queryBindings(
+        const bindingStream = await linkTraversalEngine.queryBindings(
             `
             PREFIX tree: <https://w3id.org/tree#>
             PREFIX ldp: <http://www.w3.org/ns/ldp#>
@@ -34,16 +34,16 @@ export class AggregatorInstantiator {
                 sources: [`${solidServerURL}`]
             });
 
-        bindingStrem.on('data', async (bindings: any) => {
+        bindingStream.on('data', async (bindings: any) => {
             await this.instantiateAggregator(bindings.get('LIL').value, this.query);
         });
     }
 
 
     async instantiateAggregator(LILContainer: string, query: string) {
-        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
+        // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
         // test case for historical data.
-        // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer);
+        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer);
     }
 
 }

@@ -1,6 +1,6 @@
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
-const { LDPCommunication, LDESinLDP } = require('@treecg/versionawareldesinldp');
+const { LDPCommunication, LDESinLDP, dateToLiteral } = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const N3 = require('n3');
 import { RDFStream, RSPEngine } from "rsp-js";
@@ -62,29 +62,37 @@ export class SinglePodAggregator {
 
                 bindingStream.on('data', async (bindings: any) => {
                     let timestamp = await this.epoch(bindings.get('time').value);
-                    console.log(`The timestamp is ${timestamp}`);                    
+                    console.log(`The timestamp is ${timestamp}`);
                     if (streamName) {
                         console.log(`Adding Event to ${streamName}`);
-                        
-                        this.addEventToRSPEngine(data, [streamName], timestamp);
+
+                        await this.addEventToRSPEngine(data, [streamName], timestamp);
                     }
                     else {
                         console.log(`The stream is undefined`);
                     }
                 });
             });
-            this.aggregationEmitter.on('RStream', async (data: any) => {
+            this.aggregationEmitter.on('RStream', async (binding: any) => {
+                let iterable = binding.values();
+                for (let item of iterable) {
+                    let aggregationEventTimestamp = new Date().getTime();
+                    let data = item.value;
+                    let aggregationEvent: string = this.generateAggregationEvent(data, aggregationEventTimestamp, this.streamName?.name, this.observationCounter);
+                    this.observationCounter++;
+                    this.sendToServer(aggregationEvent);
+                }
+                // console.log(`The binding is ${binding.toString()}`); 
                 let aggregationEventTimestamp = new Date().getTime();
-                console.log(JSON.parse(data));
-                let aggregationEvent: string = await this.generateAggregationEvent(data, aggregationEventTimestamp, this.streamName?.name, this.observationCounter);
-                this.observationCounter++;
-                this.sendToServer(aggregationEvent);
+                // let data = JSON.parse(binding.toString())[Object.keys(JSON.parse(binding.toString()))[0]]
+                // console.log(`The data is ${data}`);
+                // this.sendToServer(aggregationEvent);
             });
         });
 
     }
 
-    async sendToServer(message: string) {
+    sendToServer(message: string) {
         if (this.connection.connected) {
             this.connection.sendUTF(message);
         }
@@ -101,16 +109,28 @@ export class SinglePodAggregator {
         });
     }
 
-    async generateAggregationEvent(value: any, timestamp: any, streamName: string | undefined, eventCounter : number) {
+    generateAggregationEvent(value: any, timestamp: number, streamName: string | undefined, eventCounter: number): string {
         if (streamName == undefined) {
             streamName = "https://rsp.js/undefined";
         }
+        const timestampDate = new Date(timestamp).toISOString();
+        // try {
+        //     dateToLiteral(timestampDate)
+        // } catch (error) {
+        //     console.log(timestamp);
+        //     console.log(error);
+
+        // }
+
+        // <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate.toISOString()}"^^<https://www.w3.org/2001/XMLSchema#dateTime> .
+
+
         let aggregationEvent = `
         <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
-        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasValue> ${value} .
-        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> ${timestamp} .
+        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
         <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
-        <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/ns/prov#generatedBy> ${streamName} .
+        <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/ns/prov#generatedBy> <${streamName}> .
         `;
         return aggregationEvent;
     }
@@ -128,6 +148,6 @@ export class SinglePodAggregator {
 
     async epoch(date: any) {
         return Date.parse(date);
-    }    
+    }
 
 }

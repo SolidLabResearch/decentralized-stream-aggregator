@@ -4,8 +4,7 @@
     "description": "Aggregation on top of streams generated from a Solid Pod",
     "main": "dist/index.js",
     "scripts": {
-        "build": "npx tsc",
-        "start": "node dist/index.js",
+        "start": "npx tsc && node dist/index.js",
         "test": "jest --coverage",
         "test:watch": "jest --watch",
         "start-solid-server": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ --seededPodConfigJson ./pod/multiSolidPod.json"

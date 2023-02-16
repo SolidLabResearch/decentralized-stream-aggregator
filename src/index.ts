@@ -40,7 +40,6 @@ program
     )
     .action((options: any) => {
         new HTTPServer(options.port, options.minutes, options.SolidServer);
-        // new SinglePodAggregator(options.query, options.minutes, options.SolidServer, options.port);
     });
 
 program.parse();

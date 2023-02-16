@@ -1,16 +1,23 @@
 import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
+import { AggregationLDESPublisher } from "../service/AggregationLDESPublisher";
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const websocket = require('websocket');
+const EventEmitter = require('events');
+const eventEmitter = new EventEmitter();
+const {Parser} = require('n3');
 
 export class HTTPServer {
     private minutes: number;
     private serverURL: string;
+    private aggregationResourceList: any[] = [];
+    private resourceListBatchSize: number = 500;
     constructor(port: number, minutes: number, serverURL: string) {
         this.minutes = minutes;
         this.serverURL = serverURL;
         const app = express();
+        let publisher = new AggregationLDESPublisher();
         app.server = http.createServer(app);
         app.use(cors({
             exposedHeaders: '*',
@@ -57,7 +64,7 @@ export class HTTPServer {
             }
             `
             res.send('Received request on /averageHRPatient1');
-            new AggregatorInstantiator(query, 30, 'http://localhost:3000/');
+            new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
         });
 
         wss.on('request', async (request: any) => {
@@ -65,12 +72,45 @@ export class HTTPServer {
             console.log('Connection accepted');
             connection.on('message', async (message: any) => {
                 if (message.type === 'utf8') {
-                    console.log(`Received Message: ${JSON.stringify(message.utf8Data)}`);
+                    let value = message.utf8Data;
+                    eventEmitter.emit('aggregationEvent', value);
+                    // console.log(`Received Message: ${message.utf8Data}`); // log the message that we've received for testing.
                 }
             });
+
+            connection.on('close', function (reasonCode: any, description: any) {
+                console.log('Peer ' + connection.remoteAddress + ' disconnected.');
+            });
+
+            eventEmitter.on('aggregationEvent', (value: any) => {
+                const parser = new Parser({'format': 'N-Triples'});
+                const store = parser.parse(value);
+            
+                this.aggregationResourceList.push(store);
+                if (this.aggregationResourceList.length == this.resourceListBatchSize) {
+                    if (publisher.initialised == false) {
+                        publisher.initialise();
+                        publisher.initialised = true;
+                    }
+                    console.log();
+                    
+                    publisher.publish(this.aggregationResourceList);
+                    this.aggregationResourceList = [];
+                }
+                if (this.aggregationResourceList.length < this.resourceListBatchSize) {
+                    if (publisher.initialised == false) {
+                        publisher.initialise();
+                        publisher.initialised = true;
+                    }
+                    publisher.publish(this.aggregationResourceList);
+                    this.aggregationResourceList = [];
+                }
+            });
+            eventEmitter.on('close', () => {
+                console.log('Closing connection');
+            });
+
         });
-
-
     }
 
 }

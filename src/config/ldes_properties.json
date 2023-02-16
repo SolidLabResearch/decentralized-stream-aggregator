@@ -1,0 +1,9 @@
+{
+    "LIL_URL": "http://localhost:3000/aggregation_pod/data2/",
+    "PREFIX_FILE": "",
+    "TREE_PATH": "https://saref.etsi.org/core/hasTimestamp",
+    "AMOUNT": 0,
+    "BUCKET_SIZE": 10,
+    "CREDENTIALS_FILE_NAME" : null,
+    "LOG_LEVEL": "info"
+}
