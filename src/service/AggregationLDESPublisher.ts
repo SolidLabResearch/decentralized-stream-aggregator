@@ -1,4 +1,4 @@
-import { LDESinLDP, LDESMetadata, LDPCommunication, SolidCommunication, RDF, LDES, extractLdesMetadata, LDESConfig, VersionAwareLDESinLDP } from "@treecg/versionawareldesinldp";
+import { LDESinLDP, LDESMetadata, LDPCommunication, SolidCommunication, RDF, LDES, extractLdesMetadata, LDESConfig, VersionAwareLDESinLDP, ILDES } from "@treecg/versionawareldesinldp";
 import { naiveAlgorithm } from "../utils/algorithms/naiveAlgorithm";
 import { getTimeStamp, prefixesFromFilepath, resourceToOptimisedTurtle, Resource, initSession } from "../utils/EventSource";
 import * as CONFIG from '../config/ldes_properties.json';
@@ -13,6 +13,11 @@ export class AggregationLDESPublisher {
     private bucketSize = CONFIG.BUCKET_SIZE;
     private logLevel = CONFIG.LOG_LEVEL;
     public initialised: boolean = false;
+    public config: LDESConfig = {
+        LDESinLDPIdentifier: this.lilURL,
+        treePath: this.treePath,
+        versionOfPath: "1.0",
+    }
 
     constructor() {
         this.initialise();
@@ -26,10 +31,10 @@ export class AggregationLDESPublisher {
         this.session = s;
 
         const commuication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
-        const lil = new LDESinLDP(this.lilURL, commuication);
+        const lil: ILDES  = await new LDESinLDP(this.lilURL, commuication);
         let metadata: LDESMetadata | undefined;
         const versionAware = new VersionAwareLDESinLDP(lil);
-        await versionAware.initialise();
+        await versionAware.initialise(this.config);
         try {
             const metadataStore = await lil.readMetadata();
             const ldes = metadataStore.getSubjects(RDF.type, LDES.EventStream, null);

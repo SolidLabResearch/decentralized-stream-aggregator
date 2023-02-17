@@ -74,7 +74,6 @@ export class HTTPServer {
                 if (message.type === 'utf8') {
                     let value = message.utf8Data;
                     eventEmitter.emit('aggregationEvent', value);
-                    // console.log(`Received Message: ${message.utf8Data}`); // log the message that we've received for testing.
                 }
             });
 
@@ -85,15 +84,12 @@ export class HTTPServer {
             eventEmitter.on('aggregationEvent', (value: any) => {
                 const parser = new Parser({'format': 'N-Triples'});
                 const store = parser.parse(value);
-            
                 this.aggregationResourceList.push(store);
                 if (this.aggregationResourceList.length == this.resourceListBatchSize) {
                     if (publisher.initialised == false) {
                         publisher.initialise();
                         publisher.initialised = true;
-                    }
-                    console.log();
-                    
+                    }                    
                     publisher.publish(this.aggregationResourceList);
                     this.aggregationResourceList = [];
                 }

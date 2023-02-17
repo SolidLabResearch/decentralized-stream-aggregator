@@ -2,7 +2,8 @@ const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const { LDPCommunication, LDESinLDP, dateToLiteral } = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
-const N3 = require('n3');
+const { Store } = require('n3');
+import { NamedNode, Quad } from "n3";
 import { RDFStream, RSPEngine } from "rsp-js";
 
 
@@ -50,7 +51,7 @@ export class SinglePodAggregator {
             console.log('WebSocket Client Connected');
             let LILStream = await this.ldesinldp.readAllMembers(new Date(this.startTime), new Date(this.endTime));
             LILStream.on('data', async (data: any) => {
-                let LILStreamStore = new N3.Store(data.quads);
+                let LILStreamStore = new Store(data.quads);
                 let bindingStream = await this.queryEngine.queryBindings(`
                 PREFIX saref: <https://saref.etsi.org/core/>
                 SELECT ?time WHERE {
@@ -82,11 +83,6 @@ export class SinglePodAggregator {
                     this.observationCounter++;
                     this.sendToServer(aggregationEvent);
                 }
-                // console.log(`The binding is ${binding.toString()}`); 
-                let aggregationEventTimestamp = new Date().getTime();
-                // let data = JSON.parse(binding.toString())[Object.keys(JSON.parse(binding.toString()))[0]]
-                // console.log(`The data is ${data}`);
-                // this.sendToServer(aggregationEvent);
             });
         });
 
@@ -114,17 +110,7 @@ export class SinglePodAggregator {
             streamName = "https://rsp.js/undefined";
         }
         const timestampDate = new Date(timestamp).toISOString();
-        // try {
-        //     dateToLiteral(timestampDate)
-        // } catch (error) {
-        //     console.log(timestamp);
-        //     console.log(error);
-
-        // }
-
-        // <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate.toISOString()}"^^<https://www.w3.org/2001/XMLSchema#dateTime> .
-
-
+        
         let aggregationEvent = `
         <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
         <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
