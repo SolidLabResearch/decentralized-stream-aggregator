@@ -1,13 +1,17 @@
 ## Solid Stream Aggregator
 
-To run the project you will have to, in order:
+Solid Stream Aggregator provides aggregation of stream data over a solid pod and stores the aggregation event in a common aggregation solid pod.
+It is built with [RSP-JS](https://github.com/pbonte/RSP-JS) and [VersionAwareLDESinLDP](https://github.com/woutslabbinck/VersionAwareLDESinLDP). The aggregator uses the [CSS](https://github.com/CommunitySolidServer/CommunitySolidServer) for the solid pods.
 
-1. ```npm install```
-2. ```npm run build```
-3. ```npm run start aggregate```
+## About
+The aggregator is exposed as a service on a HTTP server. Queries are sent to the aggregator via HTTP GET Requests on predefined endpoints. 
+The aggregator executes then aggregates the data as specified in the query and uploads the aggregation data to the Solid Pod.
 
-This will run a server on port 8080, and has two API endpoints at the moment for testing.
-'/test' and '/averageHRPatient1'
+## Usage
+```
+- npm install
+- npm run start aggregation
+```
+You can specify the last X minutes of data you wish to aggregate on. The default is 30 minutes.
 
-The aggregation events from the pod(s) are currently logged into the console, which can be connected or sent 
-to other service.
+Note : The aggregator is in active development and will be continuously updated.

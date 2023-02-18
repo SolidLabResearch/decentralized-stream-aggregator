@@ -8,7 +8,7 @@ program
     .name('solid-stream-aggregator')
 
 program
-    .command('aggregate')
+    .command('aggregation')
     .description('Starting the aggregation service.')
     .option(
         '-p, --port <port>',
