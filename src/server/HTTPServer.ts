@@ -73,7 +73,7 @@ export class HTTPServer {
             connection.on('message', async (message: any) => {
                 if (message.type === 'utf8') {
                     let value = message.utf8Data;
-                    eventEmitter.emit('aggregationEvent', value);
+                    eventEmitter.emit('AggregationEvent$', value);
                 }
             });
 
@@ -81,7 +81,7 @@ export class HTTPServer {
                 console.log('Peer ' + connection.remoteAddress + ' disconnected.');
             });
 
-            eventEmitter.on('aggregationEvent', (value: any) => {
+            eventEmitter.on('AggregationEvent$', (value: any) => {
                 const parser = new Parser({'format': 'N-Triples'});
                 const store = parser.parse(value);
                 this.aggregationResourceList.push(store);

@@ -1,6 +1,7 @@
 let SparqlParser = require('sparqljs').Parser;
 let parser = new SparqlParser();
 const Store = require('n3').Store;
+import * as RSPQLConfig from '../config/rspql_query.json';
 export class SPARQLToRSPQL {
     private extractedVariables: string[];
     private extractedGraphPatterns: typeof Store;
@@ -56,7 +57,32 @@ export class SPARQLToRSPQL {
         }
         else {
             throw new Error('The query is not a SPARQL query, please check your query.');
-        }        
-        return '';
+        }
+
+
+        // console.log(this.extractedVariables);
+        // console.log(this.extractedGraphPatterns.getQuads());
+        // console.log(this.operator);
+        // console.log(this.operationArgs);
+
+
+        let rspqlQuery = `
+        PREFIX : <https://rsp.js/> 
+        PREFIX saref: <https://saref.etsi.org/>
+        PREFIX asdo: <https://argahsuknesib.github.io/asdo/>
+        PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+        REGISTER RStream <output> AS
+        SELECT ?` + this.extractedVariables.join(' ?') + `
+        FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE ${RSPQLConfig.RANGE} STEP ${RSPQLConfig.STEP}]
+        WHERE 
+        { 
+            WINDOW :w1 { `+
+            this.extractedGraphPatterns.getQuads().map((quad: any) => {
+                return `?${quad.subject.value} ?${quad.predicate.value} ?${quad.object.value} .`;
+            })
+            + ` }
+        } 
+        `;
+        return rspqlQuery.replace(",", "\t");
     }
 }
