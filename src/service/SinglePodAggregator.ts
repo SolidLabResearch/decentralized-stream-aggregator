@@ -66,7 +66,6 @@ export class SinglePodAggregator {
                     console.log(`The timestamp is ${timestamp}`);
                     if (streamName) {
                         console.log(`Adding Event to ${streamName}`);
-
                         await this.addEventToRSPEngine(data, [streamName], timestamp);
                     }
                     else {
@@ -77,11 +76,11 @@ export class SinglePodAggregator {
             this.aggregationEmitter.on('RStream', async (binding: any) => {
                 let iterable = binding.values();
                 for (let item of iterable) {
-                    let aggregationEventTimestamp = new Date().getTime();
+                    let AggregationEvent$Timestamp = new Date().getTime();
                     let data = item.value;
-                    let aggregationEvent: string = this.generateAggregationEvent(data, aggregationEventTimestamp, this.streamName?.name, this.observationCounter);
+                    let AggregationEvent$: string = this.generateAggregationEvent(data, AggregationEvent$Timestamp, this.streamName?.name, this.observationCounter);
                     this.observationCounter++;
-                    this.sendToServer(aggregationEvent);
+                    this.sendToServer(AggregationEvent$);
                 }
             });
         });
@@ -105,20 +104,19 @@ export class SinglePodAggregator {
         });
     }
 
-    generateAggregationEvent(value: any, timestamp: number, streamName: string | undefined, eventCounter: number): string {
+    generateAggregationEvent(value: any, eventTimestamp: number, streamName: string | undefined, eventCounter: number): string {
         if (streamName == undefined) {
             streamName = "https://rsp.js/undefined";
         }
-        const timestampDate = new Date(timestamp).toISOString();
-        
-        let aggregationEvent = `
-        <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
-        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-        <https://rsp.js/Observation${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
-        <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
-        <https://rsp.js/Observation${eventCounter}> <https://www.w3.org/ns/prov#generatedBy> <${streamName}> .
+        const timestampDate = new Date(eventTimestamp).toISOString();
+        let AggregationEvent = `
+        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
+        <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+        <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
+        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
+        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#generatedBy> <${streamName}> .
         `;
-        return aggregationEvent;
+        return AggregationEvent;
     }
 
     async connectWithServer(wssURL: string) {
