@@ -34,7 +34,7 @@
     ],
     "@graph": [
       {
-        "comment": "A single-pod server that stores its resources in memory."
+        "comment": "A single-pod server that stores its resources in memory. Allows multiple simultaneous read operations. Locks are stored in memory. Locks expire after inactivity."
       }
     ]
   }

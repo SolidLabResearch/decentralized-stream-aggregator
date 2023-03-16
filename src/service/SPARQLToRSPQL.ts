@@ -1,23 +1,22 @@
-let SparqlParser = require('sparqljs').Parser;
+let {Parser: SparqlParser} = require('sparqljs');
 let parser = new SparqlParser();
 const Store = require('n3').Store;
 import * as RSPQLConfig from '../config/rspql_query.json';
+
 export class SPARQLToRSPQL {
     private extractedVariables: string[];
     private extractedGraphPatterns: typeof Store;
-    private sparqlQuery: string;
     private operationArgs: Map<string, string>;
     private operator: string;
-    constructor(sparqlQuery: string) {
-        this.sparqlQuery = sparqlQuery;
+    constructor() {
         this.extractedVariables = [];
         this.extractedGraphPatterns = new Store();
         this.operationArgs = new Map<string, string>();
         this.operator = '';
     }
 
-    public getRSPQLQuery(): string {
-        let parsedQuery = parser.parse(this.sparqlQuery);
+    public getRSPQLQuery(sparqlQuery: string): string {
+        let parsedQuery = parser.parse(sparqlQuery);
         if (parsedQuery.type === 'query') {
             if (parsedQuery.queryType === 'SELECT' || 'select') {
                 let queryVariables = parsedQuery.variables;
@@ -58,14 +57,6 @@ export class SPARQLToRSPQL {
         else {
             throw new Error('The query is not a SPARQL query, please check your query.');
         }
-
-
-        // console.log(this.extractedVariables);
-        // console.log(this.extractedGraphPatterns.getQuads());
-        // console.log(this.operator);
-        // console.log(this.operationArgs);
-
-
         let rspqlQuery = `
         PREFIX : <https://rsp.js/> 
         PREFIX saref: <https://saref.etsi.org/>

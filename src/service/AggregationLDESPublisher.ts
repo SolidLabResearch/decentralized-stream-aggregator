@@ -1,23 +1,36 @@
-import { LDESinLDP, LDESMetadata, LDPCommunication, SolidCommunication, RDF, LDES, extractLdesMetadata, LDESConfig, VersionAwareLDESinLDP, ILDES } from "@treecg/versionawareldesinldp";
-import { naiveAlgorithm } from "../utils/algorithms/naiveAlgorithm";
-import { getTimeStamp, prefixesFromFilepath, resourceToOptimisedTurtle, Resource, initSession } from "../utils/EventSource";
+import {
+    LDESinLDP,
+    LDESMetadata,
+    LDPCommunication,
+    SolidCommunication,
+    RDF,
+    LDES,
+    extractLdesMetadata,
+    LDESConfig,
+    VersionAwareLDESinLDP,
+    ILDES
+} from "@treecg/versionawareldesinldp";
+import {naiveAlgorithm} from "../utils/algorithms/naiveAlgorithm";
+import {
+    prefixesFromFilepath,
+    initSession
+} from "../utils/EventSource";
 import * as CONFIG from '../config/ldes_properties.json';
+
 export class AggregationLDESPublisher {
 
+    public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
     private lilURL = CONFIG.LIL_URL;
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
+    public config: LDESConfig = {
+        LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
+    }
     private amount = CONFIG.AMOUNT;
     private bucketSize = CONFIG.BUCKET_SIZE;
     private logLevel = CONFIG.LOG_LEVEL;
-    public initialised: boolean = false;
-    public config: LDESConfig = {
-        LDESinLDPIdentifier: this.lilURL,
-        treePath: this.treePath,
-        versionOfPath: "1.0",
-    }
 
     constructor() {
         this.initialise();
@@ -30,8 +43,8 @@ export class AggregationLDESPublisher {
         }
         this.session = s;
 
-        const commuication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
-        const lil: ILDES  = await new LDESinLDP(this.lilURL, commuication);
+        const communication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
+        const lil: ILDES = await new LDESinLDP(this.lilURL, communication);
         let metadata: LDESMetadata | undefined;
         const versionAware = new VersionAwareLDESinLDP(lil);
         await versionAware.initialise(this.config);
@@ -58,9 +71,7 @@ export class AggregationLDESPublisher {
 
         const prefixes = prefixesFromFilepath(this.prefixFile, this.lilURL);
         const config: LDESConfig = {
-            LDESinLDPIdentifier: this.lilURL,
-            treePath: this.treePath,
-            versionOfPath: "1.0",
+            LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
 
         naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)

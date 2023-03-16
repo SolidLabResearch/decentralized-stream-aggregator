@@ -1,16 +1,18 @@
-import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
-import { AggregationLDESPublisher } from "../service/AggregationLDESPublisher";
+import {AggregatorInstantiator} from "../service/AggregatorInstantiator";
+import {AggregationLDESPublisher} from "../service/AggregationLDESPublisher";
+import {SPARQLToRSPQL} from "../service/SPARQLToRSPQL";
+
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const websocket = require('websocket');
 const EventEmitter = require('events');
 const eventEmitter = new EventEmitter();
-const {Parser} = require('n3');
+const { Parser } = require('n3');
 
 export class HTTPServer {
-    private minutes: number;
-    private serverURL: string;
+    private readonly minutes: number;
+    private readonly serverURL: string;
     private aggregationResourceList: any[] = [];
     private resourceListBatchSize: number = 500;
     constructor(port: number, minutes: number, serverURL: string) {
@@ -18,11 +20,13 @@ export class HTTPServer {
         this.serverURL = serverURL;
         const app = express();
         let publisher = new AggregationLDESPublisher();
+        let sparqlToRSPQL = new SPARQLToRSPQL();
         app.server = http.createServer(app);
         app.use(cors({
             exposedHeaders: '*',
         }));
 
+        app.use(express.urlencoded());
         const wss = new websocket.server({
             httpServer: app.server,
         });
@@ -67,6 +71,17 @@ export class HTTPServer {
             new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
         });
 
+        // TODO : work on the SPARQL to RSPQL conversion.
+
+        /*
+        To be used as, /sparql?value=SELECT * WHERE { ?s ?p ?o }
+        */
+        app.get('/sparql', (req: any, res: any) => {
+            let query: string = req.query.value;
+            let value = sparqlToRSPQL.getRSPQLQuery(query);
+            console.log(`The RSP-QL Query is: ${value}`);
+        });
+
         wss.on('request', async (request: any) => {
             let connection = request.accept('echo-protocol', request.origin);
             console.log('Connection accepted');
@@ -82,24 +97,27 @@ export class HTTPServer {
             });
 
             eventEmitter.on('AggregationEvent$', (value: any) => {
-                const parser = new Parser({'format': 'N-Triples'});
+                const parser = new Parser({ 'format': 'N-Triples' });
                 const store = parser.parse(value);
                 this.aggregationResourceList.push(store);
                 if (this.aggregationResourceList.length == this.resourceListBatchSize) {
-                    if (publisher.initialised == false) {
-                        publisher.initialise();
-                        publisher.initialised = true;
-                    }                    
-                    publisher.publish(this.aggregationResourceList);
-                    this.aggregationResourceList = [];
-                }
-                if (this.aggregationResourceList.length < this.resourceListBatchSize) {
-                    if (publisher.initialised == false) {
+                    if (!publisher.initialised) {
                         publisher.initialise();
                         publisher.initialised = true;
                     }
                     publisher.publish(this.aggregationResourceList);
                     this.aggregationResourceList = [];
+                }
+                if (this.aggregationResourceList.length < this.resourceListBatchSize) {
+                    if (!publisher.initialised) {
+                        publisher.initialise();
+                        publisher.initialised = true;
+                    }
+                    publisher.publish(this.aggregationResourceList);
+                    this.aggregationResourceList = [];
+                }
+                if (this.aggregationResourceList.length === 0) {
+                    console.log('No data to publish');
                 }
             });
             eventEmitter.on('close', () => {

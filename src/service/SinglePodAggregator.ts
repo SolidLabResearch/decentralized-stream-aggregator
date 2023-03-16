@@ -3,9 +3,7 @@ const websocketConnection = require('websocket').connection;
 const { LDPCommunication, LDESinLDP, dateToLiteral } = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const { Store } = require('n3');
-import { NamedNode, Quad } from "n3";
-import { RDFStream, RSPEngine } from "rsp-js";
-
+import {RDFStream, RSPEngine} from "rsp-js";
 
 export class SinglePodAggregator {
     public LDESContainer: string;
@@ -46,7 +44,9 @@ export class SinglePodAggregator {
 
     async executeRSP(streamName: RDFStream) {
         console.log(`The stream name is ${streamName.name}`);
-        this.connectWithServer(this.serverURL);
+        this.connectWithServer(this.serverURL).then(r => {
+            console.log(`Connected to the server`);
+        });
         this.client.on('connect', async (connection: typeof websocketConnection) => {
             console.log('WebSocket Client Connected');
             let LILStream = await this.ldesinldp.readAllMembers(new Date(this.startTime), new Date(this.endTime));
@@ -109,14 +109,13 @@ export class SinglePodAggregator {
             streamName = "https://rsp.js/undefined";
         }
         const timestampDate = new Date(eventTimestamp).toISOString();
-        let AggregationEvent = `
+        return `
         <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
         <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
         <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
         <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#generatedBy> <${streamName}> .
         `;
-        return AggregationEvent;
     }
 
     async connectWithServer(wssURL: string) {
