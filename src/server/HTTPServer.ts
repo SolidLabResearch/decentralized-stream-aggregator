@@ -1,6 +1,8 @@
-import {AggregatorInstantiator} from "../service/AggregatorInstantiator";
-import {AggregationLDESPublisher} from "../service/AggregationLDESPublisher";
-import {SPARQLToRSPQL} from "../service/SPARQLToRSPQL";
+import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
+import { AggregationLDESPublisher } from "../service/AggregationLDESPublisher";
+import { SPARQLToRSPQL } from "../service/SPARQLToRSPQL";
+import { QueryRegistry } from "../service/QueryRegistry";
+import { sleep } from "@treecg/versionawareldesinldp";
 
 const http = require('http');
 const express = require('express');
@@ -20,6 +22,7 @@ export class HTTPServer {
         this.serverURL = serverURL;
         const app = express();
         let publisher = new AggregationLDESPublisher();
+        let queryRegistry = new QueryRegistry();
         let sparqlToRSPQL = new SPARQLToRSPQL();
         app.server = http.createServer(app);
         app.use(cors({
@@ -67,8 +70,46 @@ export class HTTPServer {
                              ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
             }
             `
+
             res.send('Received request on /averageHRPatient1');
             new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
+        });
+
+        app.get('/queryRegistryTest', (req: any, res: any) => {
+            let queryOne = `
+            PREFIX saref: <https://saref.etsi.org/core/>
+            PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+            PREFIX : <https://rsp.js/>
+            SELECT (AVG(?o) AS ?averageHR1)
+            WHERE{
+                ?s saref:hasValue ?o .
+                ?s saref:relatesToProperty dahccsensors:wearable.bvp .
+            }
+            `;
+            let queryTwo = `    
+            PREFIX saref: <https://saref.etsi.org/core/>
+            PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+            PREFIX : <https://rsp.js/>
+            SELECT ?object
+            WHERE{
+                ?subject saref:hasValue ?object .
+                ?subject saref:relatesToProperty dahccsensors:wearable.bvp .
+            }
+            `
+
+            let queryThree = `
+            PREFIX saref: <https://saref.etsi.org/core/>
+            PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+            PREFIX : <https://rsp.js/>
+            SELECT ?object
+            WHERE{
+                ?subject saref:hasValue ?object .
+                ?subject saref:relatesToProperty dahccsensors:wearable.bvp .
+            }`;
+            // console.log(`for queryOne: ${sparqlToRSPQL.getRSPQLQuery(queryOne)} and for queryTwo: ${sparqlToRSPQL.getRSPQLQuery(queryTwo)}`);
+            queryRegistry.add(queryTwo);
+            queryRegistry.add(queryThree);
+            queryRegistry.add(queryTwo);
         });
 
         // TODO : work on the SPARQL to RSPQL conversion.
@@ -78,6 +119,8 @@ export class HTTPServer {
         */
         app.get('/sparql', (req: any, res: any) => {
             let query: string = req.query.value;
+            let aggregationFunction: string = (req.query.aggregationFunction.toUpperCase());
+            console.log(aggregationFunction);
             let value = sparqlToRSPQL.getRSPQLQuery(query);
             console.log(`The RSP-QL Query is: ${value}`);
         });
@@ -126,5 +169,4 @@ export class HTTPServer {
 
         });
     }
-
 }
