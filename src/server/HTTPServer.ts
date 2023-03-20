@@ -2,7 +2,6 @@ import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
 import { AggregationLDESPublisher } from "../service/AggregationLDESPublisher";
 import { SPARQLToRSPQL } from "../service/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/QueryRegistry";
-import { sleep } from "@treecg/versionawareldesinldp";
 
 const http = require('http');
 const express = require('express');
@@ -78,22 +77,29 @@ export class HTTPServer {
         app.get('/queryRegistryIsomorphicTest', (req: any, res: any) => {
             let simple_query_one = `PREFIX : <https://rsp.js/>
             REGISTER RStream <output> AS
-            SELECT AVG(?v) as ?avgTemp
+            SELECT (AVG(?v) as ?avgTemp)
             FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
             WHERE{
                 WINDOW :w1 { ?sensor :value ?v ; :measurement: ?m }
             }`;
             let simple_query_two = `PREFIX : <https://rsp.js/>
             REGISTER RStream <output> AS
-            SELECT AVG(?v) as ?avgTemp
+            SELECT (AVG(?v) as ?avgTemp)
             FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
             WHERE{
                 WINDOW :w1 { ?sensor :value ?v ; :measurement: ?m }
             }`;
+            let simple_query_three = `PREFIX : <https://rsp.js/>
+            REGISTER RStream <output> AS
+            SELECT (AVG(?v) as ?avgTemp)
+            FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
+            WHERE{
+                WINDOW :w1 { ?sensor :valueX ?v ; :measurement: ?m }
+            }`;
 
             queryRegistry.add(simple_query_one);
             queryRegistry.add(simple_query_two);
-
+            queryRegistry.add(simple_query_three);
             res.send(`Received request on /queryRegistryIsomorphicTest`)
         });
 

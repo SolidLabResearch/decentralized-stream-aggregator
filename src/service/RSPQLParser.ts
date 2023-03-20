@@ -1,14 +1,12 @@
 export class RSPQLParser {
-    rspqlQuery: string;
     r2s: Map<string, string> = new Map<string, string>();
     s2r: Array<string> = new Array<string>();
-    constructor(query: string) {
-        this.rspqlQuery = query;
+    constructor() {
     }
-
-    parse(): ParsedQuery {
+    
+    parse(rspqlQuery: string): ParsedQuery {
         let parsed = new ParsedQuery();
-        let split = this.rspqlQuery.split(/\r?\n/);
+        let split = rspqlQuery.split(/\r?\n/);
         let sparqlLines = new Array<string>();
         let prefixMapper = new Map<string, string>();
         split.forEach((line) => {
@@ -73,7 +71,6 @@ export class ParsedQuery {
     s2r: Array<WindowDefinition>;
     constructor() {
         this.sparql = "Select * WHERE{?s ?p ?o}";
-        // @ts-ignore
         this.r2s = { operator: "RStream", name: "undefined" };
         this.s2r = new Array<WindowDefinition>();
 

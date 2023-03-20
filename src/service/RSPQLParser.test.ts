@@ -10,7 +10,7 @@ let simple_query = `PREFIX : <https://rsp.js/>
 describe("RSPQLParser", () => {
     it('parsing a simple one stream RSPQL query', () => {
         let query = simple_query;
-        let parser = new RSPQLParser(query);
-        let sparqlQuery = parser.parse();
+        let parser = new RSPQLParser();
+        let sparqlQuery = parser.parse(query);
     });
 });
