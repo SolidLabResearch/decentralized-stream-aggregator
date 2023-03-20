@@ -75,6 +75,28 @@ export class HTTPServer {
             new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
         });
 
+        app.get('/queryRegistryIsomorphicTest', (req: any, res: any) => {
+            let simple_query_one = `PREFIX : <https://rsp.js/>
+            REGISTER RStream <output> AS
+            SELECT AVG(?v) as ?avgTemp
+            FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
+            WHERE{
+                WINDOW :w1 { ?sensor :value ?v ; :measurement: ?m }
+            }`;
+            let simple_query_two = `PREFIX : <https://rsp.js/>
+            REGISTER RStream <output> AS
+            SELECT AVG(?v) as ?avgTemp
+            FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
+            WHERE{
+                WINDOW :w1 { ?sensor :value ?v ; :measurement: ?m }
+            }`;
+
+            queryRegistry.add(simple_query_one);
+            queryRegistry.add(simple_query_two);
+
+            res.send(`Received request on /queryRegistryIsomorphicTest`)
+        });
+
         app.get('/queryRegistryTest', (req: any, res: any) => {
             let queryOne = `
             PREFIX saref: <https://saref.etsi.org/core/>
