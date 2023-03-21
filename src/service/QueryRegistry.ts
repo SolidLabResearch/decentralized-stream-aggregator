@@ -1,17 +1,19 @@
 import { isomorphic } from "rdf-isomorphic";
 import { DataFactory, Quad } from "rdf-data-factory";
 import { RSPQLParser } from "./RSPQLParser";
+import { Logger, ILogObj } from "tslog";
+import { BlankNode } from "n3";
 let sparqlParser = require('sparqljs').Parser;
 let SPARQLParser = new sparqlParser();
 
 export class QueryRegistry {
-
     registeredQueries: Map<number, string>;
     executedQueries: any[];
     futureQueries: any[];
     executingQueries: any[];
     queryCount: number;
     parser: any;
+    logger: Logger<ILogObj>;
 
     constructor() {
         this.registeredQueries = new Map();
@@ -20,20 +22,29 @@ export class QueryRegistry {
         this.futureQueries = [];
         this.queryCount = 0;
         this.parser = new RSPQLParser();
-
+        this.logger = new Logger();
     }
 
-    add(rspqlQuery: string) {
+    registerQuery(rspqlQuery: string) {
         this.registeredQueries.set(this.queryCount, rspqlQuery);
         this.queryCount++;
         if (this.checkUniqueQuery(rspqlQuery)) {
-            console.log(`The query you have registered is already executing`);
+            /*
+            The query you have registered is already executing.
+            */
+            return false;
         }
         else {
-            console.log(`The query you have registered is not already executing`);
-
-            this.executingQueries.push(rspqlQuery);
+            /*
+            The query you have registered is not already executing.
+            */
+            this.add(rspqlQuery);
+            return true;
         }
+    }
+
+    add(query: string) {
+        this.executingQueries.push(query);
     }
 
     checkUniqueQuery(query: string) {
@@ -58,8 +69,8 @@ export class QueryRegistry {
                     }
                 }
                 else {
-                    console.log("The stream parameters are not equal");
-
+                    this.logger.info('The stream parameters are not equal.')
+                    return false;
                 }
             }
         }
@@ -98,11 +109,21 @@ export class QueryRegistry {
             let subject = basicGraphPattern[i].subject;
             let predicate = basicGraphPattern[i].predicate;
             let object = basicGraphPattern[i].object;
+            if (subject.termType === 'Variable') {
+                subject = new BlankNode(subject);
+            }
+            if (object.termType === 'Variable') {
+                object = new BlankNode(object);
+            }
+            if (predicate.termType === 'Variable') {
+                predicate = new BlankNode(predicate);
+            }
             let quad = new DataFactory().quad(subject, predicate, object);
             graph.push(quad);
         }
         return graph;
     }
+
 
 
 }

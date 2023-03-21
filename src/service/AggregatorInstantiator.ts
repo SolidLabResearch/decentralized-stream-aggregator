@@ -1,5 +1,5 @@
-import {SinglePodAggregator} from "./SinglePodAggregator";
-
+import { SinglePodAggregator } from "./SinglePodAggregator";
+import { Logger, ILogObj } from "tslog";
 const QueryEngine = require('@comunica/query-sparql-link-traversal').QueryEngine;
 const linkTraversalEngine = new QueryEngine();
 
@@ -8,14 +8,16 @@ export class AggregatorInstantiator {
     public currentTime: any;
     public solidServerURL: string;
     public query: string;
+    public logger: Logger<ILogObj>;
 
     constructor(continuousQuery: string, latestMinutes: number, serverURL: string) {
         this.latestMinutes = latestMinutes;
         this.currentTime = new Date();
         this.solidServerURL = serverURL;
         this.query = continuousQuery;
+        this.logger = new Logger();
         this.discoverLIL(this.solidServerURL).then((result: void) => {
-            console.log(`The process to discover LILs has been started.`);
+            this.logger.info(`The process to discover LILs has been started`);
         });
     }
 
