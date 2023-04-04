@@ -1,11 +1,9 @@
-import { Logger } from "tslog"
 const fs = require('fs')
 const generator = require('generate-password')
 const jsonFile = require('jsonfile')
 const directory: string = '/home/kush/Code/stream-aggregator-solid/data'
-
-const logging: Logger = new Logger();
-
+import { Logger, ILogObj } from "tslog";
+let logger: Logger<ILogObj> = new Logger();
 const mailDomain: string = '@protego.com'
 
 type multipod = {
@@ -42,13 +40,13 @@ export class prepareSolidPod {
     }
 
     async writeJSONFile(object: multipod[]) {
-        for await (const {} of object) {
+        for await (const { } of object) {
             const podContent: string = JSON.stringify(fileObject.solidpod)
             jsonFile.writeFile('multiSolidPod.json', JSON.parse(podContent), function (error: string) {
                 if (error) {
-                    throw new Error("The error is" + error);
+                    logger.error(`The error is ${error}`);
                 }
-                logging.info('complete.')
+                logger.info('complete.')
             })
         }
     }
@@ -58,5 +56,5 @@ const something = new prepareSolidPod();
 something.listFile(directory).then(() => {
     something.writeJSONFile(fileObject.solidpod);
 }).catch(error => {
-    console.log(error);
+    logger.error(error);
 })

@@ -3,7 +3,8 @@ const websocketConnection = require('websocket').connection;
 const { LDPCommunication, LDESinLDP, dateToLiteral } = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const { Store } = require('n3');
-import {RDFStream, RSPEngine} from "rsp-js";
+import { RDFStream, RSPEngine } from "rsp-js";
+import { Logger, ILogObj } from "tslog";
 
 export class SinglePodAggregator {
     public LDESContainer: string;
@@ -19,6 +20,7 @@ export class SinglePodAggregator {
     public client = new WebSocketClient();
     public connection: typeof websocketConnection;
     public observationCounter: number = 1;
+    public logger: Logger<ILogObj>;
 
     constructor(LDESContainer: string, continuousQuery: string, wssURL: string, startDate: any, endDate: any, streamName: string) {
         this.LDESCommunication = new LDPCommunication();
@@ -32,23 +34,24 @@ export class SinglePodAggregator {
         this.endTime = endDate;
         this.serverURL = wssURL;
         this.connection = websocketConnection;
+        this.logger = new Logger();
         if (this.streamName != undefined) {
             this.executeRSP(this.streamName).then((result: any) => {
-                console.log(`Getting Events From ${LDESContainer}`);
+                this.logger.info(`Getting Events From ${LDESContainer}`);
             });
         }
         else {
-            console.log(`The stream is undefined`);
+            this.logger.error(`The stream is undefined.`);
         }
     }
 
     async executeRSP(streamName: RDFStream) {
-        console.log(`The stream name is ${streamName.name}`);
+        this.logger.info(`The stream name is ${streamName.name}`)
         this.connectWithServer(this.serverURL).then(r => {
-            console.log(`Connected to the server`);
+            this.logger.info(`Connected to the server`)
         });
         this.client.on('connect', async (connection: typeof websocketConnection) => {
-            console.log('WebSocket Client Connected');
+            this.logger.info(`WebSocket Client is connected.`);
             let LILStream = await this.ldesinldp.readAllMembers(new Date(this.startTime), new Date(this.endTime));
             LILStream.on('data', async (data: any) => {
                 let LILStreamStore = new Store(data.quads);
@@ -63,13 +66,13 @@ export class SinglePodAggregator {
 
                 bindingStream.on('data', async (bindings: any) => {
                     let timestamp = await this.epoch(bindings.get('time').value);
-                    console.log(`The timestamp is ${timestamp}`);
+                    this.logger.info(`The timestamp is ${timestamp}`);
                     if (streamName) {
-                        console.log(`Adding Event to ${streamName}`);
+                        this.logger.info(`Adding Event to ${streamName}`);
                         await this.addEventToRSPEngine(data, [streamName], timestamp);
                     }
                     else {
-                        console.log(`The stream is undefined`);
+                        this.logger.error(`The stream is undefined`);
                     }
                 });
             });
@@ -92,7 +95,7 @@ export class SinglePodAggregator {
             this.connection.sendUTF(message);
         }
         else {
-            console.log(`The connection is not established`);
+            this.logger.error(`The connection is not established`);
         }
     }
 
@@ -121,7 +124,7 @@ export class SinglePodAggregator {
     async connectWithServer(wssURL: string) {
         this.client.connect(wssURL, 'echo-protocol');
         this.client.on('connectFailed', (error: any) => {
-            console.log('Connect Error: ' + error.toString());
+            this.logger.error('Connect Error: ' + error.toString());
         });
         this.client.setMaxListeners(Infinity);
         this.client.on('connect', (connection: typeof websocketConnection) => {

@@ -10,19 +10,21 @@ import {
     VersionAwareLDESinLDP,
     ILDES
 } from "@treecg/versionawareldesinldp";
-import {naiveAlgorithm} from "../utils/algorithms/naiveAlgorithm";
+import { naiveAlgorithm } from "../utils/algorithms/naiveAlgorithm";
 import {
     prefixesFromFilepath,
     initSession
 } from "../utils/EventSource";
 import * as CONFIG from '../config/ldes_properties.json';
+import { RSPQLParser } from "./RSPQLParser";
+import { Logger, ILogObj } from "tslog";
 
 export class AggregationLDESPublisher {
 
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
-    private lilURL = CONFIG.LIL_URL;
+    private lilURL = this.getextractedContainerNames(CONFIG.LIL_URL);
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: LDESConfig = {
@@ -31,9 +33,14 @@ export class AggregationLDESPublisher {
     private amount = CONFIG.AMOUNT;
     private bucketSize = CONFIG.BUCKET_SIZE;
     private logLevel = CONFIG.LOG_LEVEL;
+    private aggregationQuery: string = "";
+    private parser: any;
+    public logger: Logger<ILogObj>;
 
     constructor() {
         this.initialise();
+        this.parser = new RSPQLParser();
+        this.logger = new Logger();
     }
 
     async initialise() {
@@ -75,5 +82,22 @@ export class AggregationLDESPublisher {
         }
 
         naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
+    }
+
+    setAggregationQuery(query: string) {
+        this.aggregationQuery = query;
+        console.log(this.aggregationQuery);
+    }
+
+    getextractedContainerNames(config_lil_url: string) {
+        if (this.aggregationQuery != undefined) {
+            let parsedAggregationQuery = this.parser.parse(this.aggregationQuery);
+            console.log(parsedAggregationQuery.sparql);
+        }
+        else {
+            console.log(`The aggregationQuery is not set.`);
+            // this.logger.debug(`The aggregationQuery is not set.`)
+        }
+        return config_lil_url;
     }
 }

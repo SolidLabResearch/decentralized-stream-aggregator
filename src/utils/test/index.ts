@@ -1,22 +1,22 @@
-const QueryEngine = require('@comunica/query-sparql').QueryEngine;
-const queryEngine = new QueryEngine();
-const participantOneProfileCard = "http://localhost:3000/dataset_participant1/profile/card#me";
+import { SPARQLToRSPQL } from "../../service/SPARQLToRSPQL";
+let {Parser: SparqlParser} = require('sparqljs');
+let parser = new SparqlParser();
+let sparqlToRSPQL = new SPARQLToRSPQL();
 
-async function main(){
-    const bindingStream = await queryEngine.queryBindings(`
-    PREFIX asdo: <http://argahsuknesib.github.io/> 
-    select ?aggregator where {
-     <${participantOneProfileCard}> asdo:aggregatorLocation ?aggregator .
-    }
-    `, {
-        sources: [`${participantOneProfileCard}`]
-    });
-
-    bindingStream.on('data', async (bindings: any) => {
-        console.log(bindings.get('aggregator').value);
-    });
+let query = `
+PREFIX : <https://rsp.js/> PREFIX saref: <https://saref.etsi.org/core/> PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+SELECT (AVG(?o) AS ?averageHR1) (AVG(?x) AS ?averageHR2) {
+    ?s saref:hasValue ?o .
+    ?s saref:relatesToProperty dahccsensors:wearable.bvp .
 }
+`;
 
-main().then((result: void) => {
-    console.log(`started`);
-});
+let parsedQuery = parser.parse(query);
+let variables = parsedQuery.variables;
+for (let i = 0; i < variables.length; i++) {
+    let variable = variables[i].expression.expression.value 
+    let aggregationfunction = variables[i].expression.aggregation.toUpperCase();
+    
+}
+console.log(parsedQuery);
+
