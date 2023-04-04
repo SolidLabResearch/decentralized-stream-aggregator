@@ -62,8 +62,21 @@ export class HTTPServer {
             PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
             PREFIX : <https://rsp.js/>
             REGISTER RStream <output> AS
-            SELECT (AVG(?object) AS ?averageHR1)
+            SELECT (AVG(?object) AS ?something)
             FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+            WHERE{
+                WINDOW :w1 { ?subject saref:hasValue ?object .
+                                ?subject saref:relatesToProperty dahccsensors:wearable.bvp .
+                            }
+            }
+            `
+            let query_three = `  
+            PREFIX saref: <https://saref.etsi.org/core/> 
+            PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+            PREFIX : <https://rsp.js/>
+            REGISTER RStream <output> AS
+            SELECT (AVG(?object) AS ?averageHR1)
+            FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant2/data/> [RANGE 10 STEP 2]
             WHERE{
                 WINDOW :w1 { ?subject saref:hasValue ?object .
                              ?subject saref:relatesToProperty dahccsensors:wearable.bvp .}
@@ -71,10 +84,18 @@ export class HTTPServer {
             `
             if (queryRegistry.registerQuery(query_one)) {
                 queryRegistry.add(query_one);
+                this.logger.info("Query one registered");
+
             }
             if (queryRegistry.registerQuery(query_two)) {
                 queryRegistry.add(query_two);
+                this.logger.info("Query two registered");
             }
+            if (queryRegistry.registerQuery(query_three)) {
+                queryRegistry.add(query_three);
+                this.logger.info("Query three registered");
+            }
+            res.send('Received request on /test');
         });
 
         app.get('/averageHRPatient1', (req: any, res: any) => {
@@ -92,7 +113,9 @@ export class HTTPServer {
             `
 
             res.send('Received request on /averageHRPatient1');
+            publisher.setAggregationQuery(query);
             new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
+
         });
 
         app.get('/queryRegistryIsomorphicTest', (req: any, res: any) => {

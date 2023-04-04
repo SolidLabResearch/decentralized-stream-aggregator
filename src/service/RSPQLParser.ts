@@ -2,8 +2,9 @@ export class RSPQLParser {
     r2s: Map<string, string> = new Map<string, string>();
     s2r: Array<string> = new Array<string>();
     constructor() {
+
     }
-    
+
     parse(rspqlQuery: string): ParsedQuery {
         let parsed = new ParsedQuery();
         let split = rspqlQuery.split(/\r?\n/);

@@ -248,7 +248,54 @@ describe("QueryRegistry", () => {
         expect(queryRegistry.registerQuery(query_one)).toBeTruthy();
         expect(queryRegistry.registerQuery(query_two)).toBeTruthy();
         expect(queryRegistry.registerQuery(query_one)).toBeFalsy();
+    });
 
+    it('check_if_window_parameters_are_equal', () => {
+        let queryRegistry = new QueryRegistry();
+        let query_one = `  
+        PREFIX saref: <https://saref.etsi.org/core/> 
+        PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+        PREFIX : <https://rsp.js/>
+        REGISTER RStream <output> AS
+        SELECT (AVG(?o) AS ?averageHR1)
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+        WHERE{
+            WINDOW :w1 { ?s saref:hasValue ?o .
+                         ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
+        }
+        `
+
+        let query_two = `  
+        PREFIX saref: <https://saref.etsi.org/core/> 
+        PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+        PREFIX : <https://rsp.js/>
+        REGISTER RStream <output> AS
+        SELECT (AVG(?o) AS ?averageHR1)
+        FROM NAMED WINDOW :w2 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+        WHERE{
+            WINDOW :w2 { ?s saref:hasValue ?o .
+                         ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
+        }`
+
+        expect(queryRegistry.checkIfWindowParametersAreEqual(query_one, query_two)).toBeFalsy();
+
+    })
+
+    it('check_get_window_size_and_range_function', () => {
+        let queryRegistry = new QueryRegistry();
+        let query_one = `  
+        PREFIX saref: <https://saref.etsi.org/core/> 
+        PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+        PREFIX : <https://rsp.js/>
+        REGISTER RStream <output> AS
+        SELECT (AVG(?o) AS ?averageHR1)
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+        WHERE{
+            WINDOW :w1 { ?s saref:hasValue ?o .
+                         ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
+        }
+        `;
+        expect(queryRegistry.getWindowWidthAndSlide(query_one)).toEqual({window_width: 10, window_slide: 2});
     });
 
 });

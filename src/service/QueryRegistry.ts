@@ -57,7 +57,7 @@ export class QueryRegistry {
             for (let i = 0; i < queryArray.length; i++) {
                 let queryArrayElement = this.parser.parse(queryArray[i]);
                 let RSPQLqueryParsed = this.parser.parse(query);
-                if (this.checkIfStreamParametersAreEqual(query, queryArray[i])) {
+                if (this.checkIfStreamParametersAreEqual(query, queryArray[i]) && this.checkIfWindowParametersAreEqual(query, queryArray[i])) {
                     let RSPQLqueryParsedBGP = this.generateBGPQuadsFromQueries(RSPQLqueryParsed.sparql);
                     let queryArrayElementBGP = this.generateBGPQuadsFromQueries(queryArrayElement.sparql);
                     let isomorphism = this.checkIfQueriesAreIsomorphic(queryArrayElementBGP, RSPQLqueryParsedBGP)
@@ -69,7 +69,9 @@ export class QueryRegistry {
                     }
                 }
                 else {
-                    this.logger.info('The stream parameters are not equal.')
+                    /*
+                    The stream parameters (the stream name and window size / slide) are not equal.
+                    */
                     return false;
                 }
             }
@@ -86,6 +88,24 @@ export class QueryRegistry {
         else {
             return false;
         }
+    }
+
+    checkIfWindowParametersAreEqual(queryOne: string, queryTwo: string) {
+        let queryOneParsed = this.parser.parse(queryOne);
+        let queryTwoParsed = this.parser.parse(queryTwo);
+        if (queryOneParsed.s2r[0].window_name === queryTwoParsed.s2r[0].window_name) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    getWindowWidthAndSlide(queryOne: string) {
+        let queryOneParsed = this.parser.parse(queryOne);
+        let window_width = queryOneParsed.s2r[0].width;
+        let window_slide = queryOneParsed.s2r[0].slide;
+        return { "window_width": window_width, "window_slide": window_slide };
     }
 
     getRegisteredQueries() {
@@ -115,15 +135,15 @@ export class QueryRegistry {
             if (object.termType === 'Variable') {
                 object = new BlankNode(object);
             }
-            if (predicate.termType === 'Variable') {
-                predicate = new BlankNode(predicate);
-            }
             let quad = new DataFactory().quad(subject, predicate, object);
             graph.push(quad);
         }
         return graph;
     }
 
-
-
+    convertVariablesToBlankNodes(node: any) {
+        if (node.termType === 'Variable') {
+            return new BlankNode(node);
+        }
+    }
 }
