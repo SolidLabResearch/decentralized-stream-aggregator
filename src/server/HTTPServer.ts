@@ -1,7 +1,7 @@
-import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
-import { AggregationLDESPublisher } from "../service/AggregationLDESPublisher";
-import { SPARQLToRSPQL } from "../service/SPARQLToRSPQL";
-import { QueryRegistry } from "../service/QueryRegistry";
+import { AggregatorInstantiator } from "../service/aggregator/AggregatorInstantiator";
+import { AggregationLDESPublisher } from "../service/publishing-stream-to-pod/AggregationLDESPublisher";
+import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
+import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { Logger, ILogObj } from "tslog";
 const http = require('http');
 const express = require('express');
@@ -15,14 +15,24 @@ export class HTTPServer {
     private readonly minutes: number;
     private readonly serverURL: string;
     private aggregationResourceList: any[] = [];
-    private resourceListBatchSize: number = 500;
+    /**
+     * The batch size for the resource list which is used to store the aggregated events in a batch
+     * and then pushed to the Solid Pod by the AggregationLDESPublisher.
+     * @private
+     * @type {number}
+     * @memberof HTTPServer
+     */
+    private aggregation_resource_list_batch_size: number = 500;
     public logger: Logger<ILogObj>;
     constructor(port: number, minutes: number, serverURL: string) {
+        let publisher = new AggregationLDESPublisher();
         this.minutes = minutes;
         this.serverURL = serverURL;
         const app = express();
         this.logger = new Logger();
-        let publisher = new AggregationLDESPublisher();
+        /*
+        the publisher for the LDES in LDP is initialized here.
+        */
         let queryRegistry = new QueryRegistry();
         let sparqlToRSPQL = new SPARQLToRSPQL();
         app.server = http.createServer(app);
@@ -83,16 +93,16 @@ export class HTTPServer {
             }
             `
             if (queryRegistry.registerQuery(query_one)) {
-                queryRegistry.add(query_one);
+                queryRegistry.add_to_executing_queries(query_one);
                 this.logger.info("Query one registered");
 
             }
             if (queryRegistry.registerQuery(query_two)) {
-                queryRegistry.add(query_two);
+                queryRegistry.add_to_executing_queries(query_two);
                 this.logger.info("Query two registered");
             }
             if (queryRegistry.registerQuery(query_three)) {
-                queryRegistry.add(query_three);
+                queryRegistry.add_to_executing_queries(query_three);
                 this.logger.info("Query three registered");
             }
             res.send('Received request on /test');
@@ -113,9 +123,8 @@ export class HTTPServer {
             `
 
             res.send('Received request on /averageHRPatient1');
-            publisher.setAggregationQuery(query);
+            // publisher.setAggregationQuery(query);
             new AggregatorInstantiator(query, minutes, 'http://localhost:3000/');
-
         });
 
         app.get('/queryRegistryIsomorphicTest', (req: any, res: any) => {
@@ -148,11 +157,10 @@ export class HTTPServer {
                 WINDOW :w1 {?something :random ?v}
             }
             `;
-            queryRegistry.add(simple_query_one);
-            queryRegistry.add(simple_query_two);
-            queryRegistry.add(simple_query_three);
-            queryRegistry.add(simple_query_four);
-
+            queryRegistry.add_to_executing_queries(simple_query_one);
+            queryRegistry.add_to_executing_queries(simple_query_two);
+            queryRegistry.add_to_executing_queries(simple_query_three);
+            queryRegistry.add_to_executing_queries(simple_query_four);            
             res.send(`Received request on /queryRegistryIsomorphicTest`)
         });
 
@@ -188,9 +196,9 @@ export class HTTPServer {
                 ?subject saref:relatesToProperty dahccsensors:wearable.bvp .
             }`;
             // console.log(`for queryOne: ${sparqlToRSPQL.getRSPQLQuery(queryOne)} and for queryTwo: ${sparqlToRSPQL.getRSPQLQuery(queryTwo)}`);
-            queryRegistry.add(queryTwo);
-            queryRegistry.add(queryThree);
-            queryRegistry.add(queryTwo);
+            queryRegistry.add_to_executing_queries(queryTwo);
+            queryRegistry.add_to_executing_queries(queryThree);
+            queryRegistry.add_to_executing_queries(queryTwo);
         });
 
         // TODO : work on the SPARQL to RSPQL conversion.
@@ -208,23 +216,22 @@ export class HTTPServer {
 
         wss.on('request', async (request: any) => {
             let connection = request.accept('echo-protocol', request.origin);
-            console.log('Connection accepted');
+            this.logger.debug('Connection accepted');
             connection.on('message', async (message: any) => {
                 if (message.type === 'utf8') {
                     let value = message.utf8Data;
-                    eventEmitter.emit('AggregationEvent$', value);
+                    eventEmitter.emit('AggregationEvent', value);
                 }
             });
-
             connection.on('close', function (reasonCode: any, description: any) {
                 console.log('Peer ' + connection.remoteAddress + ' disconnected.');
             });
 
-            eventEmitter.on('AggregationEvent$', (value: any) => {
+            eventEmitter.on('AggregationEvent', (value: any) => {
                 const parser = new Parser({ 'format': 'N-Triples' });
                 const store = parser.parse(value);
                 this.aggregationResourceList.push(store);
-                if (this.aggregationResourceList.length == this.resourceListBatchSize) {
+                if (this.aggregationResourceList.length == this.aggregation_resource_list_batch_size) {
                     if (!publisher.initialised) {
                         publisher.initialise();
                         publisher.initialised = true;
@@ -232,7 +239,7 @@ export class HTTPServer {
                     publisher.publish(this.aggregationResourceList);
                     this.aggregationResourceList = [];
                 }
-                if (this.aggregationResourceList.length < this.resourceListBatchSize) {
+                if (this.aggregationResourceList.length < this.aggregation_resource_list_batch_size) {
                     if (!publisher.initialised) {
                         publisher.initialise();
                         publisher.initialised = true;
@@ -241,11 +248,11 @@ export class HTTPServer {
                     this.aggregationResourceList = [];
                 }
                 if (this.aggregationResourceList.length === 0) {
-                    console.log('No data to publish');
+                    this.logger.debug('No data to publish');
                 }
             });
             eventEmitter.on('close', () => {
-                console.log('Closing connection');
+                this.logger.debug('Closing the connection');
             });
 
         });

@@ -4,10 +4,16 @@ export class RSPQLParser {
     constructor() {
 
     }
-
-    parse(rspqlQuery: string): ParsedQuery {
+    /**
+     * Parse a RSPQL query to a parsedQuery Object containing the R2S and S2R mappings along with the SPARQL query.
+     *
+     * @param {string} rspql_query
+     * @return {*}  {ParsedQuery}
+     * @memberof RSPQLParser
+     */
+    parse(rspql_query: string): ParsedQuery {
         let parsed = new ParsedQuery();
-        let split = rspqlQuery.split(/\r?\n/);
+        let split = rspql_query.split(/\r?\n/);
         let sparqlLines = new Array<string>();
         let prefixMapper = new Map<string, string>();
         split.forEach((line) => {
@@ -51,6 +57,14 @@ export class RSPQLParser {
         return parsed;
     }
 
+    /**
+     * Unwraps a prefixed IRI to a full IRI.
+     *
+     * @param {string} prefixedIRI
+     * @param {Map<string, string>} prefixMapper
+     * @return {*} 
+     * @memberof RSPQLParser
+     */
     unwrap(prefixedIRI: string, prefixMapper: Map<string, string>) {
         if (prefixedIRI.trim().startsWith("<")) {
             return prefixedIRI.trim().slice(1, -1);
@@ -63,6 +77,14 @@ export class RSPQLParser {
         else {
             return "";
         }
+    }
+
+    /**
+     * Returns the name of the sensor from the SPARQL query.
+    **/
+   
+    get_sensor_name(parsed_query: ParsedQuery) {
+        console.log(parsed_query.sparql)
     }
 }
 

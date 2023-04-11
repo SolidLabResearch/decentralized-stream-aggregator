@@ -1,4 +1,4 @@
-import { AggregatorInstantiator } from "../service/AggregatorInstantiator";
+import { AggregatorInstantiator } from "../service/aggregator/AggregatorInstantiator";
 let express = require('express');
 let router = express.Router();
 

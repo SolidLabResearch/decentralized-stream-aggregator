@@ -12,21 +12,14 @@ async function main() {
 }
 
 let query_one = `
-PREFIX saref: <http://saref.etsi.org/> 
-PREFIX dahccsensors: <http://example.org/> 
-PREFIX : <http://rsp.org/> 
-SELECT (AVG(?o) AS ?averageHR1)
-WHERE{
-    ?s saref:hasValue ?o .
+select ?s ?p where {
+    ?s ?p ?o .
 }
 `
 let query_two = `
-PREFIX saref: <http://saref.etsi.org/> 
-PREFIX dahccsensors: <http://example.org/> 
-PREFIX : <http://rsp.org/> 
-SELECT (AVG(?object) AS ?averageHR1)
-WHERE{
-    ?subject saref:hasValue ?object .
+select distinct ?x where {
+    ?x ?y ?z .
+    filter (?y = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
 }
 `
 

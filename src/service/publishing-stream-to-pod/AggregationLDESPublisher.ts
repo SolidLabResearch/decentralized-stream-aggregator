@@ -10,13 +10,13 @@ import {
     VersionAwareLDESinLDP,
     ILDES
 } from "@treecg/versionawareldesinldp";
-import { naiveAlgorithm } from "../utils/algorithms/naiveAlgorithm";
+import { naiveAlgorithm } from "../../utils/algorithms/naiveAlgorithm";
 import {
     prefixesFromFilepath,
     initSession
-} from "../utils/EventSource";
-import * as CONFIG from '../config/ldes_properties.json';
-import { RSPQLParser } from "./RSPQLParser";
+} from "../../utils/ldes-in-ldp/EventSource";
+import * as CONFIG from '../../config/ldes_properties.json';
+import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 
 export class AggregationLDESPublisher {
@@ -24,12 +24,10 @@ export class AggregationLDESPublisher {
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
-    private lilURL = this.getextractedContainerNames(CONFIG.LIL_URL);
+    private lilURL: string;
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
-    public config: LDESConfig = {
-        LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
-    }
+    public config: LDESConfig;
     private amount = CONFIG.AMOUNT;
     private bucketSize = CONFIG.BUCKET_SIZE;
     private logLevel = CONFIG.LOG_LEVEL;
@@ -38,7 +36,11 @@ export class AggregationLDESPublisher {
     public logger: Logger<ILogObj>;
 
     constructor() {
+        this.lilURL = CONFIG.LIL_URL;
         this.initialise();
+        this.config = {
+            LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
+        }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
     }
@@ -68,6 +70,7 @@ export class AggregationLDESPublisher {
             console.log(`No LDES is present.`);
         }
         const eventStreamURI = metadata ? metadata.ldesEventStreamIdentifier : this.lilURL + "#EventStream";
+        return true;
     }
 
     publish(resourceList: any[]) {
@@ -82,22 +85,5 @@ export class AggregationLDESPublisher {
         }
 
         naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
-    }
-
-    setAggregationQuery(query: string) {
-        this.aggregationQuery = query;
-        console.log(this.aggregationQuery);
-    }
-
-    getextractedContainerNames(config_lil_url: string) {
-        if (this.aggregationQuery != undefined) {
-            let parsedAggregationQuery = this.parser.parse(this.aggregationQuery);
-            console.log(parsedAggregationQuery.sparql);
-        }
-        else {
-            console.log(`The aggregationQuery is not set.`);
-            // this.logger.debug(`The aggregationQuery is not set.`)
-        }
-        return config_lil_url;
     }
 }

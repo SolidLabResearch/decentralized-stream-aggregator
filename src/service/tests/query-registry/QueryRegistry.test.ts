@@ -1,8 +1,8 @@
-import { QueryRegistry } from "./QueryRegistry";
-import { RSPQLParser } from "./RSPQLParser";
+import { QueryRegistry } from "../../query-registry/QueryRegistry";
+import { RSPQLParser } from "../../parsers/RSPQLParser";
 describe("QueryRegistry", () => {
     it("register_one_query_to_registry", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -15,11 +15,11 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(queryRegistry.registerQuery(query_one)).toBeTruthy();
+        expect(query_registry.registerQuery(query_one)).toBeTruthy();
     })
 
     it("register_two_but_same_query_to_registry", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -44,12 +44,12 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(queryRegistry.registerQuery(query_one)).toBeTruthy();
-        expect(queryRegistry.registerQuery(query_two)).toBeFalsy();
+        expect(query_registry.registerQuery(query_one)).toBeTruthy();
+        expect(query_registry.registerQuery(query_two)).toBeFalsy();
     });
 
     it("register_two_different_query_to_registry", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -74,12 +74,12 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(queryRegistry.registerQuery(query_one)).toBeTruthy();
-        expect(queryRegistry.registerQuery(query_two)).toBeTruthy();
+        expect(query_registry.registerQuery(query_one)).toBeTruthy();
+        expect(query_registry.registerQuery(query_two)).toBeTruthy();
     });
 
     it("check_get_registeredQueries_function", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -104,13 +104,13 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        queryRegistry.registerQuery(query_one);
-        queryRegistry.registerQuery(query_two);
-        expect(queryRegistry.getRegisteredQueries().size).toBe(2);
+        query_registry.registerQuery(query_one);
+        query_registry.registerQuery(query_two);
+        expect(query_registry.get_registered_queries().size).toBe(2);
     });
 
     it("check_add_query_function", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -135,13 +135,13 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        queryRegistry.add(query_one);
-        queryRegistry.add(query_two);
-        expect(queryRegistry.executingQueries.length).toBe(2);
+        query_registry.add_to_executing_queries(query_one);
+        query_registry.add_to_executing_queries(query_two);
+        expect(query_registry.executing_queries.length).toBe(2);
     });
 
     it("check_convert_to_graph_function", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let sparqlParser = require('sparqljs').Parser;
         let SPARQLParser = new sparqlParser();
         let basic_sparql_query = `
@@ -154,12 +154,12 @@ describe("QueryRegistry", () => {
         }   `;
         let parsed_sparql_query = SPARQLParser.parse(basic_sparql_query);
         let basicGraphPattern = parsed_sparql_query.where[0].triples;
-        let graph = queryRegistry.convertToGraph(basicGraphPattern);
+        let graph = query_registry.convertToGraph(basicGraphPattern);
         expect(graph.length).toBe(1);
     });
 
     it("check_the_isomorphic_query_function", () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let sparqlParser = require('sparqljs').Parser;
         let SPARQLParser = new sparqlParser();
         let basic_sparql_query_one = `
@@ -184,14 +184,14 @@ describe("QueryRegistry", () => {
         let parsed_sparql_query_two = SPARQLParser.parse(basic_sparql_query_two);
         let basicGraphPattern_one = parsed_sparql_query_one.where[0].triples;
         let basicGraphPattern_two = parsed_sparql_query_two.where[0].triples;
-        let graph_one = queryRegistry.convertToGraph(basicGraphPattern_one);
-        let graph_two = queryRegistry.convertToGraph(basicGraphPattern_two);
-        expect(queryRegistry.checkIfQueriesAreIsomorphic(graph_one, graph_two)).toBeTruthy();
+        let graph_one = query_registry.convertToGraph(basicGraphPattern_one);
+        let graph_two = query_registry.convertToGraph(basicGraphPattern_two);
+        expect(query_registry.checkIfQueriesAreIsomorphic(graph_one, graph_two)).toBeTruthy();
     });
 
     it("check_if_stream_parameters_are_equal", () => {
         let rspqlParser = new RSPQLParser();
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -216,11 +216,11 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(queryRegistry.checkIfStreamParametersAreEqual(query_one, query_two)).toBeFalsy();
+        expect(query_registry.checkIfStreamParametersAreEqual(query_one, query_two)).toBeFalsy();
     });
 
     it('check_if_the_query_is_already_registered', () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -245,13 +245,13 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `;
-        expect(queryRegistry.registerQuery(query_one)).toBeTruthy();
-        expect(queryRegistry.registerQuery(query_two)).toBeTruthy();
-        expect(queryRegistry.registerQuery(query_one)).toBeFalsy();
+        expect(query_registry.registerQuery(query_one)).toBeTruthy();
+        expect(query_registry.registerQuery(query_two)).toBeTruthy();
+        expect(query_registry.registerQuery(query_one)).toBeFalsy();
     });
 
     it('check_if_window_parameters_are_equal', () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -277,12 +277,12 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }`
 
-        expect(queryRegistry.checkIfWindowParametersAreEqual(query_one, query_two)).toBeFalsy();
+        expect(query_registry.checkIfWindowParametersAreEqual(query_one, query_two)).toBeFalsy();
 
     })
 
     it('check_get_window_size_and_range_function', () => {
-        let queryRegistry = new QueryRegistry();
+        let query_registry = new QueryRegistry();
         let query_one = `  
         PREFIX saref: <https://saref.etsi.org/core/> 
         PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
@@ -295,7 +295,25 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `;
-        expect(queryRegistry.getWindowWidthAndSlide(query_one)).toEqual({window_width: 10, window_slide: 2});
+        expect(query_registry.getWindowWidthAndSlide(query_one)).toEqual({ window_width: 10, window_slide: 2 });
     });
 
+    it('get_exectuting_queries_function', () => {
+        let query_registry = new QueryRegistry();
+        let query_one = `
+        PREFIX saref: <https://saref.etsi.org/core/>
+        PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
+        PREFIX : <https://rsp.js/>
+        REGISTER RStream <output> AS
+        SELECT (AVG(?o) AS ?averageHR1)
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+        WHERE{
+            WINDOW :w1 { ?s saref:hasValue ?o .
+                            ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
+        }
+        `;
+        query_registry.add_to_executing_queries(query_one);
+        let executing_queries = query_registry.get_executing_queries();
+        expect(executing_queries).toEqual([query_one]);
+    })
 });

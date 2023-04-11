@@ -22,6 +22,16 @@ export class SinglePodAggregator {
     public observationCounter: number = 1;
     public logger: Logger<ILogObj>;
 
+    /**
+     * Creates an instance of SinglePodAggregator.
+     * @param {string} LDESContainer
+     * @param {string} continuousQuery
+     * @param {string} wssURL
+     * @param {*} startDate
+     * @param {*} endDate
+     * @param {string} streamName
+     * @memberof SinglePodAggregator
+     */
     constructor(LDESContainer: string, continuousQuery: string, wssURL: string, startDate: any, endDate: any, streamName: string) {
         this.LDESCommunication = new LDPCommunication();
         this.queryEngine = new QueryEngine();
@@ -45,6 +55,13 @@ export class SinglePodAggregator {
         }
     }
 
+    /**
+     * Processes the event sourced stream by getting the latest events from the 
+     * Solid Pod and then adding them to the RDF Stream Processing Engine.
+     *
+     * @param {RDFStream} streamName
+     * @memberof SinglePodAggregator
+     */
     async executeRSP(streamName: RDFStream) {
         this.logger.info(`The stream name is ${streamName.name}`)
         this.connectWithServer(this.serverURL).then(r => {
@@ -90,6 +107,12 @@ export class SinglePodAggregator {
 
     }
 
+    /**
+     * Sends the aggregated event to a HTTP server via a websocket connection.
+     *
+     * @param {string} message
+     * @memberof SinglePodAggregator
+     */
     sendToServer(message: string) {
         if (this.connection.connected) {
             this.connection.sendUTF(message);
@@ -99,6 +122,14 @@ export class SinglePodAggregator {
         }
     }
 
+    /**
+     * Adds the retrieved events from the Solid Pod to the RDF Stream Processing Engine.
+     *
+     * @param {*} data
+     * @param {RDFStream[]} streamName
+     * @param {number} timestamp
+     * @memberof SinglePodAggregator
+     */
     async addEventToRSPEngine(data: any, streamName: RDFStream[], timestamp: number) {
         streamName.forEach((stream: RDFStream) => {
             for (let i = 0; i < data.quads.length; i++) {
@@ -107,6 +138,16 @@ export class SinglePodAggregator {
         });
     }
 
+    /**
+     * Annotates the received aggregated event from the RDF Stream Processing Engine (the result of aggregation)
+     * with the timestamp and the stream name and other metadata.
+     * @param {*} value
+     * @param {number} eventTimestamp
+     * @param {(string | undefined)} streamName
+     * @param {number} eventCounter
+     * @return {*}  {string}
+     * @memberof SinglePodAggregator
+     */
     generateAggregationEvent(value: any, eventTimestamp: number, streamName: string | undefined, eventCounter: number): string {
         if (streamName == undefined) {
             streamName = "https://rsp.js/undefined";
@@ -121,6 +162,12 @@ export class SinglePodAggregator {
         `;
     }
 
+    /**
+     * Connects to an HTTP server via a websocket connection.
+     *
+     * @param {string} wssURL
+     * @memberof SinglePodAggregator
+     */
     async connectWithServer(wssURL: string) {
         this.client.connect(wssURL, 'echo-protocol');
         this.client.on('connectFailed', (error: any) => {
@@ -132,6 +179,12 @@ export class SinglePodAggregator {
         });
     }
 
+    /**
+     * Converts a date to an epoch timestamp.
+     * @param {*} date
+     * @return {*} 
+     * @memberof SinglePodAggregator
+     */
     async epoch(date: any) {
         return Date.parse(date);
     }

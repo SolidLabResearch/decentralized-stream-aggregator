@@ -1,4 +1,4 @@
-import { SinglePodAggregator } from "./SinglePodAggregator";
+import { SinglePodAggregator } from "../../aggregator/SinglePodAggregator";
 
 describe('testing_the_single_pod_aggregator', () => {
     let query = `

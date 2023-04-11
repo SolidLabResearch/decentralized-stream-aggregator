@@ -12,30 +12,17 @@ program
     .description('Starting the aggregation service.')
     .option(
         '-p, --port <port>',
-        'The port of the REST server',
+        'The port of the REST HTTP server',
         '8080'
     )
     .option(
         '-s, --minutes <minutes>',
-        'The last x minutes to aggregate',
+        'The last x minutes to retrieve events from the solid pod and to aggregate over',
         '30'
     )
     .option(
-        '-q --query <query>',
-        'Default RSPQL query to aggregate',
-        `PREFIX : <https://rsp.js/> PREFIX saref: <https://saref.etsi.org/> PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
-         REGISTER RStream <output> AS
-         SELECT (AVG(?o) AS ?averageAcceleration)
-         FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
-         WHERE{
-             WINDOW :w1 { ?s <https://saref.etsi.org/core/hasValue> ?o .
-                        ?s saref:relatesToProperty dahccsensors:smartphone.acceleration.y .
-                    } 
-                }`
-    )
-    .option(
         '-ss --SolidServer <SolidServer>',
-        'URL of the Solid server to use',
+        'The URL of the Solid Pod server where the LDES streams are stored in a Solid Pod',
         'http://localhost:3000/'
     )
     .action((options: any) => {

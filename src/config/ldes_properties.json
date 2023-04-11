@@ -1,5 +1,5 @@
 {
-    "LIL_URL": "http://localhost:3000/aggregation_pod/value/",
+    "LIL_URL": "http://localhost:3000/aggregation_pod/aggregation/",
     "PREFIX_FILE": "",
     "TREE_PATH": "https://saref.etsi.org/core/hasTimestamp",
     "AMOUNT": 0,
