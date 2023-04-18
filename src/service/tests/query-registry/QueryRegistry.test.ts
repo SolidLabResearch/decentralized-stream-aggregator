@@ -15,7 +15,7 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(query_registry.registerQuery(query_one)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_one)).toBeTruthy();
     })
 
     it("register_two_but_same_query_to_registry", () => {
@@ -44,8 +44,8 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(query_registry.registerQuery(query_one)).toBeTruthy();
-        expect(query_registry.registerQuery(query_two)).toBeFalsy();
+        expect(query_registry.add_query_in_registry(query_one)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_two)).toBeFalsy();
     });
 
     it("register_two_different_query_to_registry", () => {
@@ -74,8 +74,8 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        expect(query_registry.registerQuery(query_one)).toBeTruthy();
-        expect(query_registry.registerQuery(query_two)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_one)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_two)).toBeTruthy();
     });
 
     it("check_get_registeredQueries_function", () => {
@@ -104,8 +104,8 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `
-        query_registry.registerQuery(query_one);
-        query_registry.registerQuery(query_two);
+        query_registry.add_query_in_registry(query_one);
+        query_registry.add_query_in_registry(query_two);
         expect(query_registry.get_registered_queries().size).toBe(2);
     });
 
@@ -245,9 +245,9 @@ describe("QueryRegistry", () => {
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }
         `;
-        expect(query_registry.registerQuery(query_one)).toBeTruthy();
-        expect(query_registry.registerQuery(query_two)).toBeTruthy();
-        expect(query_registry.registerQuery(query_one)).toBeFalsy();
+        expect(query_registry.add_query_in_registry(query_one)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_two)).toBeTruthy();
+        expect(query_registry.add_query_in_registry(query_one)).toBeFalsy();
     });
 
     it('check_if_window_parameters_are_equal', () => {

@@ -27,6 +27,8 @@ program
     )
     .action((options: any) => {
         new HTTPServer(options.port, options.minutes, options.SolidServer);
+        console.log(`Aggregation service started on port ${options.port} and retrieving the last ${options.minutes} minutes of events from the Solid Pods located at the server ${options.SolidServer}.`);
+        
     });
 
 

@@ -8,9 +8,11 @@ import {
     extractLdesMetadata,
     LDESConfig,
     VersionAwareLDESinLDP,
-    ILDES
+    ILDES,
+    createContainer
 } from "@treecg/versionawareldesinldp";
 import { naiveAlgorithm } from "../../utils/algorithms/naiveAlgorithm";
+import { QueryAnnotationPublishing } from "../../utils/algorithms/QueryAnnotationPublishing";
 import {
     prefixesFromFilepath,
     initSession
@@ -18,8 +20,9 @@ import {
 import * as CONFIG from '../../config/ldes_properties.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
+import { EndpointQueries } from "../../server/EndpointQueries";
 
-export class AggregationLDESPublisher {
+export class LDESPublisher {
 
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
@@ -33,16 +36,19 @@ export class AggregationLDESPublisher {
     private logLevel = CONFIG.LOG_LEVEL;
     private aggregationQuery: string = "";
     private parser: any;
+    private query_annotation_publisher: QueryAnnotationPublishing;
     public logger: Logger<ILogObj>;
+    public endpoint_queries: EndpointQueries;
 
     constructor() {
         this.lilURL = CONFIG.LIL_URL;
-        this.initialise();
         this.config = {
             LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
+        this.query_annotation_publisher = new QueryAnnotationPublishing();
+        this.endpoint_queries = new EndpointQueries();
     }
 
     async initialise() {
@@ -51,7 +57,6 @@ export class AggregationLDESPublisher {
             console.log(`User logged in: ${s.info.webId}`);
         }
         this.session = s;
-
         const communication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
         const lil: ILDES = await new LDESinLDP(this.lilURL, communication);
         let metadata: LDESMetadata | undefined;
@@ -83,7 +88,10 @@ export class AggregationLDESPublisher {
         const config: LDESConfig = {
             LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
-
-        naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
+        let query = this.endpoint_queries.get_query("averageHRPatient1")
+        if (query != undefined) {
+            this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
+        }
+        // naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
     }
 }

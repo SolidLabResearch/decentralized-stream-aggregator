@@ -5,6 +5,7 @@ const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const { Store } = require('n3');
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Logger, ILogObj } from "tslog";
+import { LDESPublisher } from "../publishing-stream-to-pod/LDESPublisher";
 
 export class SinglePodAggregator {
     public LDESContainer: string;
@@ -21,6 +22,7 @@ export class SinglePodAggregator {
     public connection: typeof websocketConnection;
     public observationCounter: number = 1;
     public logger: Logger<ILogObj>;
+    public ldes_publisher: LDESPublisher;
 
     /**
      * Creates an instance of SinglePodAggregator.
@@ -53,8 +55,9 @@ export class SinglePodAggregator {
         else {
             this.logger.error(`The stream is undefined.`);
         }
+        this.ldes_publisher = new LDESPublisher();
+        this.ldes_publisher.initialise();
     }
-
     /**
      * Processes the event sourced stream by getting the latest events from the 
      * Solid Pod and then adding them to the RDF Stream Processing Engine.
@@ -64,7 +67,7 @@ export class SinglePodAggregator {
      */
     async executeRSP(streamName: RDFStream) {
         this.logger.info(`The stream name is ${streamName.name}`)
-        this.connectWithServer(this.serverURL).then(r => {
+        this.connect_with_server(this.serverURL).then(r => {
             this.logger.info(`Connected to the server`)
         });
         this.client.on('connect', async (connection: typeof websocketConnection) => {
@@ -96,11 +99,11 @@ export class SinglePodAggregator {
             this.aggregationEmitter.on('RStream', async (binding: any) => {
                 let iterable = binding.values();
                 for (let item of iterable) {
-                    let AggregationEvent$Timestamp = new Date().getTime();
+                    let aggregation_event_timestamp = new Date().getTime();
                     let data = item.value;
-                    let AggregationEvent$: string = this.generateAggregationEvent(data, AggregationEvent$Timestamp, this.streamName?.name, this.observationCounter);
+                    let aggregation_event: string = this.generateAggregationEvent(data, aggregation_event_timestamp, this.streamName?.name, this.observationCounter);
                     this.observationCounter++;
-                    this.sendToServer(AggregationEvent$);
+                    this.sendToServer(aggregation_event);
                 }
             });
         });
@@ -148,18 +151,19 @@ export class SinglePodAggregator {
      * @return {*}  {string}
      * @memberof SinglePodAggregator
      */
-    generateAggregationEvent(value: any, eventTimestamp: number, streamName: string | undefined, eventCounter: number): string {
-        if (streamName == undefined) {
-            streamName = "https://rsp.js/undefined";
+    generateAggregationEvent(value: any, event_timestamp: number, stream_name: string | undefined, eventCounter: number): string {
+        if (stream_name == undefined) {
+            stream_name = "https://rsp.js/undefined";
         }
-        const timestampDate = new Date(eventTimestamp).toISOString();
-        return `
+        const timestampDate = new Date(event_timestamp).toISOString();
+        let aggregation_event = `
         <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
         <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
         <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
-        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#generatedBy> <${streamName}> .
+        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#generatedBy> <${stream_name}> .
         `;
+        return aggregation_event;
     }
 
     /**
@@ -168,7 +172,7 @@ export class SinglePodAggregator {
      * @param {string} wssURL
      * @memberof SinglePodAggregator
      */
-    async connectWithServer(wssURL: string) {
+    async connect_with_server(wssURL: string) {
         this.client.connect(wssURL, 'echo-protocol');
         this.client.on('connectFailed', (error: any) => {
             this.logger.error('Connect Error: ' + error.toString());
@@ -188,5 +192,4 @@ export class SinglePodAggregator {
     async epoch(date: any) {
         return Date.parse(date);
     }
-
 }

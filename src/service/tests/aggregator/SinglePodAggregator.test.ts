@@ -27,7 +27,7 @@ describe('testing_the_single_pod_aggregator', () => {
 
     it('connect_with_server_function_test', async() => {
 
-        let connection = await singlePodAggregator.connectWithServer(wssURL);
+        let connection = await singlePodAggregator.connect_with_server(wssURL);
         // expect(connection).toBe('it is connected')
     })
 

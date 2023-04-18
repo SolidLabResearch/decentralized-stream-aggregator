@@ -2,7 +2,7 @@ import { RSPQLParser } from "../../parsers/RSPQLParser";
 
 let simple_query = `PREFIX : <https://rsp.js/>
     REGISTER RStream <output> AS
-    SELECT AVG(?v) as ?avgTemp
+    SELECT (AVG(?v) as ?avgTemp)
     FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
     WHERE{
         WINDOW :w1 { ?sensor :value ?v ; :measurement: ?m }
@@ -10,7 +10,7 @@ let simple_query = `PREFIX : <https://rsp.js/>
 
 let two_stream_query = `PREFIX : <https://rsp.js/>
     REGISTER RStream <output> AS
-    SELECT AVG(?v) as ?avgTemp
+    SELECT (AVG(?v) as ?avgTemp)
     FROM NAMED WINDOW :w1 ON STREAM :stream1 [RANGE 10 STEP 2]
     FROM NAMED WINDOW :w2 ON STREAM :stream2 [RANGE 15 STEP 5]
     WHERE{
@@ -34,7 +34,7 @@ describe("RSPQLParser", () => {
         let parser = new RSPQLParser();
         let parsed = parser.parse(simple_query);
         expect(parsed.sparql.replace(/\s/g, '')).toBe(`PREFIX : <https://rsp.js/>
-        SELECT AVG(?v) as ?avgTemp
+        SELECT (AVG(?v) as ?avgTemp)
         WHERE{
             GRAPH :w1 {?sensor :value ?v ; :measurement: ?m }
         }
@@ -48,7 +48,7 @@ describe("RSPQLParser", () => {
         let parser = new RSPQLParser();
         let parsed = parser.parse(two_stream_query);
         expect(parsed.sparql.replace(/\s/g, '')).toBe(`PREFIX : <https://rsp.js/>
-        SELECT AVG(?v) as ?avgTemp
+        SELECT (AVG(?v) as ?avgTemp)
         WHERE{
             GRAPH :w1 {?sensor :value ?v ; :measurement: ?m }
             GRAPH :w2 {?sensor :value ?v ; :measurement: ?m }
@@ -62,7 +62,10 @@ describe("RSPQLParser", () => {
     it('generate_sensor_name_from_query', () => {
         let parser = new RSPQLParser();
         let parsed = parser.parse(dahcc_query);
-        parser.get_sensor_name(parsed);
+    });
+
+    it('testing_the_parse_sparql_query_function', () => {
+
     });
 
 });

@@ -4,14 +4,14 @@ import {
     LDPCommunication,
     storeToString
 } from "@treecg/versionawareldesinldp";
-import {DataFactory, Literal, Quad, Store} from "n3";
+import { DataFactory, Literal, Quad, Store } from "n3";
 
-const {quad, namedNode} = DataFactory
+const { quad, namedNode } = DataFactory
 
 // The semantics of Resource is the data point itself (!! not to be confused with an ldp:Resource)
 export type Resource = Quad[]
 // a dictionary which maps an ldp:containerURL to an array of Resources
-export type BucketResources = {[p: string]: Resource[]}
+export type BucketResources = { [p: string]: Resource[] }
 
 /**
  * Calculates to which bucket (i.e. the ldp:Container) the resource should be added.
@@ -53,9 +53,9 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
  * @returns {number}
  */
 export function getTimeStamp(resource: Resource, timestampPath: string): number {
-	console.log("***");
-	console.log(resource);
-	console.log("***");
+    console.log("***");
+    console.log(resource);
+    console.log("***");
     const resourceStore = new Store(resource)
     return extractTimestampFromLiteral(resourceStore.getObjects(null, timestampPath, null)[0] as Literal)// Note: expecting real xsd:dateTime
 }

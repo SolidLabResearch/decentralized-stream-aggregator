@@ -3,6 +3,7 @@ import { DataFactory, Quad } from "rdf-data-factory";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 import { BlankNode } from "n3";
+import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
 let sparqlParser = require('sparqljs').Parser;
 let SPARQLParser = new sparqlParser();
 
@@ -22,7 +23,7 @@ export class QueryRegistry {
     constructor() {
         /**
          * Map of registered queries which are the queries without any analysis by the QueryRegistry but only registered.  
-        */    
+        */
         this.registered_queries = new Map();
         /**
          * Array of executing queries which were unique as compared to all the existing queries in the QueryRegistry. 
@@ -41,7 +42,18 @@ export class QueryRegistry {
      * @return {*} 
      * @memberof QueryRegistry
      */
-    registerQuery(rspql_query: string) {
+
+    register_query(rspql_query: string, latest_minutes_to_retrieve: number, solid_server_url: string, query_registry: QueryRegistry) {
+        if (query_registry.add_query_in_registry(rspql_query)) {
+            new AggregatorInstantiator(rspql_query, latest_minutes_to_retrieve, solid_server_url);   
+        }
+        else {
+            this.logger.debug(`The query you have registered is already executing.`);
+        }
+
+    }
+
+    add_query_in_registry(rspql_query: string) {
         this.registered_queries.set(this.query_count, rspql_query);
         this.query_count++;
         if (this.checkUniqueQuery(rspql_query)) {
