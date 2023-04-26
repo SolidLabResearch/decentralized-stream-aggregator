@@ -16,3 +16,7 @@ The aggregator executes then aggregates the data as specified in the query and u
 You can specify the last X minutes of data you wish to aggregate on. The default is 30 minutes.
 
 Note : The aggregator is in active development and will be continuously updated.
+
+## Licence
+
+This code is copyrighted by [Ghent University - imec](https://www.ugent.be/ea/idlab/en) and released under the [MIT Licence](./LICENCE)
