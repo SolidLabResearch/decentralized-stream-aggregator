@@ -67,12 +67,13 @@ export class QueryAnnotationPublishing {
     }
 
     public query_container_publishing() {
-
+        
     }
 
     public get_query_metadata(query: string): any {
         const store = new Store();
         const parsed_query = this.parser.parse(query);
+        console.log(parsed_query);
         return store;
     }
 

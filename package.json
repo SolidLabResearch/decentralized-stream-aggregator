@@ -30,6 +30,7 @@
         "rdf-isomorphic": "^1.3.1",
         "rdflib": "^2.2.31",
         "rsp-js": "^1.0.1",
+        "rspql-query-equivalence": "^1.0.3",
         "sparqljs": "^3.6.2",
         "tslog": "^4.8.2",
         "websocket": "^1.0.34"

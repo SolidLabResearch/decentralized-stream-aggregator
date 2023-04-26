@@ -4,6 +4,7 @@ import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 import { BlankNode } from "n3";
 import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
+import { is_equivalent } from "rspql-query-equivalence";
 let sparqlParser = require('sparqljs').Parser;
 let SPARQLParser = new sparqlParser();
 
@@ -45,7 +46,7 @@ export class QueryRegistry {
 
     register_query(rspql_query: string, latest_minutes_to_retrieve: number, solid_server_url: string, query_registry: QueryRegistry) {
         if (query_registry.add_query_in_registry(rspql_query)) {
-            new AggregatorInstantiator(rspql_query, latest_minutes_to_retrieve, solid_server_url);   
+            new AggregatorInstantiator(rspql_query, latest_minutes_to_retrieve, solid_server_url);
         }
         else {
             this.logger.debug(`The query you have registered is already executing.`);
@@ -96,156 +97,18 @@ export class QueryRegistry {
         })
         if (queryArray.length > 1) {
             for (let i = 0; i < queryArray.length; i++) {
-                let queryArrayElement = this.parser.parse(queryArray[i]);
-                let RSPQLqueryParsed = this.parser.parse(query);
-                if (this.checkIfStreamParametersAreEqual(query, queryArray[i]) && this.checkIfWindowParametersAreEqual(query, queryArray[i])) {
-                    let RSPQLqueryParsedBGP = this.generateBGPQuadsFromQueries(RSPQLqueryParsed.sparql);
-                    let queryArrayElementBGP = this.generateBGPQuadsFromQueries(queryArrayElement.sparql);
-                    let isomorphism = this.checkIfQueriesAreIsomorphic(queryArrayElementBGP, RSPQLqueryParsedBGP)
-                    if (isomorphism) {
-                        return true;
-                    }
-                    else {
-                        return false;
-                    }
-                }
-                else {
-                    /*
-                    The stream parameters (the stream name and window size / slide) are not equal.
-                    */
-                    return false;
-                }
+                return is_equivalent(query, queryArray[i]);
             }
         }
         return false;
     }
 
-    /**
-     * Checking if two different queries have the same stream parameters.
-     *
-     * @param {string} queryOne
-     * @param {string} queryTwo
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    checkIfStreamParametersAreEqual(queryOne: string, queryTwo: string) {
-        let queryOneParsed = this.parser.parse(queryOne);
-        let queryTwoParsed = this.parser.parse(queryTwo);
-        if (queryOneParsed.s2r[0].stream_name === queryTwoParsed.s2r[0].stream_name) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    /**
-     * Checking if two different queries have the same window parameters.
-     *
-     * @param {string} queryOne
-     * @param {string} queryTwo
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    checkIfWindowParametersAreEqual(queryOne: string, queryTwo: string) {
-        let queryOneParsed = this.parser.parse(queryOne);
-        let queryTwoParsed = this.parser.parse(queryTwo);
-        if (queryOneParsed.s2r[0].window_name === queryTwoParsed.s2r[0].window_name) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    /**
-     * Get the window width and slide of a query.
-     *
-     * @param {string} queryOne
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    getWindowWidthAndSlide(queryOne: string) {
-        let queryOneParsed = this.parser.parse(queryOne);
-        let window_width = queryOneParsed.s2r[0].width;
-        let window_slide = queryOneParsed.s2r[0].slide;
-        return { "window_width": window_width, "window_slide": window_slide };
-    }
-
-    /**
-     * Get the registered queries.
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    get_registered_queries() {
-        return this.registered_queries;
-    }
-
-    /**
-     * checking if query quads generated from the basic graph patterns are isomorphic.
-     *
-     * @param {Quad[]} queryOne
-     * @param {Quad[]} queryTwo
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    checkIfQueriesAreIsomorphic(queryOne: Quad[], queryTwo: Quad[]) {
-        return isomorphic(queryOne, queryTwo)
-    }
-
-    /**
-     * Generate the quads from the basic graph patterns of a query.
-     *
-     * @param {string} query
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    generateBGPQuadsFromQueries(query: string) {
-        let parsedJSON = SPARQLParser.parse(query);
-        let basicGraphPattern = parsedJSON.where[0].patterns[0].triples;
-        let graph = this.convertToGraph(basicGraphPattern);
-        return graph;
-    }
-
-    /**
-     * Generate a quad array from a basic graph pattern of a sparql query.
-     *
-     * @param {*} basicGraphPattern
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    convertToGraph(basicGraphPattern: any) {
-        let graph: Quad[] = [];
-        for (let i = 0; i < basicGraphPattern.length; i++) {
-            let subject = basicGraphPattern[i].subject;
-            let predicate = basicGraphPattern[i].predicate;
-            let object = basicGraphPattern[i].object;
-            if (subject.termType === 'Variable') {
-                subject = new BlankNode(subject);
-            }
-            if (object.termType === 'Variable') {
-                object = new BlankNode(object);
-            }
-            let quad = new DataFactory().quad(subject, predicate, object);
-            graph.push(quad);
-        }
-        return graph;
-    }
-
-    /**
-     * Convert the variables of a query to blank nodes.
-     *
-     * @param {*} node
-     * @return {*} 
-     * @memberof QueryRegistry
-     */
-    convertVariablesToBlankNodes(node: any) {
-        if (node.termType === 'Variable') {
-            return new BlankNode(node);
-        }
-    }
 
     get_executing_queries() {
         return this.executing_queries;
+    }
+
+    get_registered_queries() {
+        return this.registered_queries;
     }
 }

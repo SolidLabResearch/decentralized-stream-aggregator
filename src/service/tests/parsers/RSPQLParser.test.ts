@@ -58,14 +58,4 @@ describe("RSPQLParser", () => {
         expect(parsed.s2r[0]).toEqual({ window_name: "https://rsp.js/w1", stream_name: "https://rsp.js/stream1", width: 10, slide: 2 });
         expect(parsed.s2r[1]).toEqual({ window_name: "https://rsp.js/w2", stream_name: "https://rsp.js/stream2", width: 15, slide: 5 });        
     });
-
-    it('generate_sensor_name_from_query', () => {
-        let parser = new RSPQLParser();
-        let parsed = parser.parse(dahcc_query);
-    });
-
-    it('testing_the_parse_sparql_query_function', () => {
-
-    });
-
 });
