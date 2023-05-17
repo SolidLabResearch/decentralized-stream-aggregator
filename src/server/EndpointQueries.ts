@@ -19,7 +19,7 @@ export class EndpointQueries {
         PREFIX : <https://rsp.js/>
         REGISTER RStream <output> AS
         SELECT (AVG(?o) AS ?averageHR1)
-        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 2]
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE 10 STEP 5]
         WHERE{
             WINDOW :w1 { ?s saref:hasValue ?o .
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}

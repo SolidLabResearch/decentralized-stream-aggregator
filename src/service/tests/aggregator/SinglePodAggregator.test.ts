@@ -20,8 +20,10 @@ describe('testing_the_single_pod_aggregator', () => {
         <https://rsp.js/AggregationEvent6> <https://saref.etsi.org/core/hasValue> "5"^^<http://www.w3.org/2001/XMLSchema#float> .
         <https://rsp.js/AggregationEvent6> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
         <https://rsp.js/AggregationEvent6> <http://www.w3.org/ns/prov#generatedBy> <http://localhost:3000/dataset_participant1/data/> .
+        <http://rsp.js/AggregationEvent6> <http://argahsuknesib.github.io/asdo/window_timestamp_from> 5 .
+        <http://rsp.js/AggregationEvent6> <http://argahsuknesib.github.io/asdo/window_timestamp_to> 1676974614 .
         `
-        let aggregationEvent = singlePodAggregator.generateAggregationEvent(5, 1676974614, "http://localhost:3000/dataset_participant1/data/", 6);
+        let aggregationEvent = singlePodAggregator.generateAggregationEvent(5, 1676974614, "http://localhost:3000/dataset_participant1/data/", 6, 5, 1676974614);
         expect(aggregationEvent).toBe(value)
     })
 

@@ -11,7 +11,6 @@ import {
     ILDES,
     createContainer
 } from "@treecg/versionawareldesinldp";
-import { naiveAlgorithm } from "../../utils/algorithms/naiveAlgorithm";
 import { QueryAnnotationPublishing } from "../../utils/algorithms/QueryAnnotationPublishing";
 import {
     prefixesFromFilepath,
@@ -27,7 +26,7 @@ export class LDESPublisher {
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
-    private lilURL: string;
+    private lilURL: string = CONFIG.LIL_URL
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: LDESConfig;
@@ -41,7 +40,6 @@ export class LDESPublisher {
     public endpoint_queries: EndpointQueries;
 
     constructor() {
-        this.lilURL = CONFIG.LIL_URL;
         this.config = {
             LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
@@ -92,6 +90,5 @@ export class LDESPublisher {
         if (query != undefined) {
             this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
         }
-        // naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
     }
 }

@@ -96,12 +96,14 @@ export class SinglePodAggregator {
                     }
                 });
             });
-            this.aggregationEmitter.on('RStream', async (binding: any) => {
-                let iterable = binding.values();
+            this.aggregationEmitter.on('RStream', async (object: any) => {
+                let window_timestamp_from = object.timestamp_from;
+                let window_timestamp_to = object.timestamp_to;
+                let iterable = object.bindings.values();
                 for (let item of iterable) {
                     let aggregation_event_timestamp = new Date().getTime();
                     let data = item.value;
-                    let aggregation_event: string = this.generateAggregationEvent(data, aggregation_event_timestamp, this.streamName?.name, this.observationCounter);
+                    let aggregation_event: string = this.generateAggregationEvent(data, aggregation_event_timestamp, this.streamName?.name, this.observationCounter, window_timestamp_from, window_timestamp_to);
                     this.observationCounter++;
                     this.sendToServer(aggregation_event);
                 }
@@ -140,28 +142,31 @@ export class SinglePodAggregator {
             }
         });
     }
-
     /**
-     * Annotates the received aggregated event from the RDF Stream Processing Engine (the result of aggregation)
+     * Annotates the received aggregated event from the RDF stream Processing Engine (the result of aggregation)
      * with the timestamp and the stream name and other metadata.
      * @param {*} value
-     * @param {number} eventTimestamp
-     * @param {(string | undefined)} streamName
-     * @param {number} eventCounter
+     * @param {number} event_timestamp
+     * @param {(string | undefined)} stream_name
+     * @param {number} event_counter
      * @return {*}  {string}
      * @memberof SinglePodAggregator
      */
-    generateAggregationEvent(value: any, event_timestamp: number, stream_name: string | undefined, eventCounter: number): string {
+    generateAggregationEvent(value: any, event_timestamp: number, stream_name: string | undefined, event_counter: number, timestamp_from: number, timestamp_to: number): string {
         if (stream_name == undefined) {
             stream_name = "https://rsp.js/undefined";
         }
-        const timestampDate = new Date(event_timestamp).toISOString();
+        const timestamp_date = new Date(event_timestamp).toISOString();
+        const timestamp_from_date = new Date(timestamp_from).toISOString();
+        const timestamp_to_date = new Date(timestamp_to).toISOString();
         let aggregation_event = `
-        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
-        <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasTimestamp> "${timestampDate}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-        <https://rsp.js/AggregationEvent${eventCounter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
-        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
-        <https://rsp.js/AggregationEvent${eventCounter}> <http://www.w3.org/ns/prov#generatedBy> <${stream_name}> .
+        <https://rsp.js/AggregationEvent${event_counter}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .
+        <https://rsp.js/AggregationEvent${event_counter}> <https://saref.etsi.org/core/hasTimestamp> "${timestamp_date}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+        <https://rsp.js/AggregationEvent${event_counter}> <https://saref.etsi.org/core/hasValue> "${value}"^^<http://www.w3.org/2001/XMLSchema#float> .
+        <https://rsp.js/AggregationEvent${event_counter}> <http://www.w3.org/ns/prov#wasDerivedFrom> <https://argahsuknesib.github.io/asdo/AggregatorService> .
+        <https://rsp.js/AggregationEvent${event_counter}> <http://www.w3.org/ns/prov#generatedBy> <${stream_name}> .
+        <https://rsp.js/AggregationEvent${event_counter}> <http://argahsuknesib.github.io/asdo/window_timestamp_from> "${timestamp_from_date}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+        <https://rsp.js/AggregationEvent${event_counter}> <http://argahsuknesib.github.io/asdo/window_timestamp_to> "${timestamp_to_date}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         `;
         return aggregation_event;
     }

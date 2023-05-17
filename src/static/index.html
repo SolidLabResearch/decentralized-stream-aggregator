@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: monospace;
+        max-width: 640px;
+        margin: auto;
+        padding: 10px;
+        border-top: 5px solid lightsteelblue;
+      }
+
+      .info {
+        color: slategray;
+        font-style: italic;
+      }
+
+      img.inline {
+        max-width: 1em;
+      }
+
+      .footer {
+        font-family: "Cascadia Code", serif;
+        font-size: 11px;
+        margin-bottom: auto;
+        position: absolute;
+        bottom: 0;
+      }
+    </style>
+    <script type="text/turtle">
+      @prefix : <#> .
+      @prefix asdo: <http://argahsuknesib.github.io/asdo> .
+      @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+      :this a asdo:StreamAggregationService ;
+            :name "Solid Stream Aggregator" ;
+            :description "The solid stream aggregator is used to aggregate over streams stored in the solid pods" ;
+            foaf:webId : ;
+            asdo:aggregator_location : .
+    </script>
+    <title>SSA</title>
+  </head>
+
+  <body>
+    <h2>Solid Stream Aggregator</h2>
+
+    <p>Welcome to the Solid Stream Aggregator.</p>
+  </body>
+</html>

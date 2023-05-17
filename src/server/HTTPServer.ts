@@ -43,6 +43,7 @@ export class HTTPServer {
         switch (req.method) {
             case "GET":
                 GETHandler.handle(req, res, this.latest_minutes_to_retrieve, this.solid_server_url, this.query_registry, this.endpoint_queries);
+                res.end();
                 break;
             default:
                 this.logger.debug(`Only GET Requests are supported by the server.`)
@@ -56,9 +57,8 @@ export class HTTPServer {
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Content-Length': 0
             });
-            res.end();
-            return;
         }
+        res.end();
     }
 
 

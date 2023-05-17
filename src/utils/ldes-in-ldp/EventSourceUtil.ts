@@ -5,7 +5,6 @@ import {
     storeToString
 } from "@treecg/versionawareldesinldp";
 import { DataFactory, Literal, Quad, Store } from "n3";
-
 const { quad, namedNode } = DataFactory
 
 // The semantics of Resource is the data point itself (!! not to be confused with an ldp:Resource)
@@ -53,9 +52,6 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
  * @returns {number}
  */
 export function getTimeStamp(resource: Resource, timestampPath: string): number {
-    console.log("***");
-    console.log(resource);
-    console.log("***");
     const resourceStore = new Store(resource)
     return extractTimestampFromLiteral(resourceStore.getObjects(null, timestampPath, null)[0] as Literal)// Note: expecting real xsd:dateTime
 }
@@ -76,8 +72,35 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
         for (const resource of bucketResources[containerURL]) {
             const resourceStore = new Store(resource)
             const response = await ldpComm.post(containerURL, storeToString(resourceStore))
-            // console.log(`Resource stored at: ${response.headers.get('location')} | status: ${response.status}`)
-            // TODO: handle when status is not 201 (Http Created)
+            let uuid: string | null = response.headers.get('location');
+            if (uuid !== null) {
+                let metadata_store = new Store([
+                    quad(
+                        namedNode('${uuid}'),
+                        namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                        namedNode('http://www.w3.org/ns/asdo#Resource')
+                    ),
+                ]
+                )
+                let resource_metadata_url = uuid + '.meta'
+                ldpComm.patch(
+                    resource_metadata_url,
+                    `INSERT DATA {${storeToString(metadata_store)}}`
+                ).then((response) => {
+                    console.log(`Resource created at ${resource_metadata_url} with status ${response.status}`);
+                }
+                );
+            }
+            if (response.status !== 201) {
+                console.log(`The resource at ${uuid} is not created`);
+            }
         }
     }
 }
+
+// export async function add_resource_with_metadata_to_buckets(resources_to_be_added: Resource_With_Metadata, metadata: LDESMetadata, ldp_communication: LDPCommunication) {
+//     for (const container_url of Object.keys(resources_to_be_added)) {
+
+//     }
+// }
+

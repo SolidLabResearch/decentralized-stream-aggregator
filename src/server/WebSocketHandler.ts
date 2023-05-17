@@ -3,7 +3,7 @@ import { Parser } from "n3";
 export class WebSocketHandler {
 
     private aggregation_resource_list: any = [];
-    private readonly aggregation_resource_list_batch_size: number = 10;
+    private readonly aggregation_resource_list_batch_size: number = 1000;
     public logger: Logger<ILogObj>;
 
     constructor() {

@@ -1,18 +1,24 @@
-## Solid Stream Aggregator
+# Solid Stream Aggregator
 
-Solid Stream Aggregator provides aggregation of stream data over a solid pod and stores the aggregation event in a common aggregation solid pod.
-It is built with [RSP-JS](https://github.com/pbonte/RSP-JS) and [VersionAwareLDESinLDP](https://github.com/woutslabbinck/VersionAwareLDESinLDP). 
-The aggregator uses the [CSS](https://github.com/CommunitySolidServer/CommunitySolidServer) for the solid pods.
+`The aggregator is in active continuous development and will be changed frequently.`
 
-## About
-The aggregator is exposed as a service on an HTTP server. Queries are sent to the aggregator via HTTP GET Requests on predefined endpoints. 
-The aggregator executes then aggregates the data as specified in the query and uploads the aggregation data to the Solid Pod.
+The Solid Stream Aggregator provides an aggregated view over a single or multiple solid pods. Moreover, over the streaming data stored in the Solid Pods.
+The aggregated view is beneficial for applications such as for continuous moniotoring of subjects. Therefore, it reduced the overhead of querying multiple solid pods to build the specific view. 
 
 ## Usage
+
+### Installation
+
 ```
 - npm install
+```
+To start the aggregator, run the following command:
+```
 - npm run start aggregation
 ```
-You can specify the last X minutes of data you wish to aggregate on. The default is 30 minutes.
 
-Note : The aggregator is in active development and will be continuously updated.
+## License
+This code is copyrighted by [Ghent University - imec](https://www.ugent.be/ea/idlab/en) and released under the [MIT Licence](./LICENCE)
+
+## Contact
+For any questions, please contact [Kush](mailto:kushagrasingh.bisen@ugent.be). 
