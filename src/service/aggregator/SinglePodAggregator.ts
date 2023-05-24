@@ -1,6 +1,6 @@
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
-const { LDPCommunication, LDESinLDP, dateToLiteral } = require('@treecg/versionawareldesinldp');
+const { LDPCommunication, LDESinLDP} = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const { Store } = require('n3');
 import { RDFStream, RSPEngine } from "rsp-js";
@@ -34,7 +34,7 @@ export class SinglePodAggregator {
      * @param {string} streamName
      * @memberof SinglePodAggregator
      */
-    constructor(LDESContainer: string, continuousQuery: string, wssURL: string, startDate: any, endDate: any, streamName: string) {
+    constructor(LDESContainer: string, continuousQuery: string, wssURL: string, startDate: any, endDate: any, streamName: string, latest_minutes: number) {
         this.LDESCommunication = new LDPCommunication();
         this.queryEngine = new QueryEngine();
         this.ldesinldp = new LDESinLDP(LDESContainer, this.LDESCommunication);
@@ -55,7 +55,7 @@ export class SinglePodAggregator {
         else {
             this.logger.error(`The stream is undefined.`);
         }
-        this.ldes_publisher = new LDESPublisher();
+        this.ldes_publisher = new LDESPublisher(latest_minutes);
         this.ldes_publisher.initialise();
     }
     /**
@@ -98,9 +98,9 @@ export class SinglePodAggregator {
             });
             this.aggregationEmitter.on('RStream', async (object: any) => {
                 let window_timestamp_from = object.timestamp_from;
-                let window_timestamp_to = object.timestamp_to;
-                let iterable = object.bindings.values();
-                for (let item of iterable) {
+                let window_timestamp_to = object.timestamp_to;            
+                let iterable = object.bindings.values();                
+                for (let item of iterable) {                    
                     let aggregation_event_timestamp = new Date().getTime();
                     let data = item.value;
                     let aggregation_event: string = this.generateAggregationEvent(data, aggregation_event_timestamp, this.streamName?.name, this.observationCounter, window_timestamp_from, window_timestamp_to);

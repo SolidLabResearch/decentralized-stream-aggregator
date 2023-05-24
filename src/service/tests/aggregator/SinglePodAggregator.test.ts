@@ -12,7 +12,7 @@ describe('testing_the_single_pod_aggregator', () => {
                 }
             `
     let wssURL = "ws://localhost:8080/";
-    let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", "http://localhost:3000/dataset_participant1/data/" )
+    let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", "http://localhost:3000/dataset_participant1/data/", 3)
     it('generate_aggregation_event_function_test', () => {
         let value: string = `
         <https://rsp.js/AggregationEvent6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://saref.etsi.org/core/Measurement> .

@@ -1,9 +1,11 @@
-import { addResourcesToBuckets, calculateBucket, getTimeStamp, Resource } from "../ldes-in-ldp/EventSourceUtil";
-import { LDESConfig, SolidCommunication, LDPCommunication, LDESinLDP, extractLdesMetadata, createContainer } from "@treecg/versionawareldesinldp";
-import { Session } from "@rubensworks/solid-client-authn-isomorphic";
-import { Logger, ILogObj } from "tslog";
+import { addRelationToNode, createContainer, extractLdesMetadata, LDESConfig, LDESinLDP, LDESMetadata, LDPCommunication, login, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
+import { ILogObj, Logger } from "tslog";
 import { RSPQLParser } from "../../service/parsers/RSPQLParser";
+import { addResourcesToBuckets, calculateBucket, getTimeStamp, Resource } from "../ldes-in-ldp/EventSource";
+import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 import { DataFactory, Store } from "n3";
+import { add_resources_with_metadata_to_buckets, check_if_container_exists, createBucketUrl, create_ldp_container } from "../ldes-in-ldp/EventSourceUtil";
+import { editMetadata } from "../ldes-in-ldp/Util";
 const { quad, namedNode } = DataFactory;
 
 export class QueryAnnotationPublishing {
@@ -11,126 +13,100 @@ export class QueryAnnotationPublishing {
     private logger: Logger<ILogObj>;
     public parser: RSPQLParser;
     public bucket_resources: {
-        [key: string]: Resource[]
+        [key: string]: Resource[];
     }
-
     constructor() {
         this.logger = new Logger();
         this.parser = new RSPQLParser();
         this.bucket_resources = {};
-        
     }
 
-    public async publish(query: string, ldes_in_ldp_url: string, event_resources: Resource[], version_id: string, bucket_size_per_container: number, config: LDESConfig, session?: Session): Promise<void> {
-        // initialise an LDES if it is not initialised already.
-        const communication = session ? new SolidCommunication(session) : new LDPCommunication();
-        const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, communication);
-        await ldes_in_ldp.initialise(config);
-        // calculate the correct bucket for each resource
+    public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, bucket_size_per_container: number, config: LDESConfig, session?: Session): Promise<void> {
+        const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
+        const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, comunication);
         const metadata_store = await ldes_in_ldp.readMetadata();
-        const metadata = extractLdesMetadata(metadata_store, ldes_in_ldp_url + "#EventStream");
-        // get the metadata related to the query to be added to the .meta file of the container
-        const query_metadata_store: Store = this.get_query_metadata(query);
-        // get the metadata related to the resources to be added to the .meta file of the resource
-        for (const resource of event_resources) {
-            const resource_metadata_store: Store = this.get_ldp_resource_metadata(resource);
-        }
-        // check if the container is full i.e the amount of resources in the container is equal to the bucket size
-        // if the container is full, then instantiate a new container and keep adding to it
-
-        for (const relation of metadata.views[0].relations) {
-            this.bucket_resources[relation.node] = [];
-        }
-        this.bucket_resources["none"] = [];
-        let earliest_resource_timestamp: number = Infinity;
-
-        this.add_resource_to_containers(event_resources, bucket_size_per_container, metadata);
-        
-        if (event_resources.length > bucket_size_per_container){
-            let event_resource_batch = event_resources.splice(0, bucket_size_per_container);
-            for (const resource of event_resource_batch) {
-                const bucket = calculateBucket(resource, metadata);
-                this.bucket_resources[bucket].push(resource);
-                const resource_timestamp = getTimeStamp(resource, metadata.timestampPath);
-                if (earliest_resource_timestamp > resource_timestamp) {
-                    earliest_resource_timestamp = resource_timestamp;
-                }
-                // add version identifier to resource
-                const resource_store = new Store(resource);
-                const subject = resource_store.getSubjects(metadata.timestampPath, null, null)[0];
-                resource_store.add(quad(subject, namedNode(metadata.versionOfPath), namedNode(version_id)));
-                event_resources.splice(event_resources.indexOf(resource), 1);
-                await addResourcesToBuckets(this.bucket_resources, metadata, communication);
-            }
-        }
-        else if (true){
-
-        }
-
-
-        
-        // if (bucket_resources["none"].length < bucket_size_per_container) {
-        //     for (const resource of event_resources) {
-        //         const bucket = calculateBucket(resource, metadata);
-        //         bucket_resources[bucket].push(resource);
-        //         const resource_timestamp = getTimeStamp(resource, metadata.timestampPath);
-        //         if (earliest_resource_timestamp > resource_timestamp) {
-        //             earliest_resource_timestamp = resource_timestamp;
-        //         }
-        //         // add version identifier to resource
-        //         const resource_store = new Store(resource);
-        //         const subject = resource_store.getSubjects(metadata.timestampPath, null, null)[0];
-        //         resource_store.add(quad(subject, namedNode(metadata.versionOfPath), namedNode(version_id)));
-        //         event_resources.splice(event_resources.indexOf(resource), 1);
-        //         await addResourcesToBuckets(bucket_resources, metadata, communication);
-        //     }
-        // }
-        // else if (bucket_resources["none"].length >= bucket_size_per_container) {
-        //     // we create a new container
-        //     const container_url = ldes_in_ldp_url + earliest_resource_timestamp + "/";
-        //     await createContainer(container_url, communication);
-        // }
-    }
-
-    public query_container_publishing() {
-
-    }
-
-    public add_resource_to_containers(resource: Resource[], bucket_size_per_container: number, metadata: any){
-        const bucket_resources: {
-            [key: string]: Resource[]
-        } = {};
-
+        const metadata: LDESMetadata = extractLdesMetadata(metadata_store, ldes_in_ldp_url + "#EventStream");
+        const bucket_resources: { [key: string]: Resource[] } = {};
         for (const relation of metadata.views[0].relations) {
             bucket_resources[relation.node] = [];
         }
         bucket_resources["none"] = [];
-        let earliest_resource_timestamp: number = Infinity;
-        let length = resource.length;
-        if (length > bucket_size_per_container){
-            let event_resource_batch = resource.splice(0, bucket_size_per_container);
-            for (const resource of event_resource_batch) {
-                const bucket = calculateBucket(resource, metadata);
-                bucket_resources[bucket].push(resource);
-                const resource_timestamp = getTimeStamp(resource, metadata.timestampPath);
+        let earliest_resource_timestamp = Infinity;
+        const resource_timestamp = getTimeStamp(resources[resources.length - 1], metadata.timestampPath);
+        const bucket_url = createBucketUrl(ldes_in_ldp_url, resource_timestamp);
+        if ((await check_if_container_exists(ldes_in_ldp, bucket_url)) === false) {
+            create_ldp_container(bucket_url, comunication);
+            let query_metadata = this.get_query_metadata(query);
+            this.patch_metadata(query_metadata, bucket_url, comunication);
+            bucket_resources[bucket_url] = [];
+            for (const resource of resources) {
+                bucket_resources[bucket_url].push(resource);
                 if (earliest_resource_timestamp > resource_timestamp) {
                     earliest_resource_timestamp = resource_timestamp;
                 }
                 const resource_store = new Store(resource);
-
+                const subject = resource_store.getSubjects(metadata.timestampPath, null, null)[0];
+                resource_store.add(quad(subject, namedNode(metadata.timestampPath), namedNode(version_id)));
             }
         }
+        if (bucket_resources["none"].length !== 0) {
+            const new_container_url = ldes_in_ldp_url + earliest_resource_timestamp + "/";
+            if ((await check_if_container_exists(ldes_in_ldp, new_container_url) === false)) {
+                create_ldp_container(new_container_url, comunication);
+            }
+            const store = new Store();
+            addRelationToNode(store, {
+                date: new Date(earliest_resource_timestamp),
+                nodeIdentifier: ldes_in_ldp_url,
+                treePath: config.treePath,
+            });
+            const insertBody = `INSERT DATA {${storeToString(store)}}`;
+            await editMetadata(ldes_in_ldp_url, comunication, insertBody);
+            bucket_resources[new_container_url] = bucket_resources["none"];
+        }
+        delete bucket_resources["none"];
+        await add_resources_with_metadata_to_buckets(bucket_resources, metadata, comunication);
     }
 
-    public get_query_metadata(query: string): any {
-        const store = new Store();
-        const parsed_query = this.parser.parse(query);
-        // console.log(parsed_query);
+    public get_query_metadata(query: string): Store {
+        const query_metadata = this.parser.parse(query);
+        const stream_name = query_metadata.s2r[0].stream_name;
+        const latest_minutes_to_monitor = query_metadata.s2r[0].width;
+        console.log(query);
+        const store = new Store()
+        store.addQuads(
+            [
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Execution')),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('https://w3id.org/function/ontology#executes'), namedNode('http://example.org/aggregation_function')),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://w3id.org/rsp/vocals-sd#registeredStreams'), namedNode(`${stream_name}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/latest_minutes_to_monitor'), namedNode(`${latest_minutes_to_monitor}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), namedNode(`${Date.now()}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode('`${query}`')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Function')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('https://w3id.org/function/ontology#name'), namedNode('aggregation_function')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://purl.org/dc/terms/description'), namedNode('A function that executes an aggregation function on a RDF stream of data')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#solves'), namedNode('http://example.org/continuous_monitoring_with_solid')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#expects'), namedNode('http://argahsuknesib.github.io/asdo/parameters/solid_pod_url')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#expects'), namedNode('http://argahsuknesib.github.io/asdo/parameters/aggregation_query')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#expects'), namedNode('http://argahsuknesib.github.io/asdo/parameters/latest_minutes_to_monitor')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#returns'), namedNode('http://example.org/aggregation_result_stream')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#implements'), namedNode('http://example.org/solid_stream_aggregation_function')),
+                quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#OutputStream')),
+                quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://purl.oclc.org/NET/UNIS/sao/sao#StreamData')),
+                quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://purl.org/dc/terms/description'), namedNode('The stream of generated aggregation data that is the result of the aggregation function')),
+                quad(namedNode('http://example.org/continuous_monitoring_with_solid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Problem')),
+                quad(namedNode('http://argahsuknesib.github.io/asdo/parameters/aggregation_query'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Parameter')),
+
+                // TODO :add parameters of the aggregation query from parsing the query.
+
+            ])
         return store;
     }
 
-    public get_ldp_resource_metadata(resource: Resource): Store {
-        const store = new Store();
-        return store;
+
+    public patch_metadata(store: Store, location: string, ldp_communication: LDPCommunication): void {
+        ldp_communication.patch(location + '.meta', `INSERT DATA {${storeToString(store)}}`).then((response) => {
+            console.log("patched", response.status);
+        });
     }
 }

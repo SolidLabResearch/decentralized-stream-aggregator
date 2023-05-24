@@ -18,7 +18,7 @@ program
     .option(
         '-s, --minutes <minutes>',
         'The last x minutes to retrieve events from the solid pod and to aggregate over',
-        '30'
+        '1'
     )
     .option(
         '-ss --SolidServer <SolidServer>',

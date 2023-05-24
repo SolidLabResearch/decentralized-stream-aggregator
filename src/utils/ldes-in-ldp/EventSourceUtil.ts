@@ -1,5 +1,7 @@
 import {
+    Communication,
     extractTimestampFromLiteral,
+    LDESinLDP,
     LDESMetadata,
     LDPCommunication,
     storeToString
@@ -42,7 +44,12 @@ export function calculateBucket(resource: Resource, metadata: LDESMetadata): str
  */
 export function createBucketUrl(containerURL: string, timestamp: number) {
     const split = containerURL.split('/')
-    return `${split.slice(0, split.length - 2).join('/')}/${timestamp}/`
+    const bucket_url = `${split.slice(0, split.length - 1).join('/')}/${timestamp}/`;
+    if (bucket_url.includes('http')) {
+        return bucket_url
+    } else {
+        return "none";
+    }
 }
 
 /**
@@ -67,40 +74,74 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
  * @param ldpComm
  * @returns {Promise<void>}
  */
-export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: LDESMetadata, ldpComm: LDPCommunication) {
-    for (const containerURL of Object.keys(bucketResources)) {
-        for (const resource of bucketResources[containerURL]) {
-            const resourceStore = new Store(resource)
-            const response = await ldpComm.post(containerURL, storeToString(resourceStore))
-            let uuid: string | null = response.headers.get('location');
-            if (uuid !== null) {
-                let metadata_store = new Store([
-                    quad(
-                        namedNode('${uuid}'),
-                        namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-                        namedNode('http://www.w3.org/ns/asdo#Resource')
-                    ),
-                ]
-                )
-                let resource_metadata_url = uuid + '.meta'
-                ldpComm.patch(
-                    resource_metadata_url,
-                    `INSERT DATA {${storeToString(metadata_store)}}`
-                ).then((response) => {
-                    console.log(`Resource created at ${resource_metadata_url} with status ${response.status}`);
+
+export async function add_resources_with_metadata_to_buckets(bucket_resources: BucketResources, metadata: LDESMetadata, ldp_communication: LDPCommunication) {
+    for (const containerURL of Object.keys(bucket_resources)) {
+        for (const resource of bucket_resources[containerURL]) {
+            const resourceStore = new Store(resource);
+            if (containerURL.includes('http')) {
+                const response = await ldp_communication.post(containerURL, storeToString(resourceStore));
+                let uuid: string | null = response.headers.get('location');
+                if (uuid !== null) {
+                    let meatadata_store = new Store([
+                        quad(
+                            namedNode(`${uuid}`),
+                            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                            namedNode('http://www.w3.org/ns/asdo#Resource')
+                        ),
+                    ]);
+
+                    let resource_metadata_url = uuid + '.meta';
+                    ldp_communication.patch(
+                        resource_metadata_url,
+                        `INSERT DATA {${storeToString(meatadata_store)}}`
+                    ).then((response) => {
+                    }
+                    );
                 }
-                );
             }
-            if (response.status !== 201) {
-                console.log(`The resource at ${uuid} is not created`);
+            else {
+                console.log(containerURL);
+            }
+
+        }
+    }
+}
+
+export async function create_ldp_container(url: string, communication: Communication) {
+    if (url.endsWith('/')) {
+        const response = await communication.put(url);
+        console.log(`Container created at ${url}`);
+        if (response.status != 201) {
+            console.error(`Could not create container at ${url} with status ${response.status}`);
+        }
+    }
+    else {
+        console.error(`The url ${url} does not end with a / and is therefore not a valid container url.`)
+    }
+}
+
+
+export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_url: string) {
+    const metadata = await ldes_in_ldp.readMetadata();
+    for (const quad of metadata) {
+        if (quad.predicate.value === 'http://www.w3.org/ns/ldp#contains') {
+            if (quad.object.value === bucket_url) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
     }
 }
 
-// export async function add_resource_with_metadata_to_buckets(resources_to_be_added: Resource_With_Metadata, metadata: LDESMetadata, ldp_communication: LDPCommunication) {
-//     for (const container_url of Object.keys(resources_to_be_added)) {
-
-//     }
-// }
-
+export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: LDESMetadata, ldpComm: LDPCommunication) {
+    for (const containerURL of Object.keys(bucketResources)) {
+        for (const resource of bucketResources[containerURL]) {
+            const response = await ldpComm.post(containerURL, storeToString(new Store(resource)));
+            console.log(`Resource stored at: ${response.headers.get('location')} | status: ${response.status}`)
+            // TODO: handle when status is not 201 (Http Created)
+        }
+    }
+}

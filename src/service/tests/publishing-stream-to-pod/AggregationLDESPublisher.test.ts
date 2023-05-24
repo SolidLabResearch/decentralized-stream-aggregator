@@ -4,7 +4,7 @@ describe('testing_the_aggregation_ldes_publisher', () => {
     let publish_config = {
         sensor_name: "test_sensor"
     }
-    let aggregator_publisher: LDESPublisher = new LDESPublisher();
+    let aggregator_publisher: LDESPublisher = new LDESPublisher(3);
     test('test_initialise', async () => { 
 
      });

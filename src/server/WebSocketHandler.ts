@@ -1,9 +1,10 @@
 import { Logger, ILogObj } from "tslog";
 import { Parser } from "n3";
+import * as CONFIG from '../config/ldes_properties.json';
 export class WebSocketHandler {
 
     private aggregation_resource_list: any = [];
-    private readonly aggregation_resource_list_batch_size: number = 1000;
+    private readonly aggregation_resource_list_batch_size: number = CONFIG.BUCKET_SIZE;
     public logger: Logger<ILogObj>;
 
     constructor() {
@@ -23,6 +24,9 @@ export class WebSocketHandler {
             connection.on('close', (reason_code: any, description: any) => {
                 this.logger.debug(`Connection closed from ${connection.remoteAddress}: ${reason_code} - ${description}`);
             });
+            connection.on('error', (error: any) => {
+                this.logger.debug(`Error in connection from ${connection.remoteAddress}: ${error}`);
+            });
         });
         this.aggregation_event_publisher(event_emitter, aggregation_publisher);
     }
@@ -30,8 +34,8 @@ export class WebSocketHandler {
     public aggregation_event_publisher(event_emitter: any, aggregation_publisher: any) {
         event_emitter.on('aggregation_event', (message: any) => {
             const parser = new Parser({ format: 'N-Triples' });
-            const triple_store = parser.parse(message);
-            this.aggregation_resource_list.push(triple_store);
+            const event_quad_array = parser.parse(message);
+            this.aggregation_resource_list.push(event_quad_array);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
                 aggregation_publisher.publish(this.aggregation_resource_list);
                 this.aggregation_resource_list = [];

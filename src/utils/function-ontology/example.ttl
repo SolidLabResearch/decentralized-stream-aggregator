@@ -20,7 +20,7 @@
             WINDOW :w1 { ?s saref:hasValue ?o .
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
         }"^^xsd:String;
-    :latest_minutes "100"^^xsd:Integer .
+    :latest_minutes 100^^xsd:Integer .
 
 :aggregation_function 
     a fno:Function ;

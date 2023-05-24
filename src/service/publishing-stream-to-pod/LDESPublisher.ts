@@ -20,6 +20,7 @@ import * as CONFIG from '../../config/ldes_properties.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 import { EndpointQueries } from "../../server/EndpointQueries";
+import { naiveAlgorithm } from "../../utils/algorithms/naiveAlgorithm";
 
 export class LDESPublisher {
 
@@ -39,14 +40,14 @@ export class LDESPublisher {
     public logger: Logger<ILogObj>;
     public endpoint_queries: EndpointQueries;
 
-    constructor() {
+    constructor(latest_minutes_to_retrieve: number) {
         this.config = {
             LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
         this.query_annotation_publisher = new QueryAnnotationPublishing();
-        this.endpoint_queries = new EndpointQueries();
+        this.endpoint_queries = new EndpointQueries(latest_minutes_to_retrieve);
     }
 
     async initialise() {
@@ -81,14 +82,16 @@ export class LDESPublisher {
             console.log("No resources to publish");
             return;
         }
+        else {
+            const config: LDESConfig = {
+                LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
+            }
+            let query = this.endpoint_queries.get_query("averageHRPatient1")
+            if (query != undefined) {
+                // naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
+                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
+            }
+        }
 
-        const prefixes = prefixesFromFilepath(this.prefixFile, this.lilURL);
-        const config: LDESConfig = {
-            LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
-        }
-        let query = this.endpoint_queries.get_query("averageHRPatient1")
-        if (query != undefined) {
-            this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
-        }
     }
 }

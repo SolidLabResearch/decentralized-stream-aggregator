@@ -17,6 +17,6 @@ describe("query_annotation_publishing_test", () => {
     it("test_get_query_metadata", () => {
         let publisher = new QueryAnnotationPublishing();
         let query_metadata_store = publisher.get_query_metadata(dahcc_query);
-        console.log(query_metadata_store.getQuads()); 
+        console.log(query_metadata_store); 
     });
 });

@@ -2,7 +2,6 @@ import { createServer, ServerResponse, IncomingMessage } from "http";
 import { GETHandler } from "./GETHandler";
 import { Logger, ILogObj } from "tslog";
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
-import { Parser } from "n3";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { EndpointQueries } from "./EndpointQueries";
 import { WebSocketHandler } from "./WebSocketHandler";
@@ -16,10 +15,8 @@ export class HTTPServer {
     public logger: Logger<ILogObj>;
     public query_registry: any;
     public websocket_server: any;
-    public aggregation_publisher: any = new LDESPublisher();
-    private aggregation_resource_list: any = [];
+    public aggregation_publisher: any;
     public endpoint_queries: EndpointQueries;
-    private readonly aggregation_resource_list_batch_size: number = 100;
     public websocket_handler: any;
     constructor(http_port: number, latest_minutes_to_retrieve: number, solid_server_url: string) {
         this.latest_minutes_to_retrieve = latest_minutes_to_retrieve;
@@ -29,9 +26,9 @@ export class HTTPServer {
         this.websocket_server = new websocket.server({
             httpServer: this.http_server
         });
-        this.aggregation_publisher = new LDESPublisher();
+        this.aggregation_publisher = new LDESPublisher(latest_minutes_to_retrieve);
         this.query_registry = new QueryRegistry();
-        this.endpoint_queries = new EndpointQueries();
+        this.endpoint_queries = new EndpointQueries(latest_minutes_to_retrieve);
         this.websocket_handler = new WebSocketHandler();
         this.websocket_handler.handle_wss(this.websocket_server, event_emitter);
         this.websocket_handler.aggregation_event_publisher(event_emitter, this.aggregation_publisher);

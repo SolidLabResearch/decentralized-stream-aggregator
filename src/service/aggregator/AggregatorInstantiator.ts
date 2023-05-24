@@ -65,7 +65,7 @@ export class AggregatorInstantiator {
         /**
          * The following line is for testing purposes only for historical data.
          */
-        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer);
+        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer, this.latestMinutes);
     }
 
 }
