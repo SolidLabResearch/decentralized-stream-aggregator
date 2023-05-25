@@ -19,7 +19,7 @@ export class EndpointQueries {
         PREFIX : <https://rsp.js/>
         REGISTER RStream <output> AS
         SELECT (AVG(?o) AS ?averageHR1)
-        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE ${latest_minutes_to_retrieve * 60} STEP 5]
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant1/data/> [RANGE ${latest_minutes_to_retrieve * 60} STEP 20]
         WHERE{
             WINDOW :w1 { ?s saref:hasValue ?o .
                          ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
@@ -32,7 +32,7 @@ export class EndpointQueries {
         PREFIX : <https://rsp.js/>
         REGISTER RStream <output> AS
         SELECT (AVG(?o) AS ?averageHR2)
-        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant2/data/> [RANGE ${latest_minutes_to_retrieve * 60} STEP 5]
+        FROM NAMED WINDOW :w1 ON STREAM <http://localhost:3000/dataset_participant2/data/> [RANGE ${latest_minutes_to_retrieve * 60} STEP 20]
         WHERE{
             WINDOW :w1 { ?s saref:hasValue ?o .
                             ?s saref:relatesToProperty dahccsensors:wearable.bvp .}

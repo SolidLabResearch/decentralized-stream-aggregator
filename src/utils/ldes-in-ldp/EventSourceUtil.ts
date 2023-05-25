@@ -6,8 +6,7 @@ import {
     LDPCommunication,
     storeToString
 } from "@treecg/versionawareldesinldp";
-import { DataFactory, Literal, Quad, Store } from "n3";
-const { quad, namedNode } = DataFactory
+import { Literal, Quad, Store } from "n3";
 
 // The semantics of Resource is the data point itself (!! not to be confused with an ldp:Resource)
 export type Resource = Quad[]
@@ -83,21 +82,21 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
                 const response = await ldp_communication.post(containerURL, storeToString(resourceStore));
                 let uuid: string | null = response.headers.get('location');
                 if (uuid !== null) {
-                    let meatadata_store = new Store([
-                        quad(
-                            namedNode(`${uuid}`),
-                            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-                            namedNode('http://www.w3.org/ns/asdo#Resource')
-                        ),
-                    ]);
-
+                    let metadata_store = new Store();
+                    for (const resource_quad of resourceStore) {
+                        if (resource_quad.predicate.value == 'http://w3id.org/rsp/vocals-sd#startedAt' || resource_quad.predicate.value == 'http://w3id.org/rsp/vocals-sd#endedAt') {
+                            metadata_store.add(resource_quad);
+                        }
+                    }
                     let resource_metadata_url = uuid + '.meta';
                     ldp_communication.patch(
                         resource_metadata_url,
-                        `INSERT DATA {${storeToString(meatadata_store)}}`
+                        `INSERT DATA {${storeToString(metadata_store)}}`
                     ).then((response) => {
                     }
-                    );
+                    ).catch((error) => {
+                        console.log("Error while patching metadata of the LDP resource: " + error);
+                    });
                 }
             }
             else {

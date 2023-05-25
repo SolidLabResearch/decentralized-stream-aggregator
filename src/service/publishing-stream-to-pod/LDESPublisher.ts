@@ -48,6 +48,7 @@ export class LDESPublisher {
         this.logger = new Logger();
         this.query_annotation_publisher = new QueryAnnotationPublishing();
         this.endpoint_queries = new EndpointQueries(latest_minutes_to_retrieve);
+        this.initialise();
     }
 
     async initialise() {

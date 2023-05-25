@@ -6,7 +6,7 @@ import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 import { DataFactory, Store } from "n3";
 import { add_resources_with_metadata_to_buckets, check_if_container_exists, createBucketUrl, create_ldp_container } from "../ldes-in-ldp/EventSourceUtil";
 import { editMetadata } from "../ldes-in-ldp/Util";
-const { quad, namedNode } = DataFactory;
+const { quad, namedNode, literal } = DataFactory;
 
 export class QueryAnnotationPublishing {
 
@@ -72,19 +72,18 @@ export class QueryAnnotationPublishing {
         const query_metadata = this.parser.parse(query);
         const stream_name = query_metadata.s2r[0].stream_name;
         const latest_minutes_to_monitor = query_metadata.s2r[0].width;
-        console.log(query);
         const store = new Store()
         store.addQuads(
             [
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Execution')),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('https://w3id.org/function/ontology#executes'), namedNode('http://example.org/aggregation_function')),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://w3id.org/rsp/vocals-sd#registeredStreams'), namedNode(`${stream_name}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/latest_minutes_to_monitor'), namedNode(`${latest_minutes_to_monitor}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), namedNode(`${Date.now()}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode('`${query}`')),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/latest_minutes_to_monitor'), literal(`${latest_minutes_to_monitor}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), literal(`${Date.now()}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode('http://example.org/aggregation_query_one')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Function')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('https://w3id.org/function/ontology#name'), namedNode('aggregation_function')),
-                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://purl.org/dc/terms/description'), namedNode('A function that executes an aggregation function on a RDF stream of data')),
+                quad(namedNode('http://example.org/aggregation_function'), namedNode('http://purl.org/dc/terms/description'), literal('A function that executes an aggregation function on a RDF stream of data', 'en')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#solves'), namedNode('http://example.org/continuous_monitoring_with_solid')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#expects'), namedNode('http://argahsuknesib.github.io/asdo/parameters/solid_pod_url')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#expects'), namedNode('http://argahsuknesib.github.io/asdo/parameters/aggregation_query')),
@@ -93,7 +92,7 @@ export class QueryAnnotationPublishing {
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://w3id.org/function/ontology#implements'), namedNode('http://example.org/solid_stream_aggregation_function')),
                 quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#OutputStream')),
                 quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://purl.oclc.org/NET/UNIS/sao/sao#StreamData')),
-                quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://purl.org/dc/terms/description'), namedNode('The stream of generated aggregation data that is the result of the aggregation function')),
+                quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://purl.org/dc/terms/description'), literal('The stream of generated aggregation data that is the result of the aggregation function', 'en')),
                 quad(namedNode('http://example.org/continuous_monitoring_with_solid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Problem')),
                 quad(namedNode('http://argahsuknesib.github.io/asdo/parameters/aggregation_query'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Parameter')),
 
@@ -102,11 +101,14 @@ export class QueryAnnotationPublishing {
             ])
         return store;
     }
-
-
     public patch_metadata(store: Store, location: string, ldp_communication: LDPCommunication): void {
-        ldp_communication.patch(location + '.meta', `INSERT DATA {${storeToString(store)}}`).then((response) => {
-            console.log("patched", response.status);
+        let location_metadata = location + '.meta';
+        ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
+            if (response.status == 200 || 201 || 205) {
+                console.log("The metadata of the LDP container is patched successfully");
+            }
+        }).catch((error) => {
+            console.error("There is an error while patching the metadata of the LDP container", error);
         });
     }
 }
