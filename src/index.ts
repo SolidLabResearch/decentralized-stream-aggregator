@@ -28,7 +28,7 @@ program
     .action((options: any) => {
         new HTTPServer(options.port, options.minutes, options.SolidServer);
         console.log("The aggregation service is running.");
-        
+
     });
     
 program.parse();

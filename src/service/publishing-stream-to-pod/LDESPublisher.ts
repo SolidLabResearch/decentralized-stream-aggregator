@@ -9,18 +9,15 @@ import {
     LDESConfig,
     VersionAwareLDESinLDP,
     ILDES,
-    createContainer
 } from "@treecg/versionawareldesinldp";
 import { QueryAnnotationPublishing } from "../../utils/algorithms/QueryAnnotationPublishing";
 import {
-    prefixesFromFilepath,
     initSession
 } from "../../utils/ldes-in-ldp/EventSource";
 import * as CONFIG from '../../config/ldes_properties.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 import { EndpointQueries } from "../../server/EndpointQueries";
-import { naiveAlgorithm } from "../../utils/algorithms/naiveAlgorithm";
 
 export class LDESPublisher {
 
@@ -78,7 +75,7 @@ export class LDESPublisher {
         return true;
     }
 
-    publish(resourceList: any[]) {
+    publish(resourceList: any[], start_time: Date, end_time: Date) {
         if (resourceList.length === 0) {
             console.log("No resources to publish");
             return;
@@ -89,8 +86,7 @@ export class LDESPublisher {
             }
             let query = this.endpoint_queries.get_query("averageHRPatient1")
             if (query != undefined) {
-                // naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
-                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session);
+                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, start_time, end_time, this.session);
             }
         }
 

@@ -57,6 +57,4 @@ export class HTTPServer {
         }
         res.end();
     }
-
-
 }

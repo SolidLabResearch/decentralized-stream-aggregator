@@ -12,8 +12,8 @@ describe('testing_the_single_pod_aggregator', () => {
                 }
             `
     let wssURL = "ws://localhost:8080/";
-    let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", "http://localhost:3000/dataset_participant1/data/", 3);
-    
+    let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", 3);
+
     it('connect_with_server_function_test', async () => {
 
         let connection = await singlePodAggregator.connect_with_server(wssURL);

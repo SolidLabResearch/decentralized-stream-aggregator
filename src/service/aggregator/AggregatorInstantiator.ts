@@ -23,7 +23,7 @@ export class AggregatorInstantiator {
         this.solidServerURL = serverURL;
         this.query = continuousQuery;
         this.logger = new Logger();
-        this.discoverLIL(this.solidServerURL).then((result: void) => {
+        this.discoverLIL(this.solidServerURL).then(() => {
             this.logger.info(`The process to discover LILs has been started`);
         });
     }
@@ -49,7 +49,7 @@ export class AggregatorInstantiator {
         });
 
         bindingStream.on('data', async (bindings: any) => {
-            await this.instantiateAggregator(bindings.get('LIL').value, this.query);
+            await this.instantiateAggregator(bindings.get('LIL').value);
         });
     }
 
@@ -60,12 +60,12 @@ export class AggregatorInstantiator {
      * @param {string} query
      * @memberof AggregatorInstantiator
      */
-    async instantiateAggregator(LILContainer: string, query: string) {
+    async instantiateAggregator(LILContainer: string) {
         // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
         /**
          * The following line is for testing purposes only for historical data.
          */
-        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer, this.latestMinutes);
+        new SinglePodAggregator(LILContainer, this.query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.latestMinutes);
     }
 
 }

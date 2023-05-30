@@ -1,8 +1,9 @@
 import { Logger, ILogObj } from "tslog";
 import { Parser } from "n3";
 import * as CONFIG from '../config/ldes_properties.json';
+import { aggregation_object } from "../service/aggregator/SinglePodAggregator";
 export class WebSocketHandler {
-
+    
     private aggregation_resource_list: any = [];
     private readonly aggregation_resource_list_batch_size: number = CONFIG.BUCKET_SIZE;
     public logger: Logger<ILogObj>;
@@ -32,12 +33,13 @@ export class WebSocketHandler {
     }
 
     public aggregation_event_publisher(event_emitter: any, aggregation_publisher: any) {
-        event_emitter.on('aggregation_event', (message: any) => {
+        event_emitter.on('aggregation_event', (object: any) => {
             const parser = new Parser({ format: 'N-Triples' });
-            const event_quad_array = parser.parse(message);
+            let aggregation_event = JSON.parse(object)
+            const event_quad_array = parser.parse(aggregation_event.aggregation_event);
             this.aggregation_resource_list.push(event_quad_array);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
-                aggregation_publisher.publish(this.aggregation_resource_list);
+                aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
                 this.aggregation_resource_list = [];
             }
             if (this.aggregation_resource_list.length == 0) {

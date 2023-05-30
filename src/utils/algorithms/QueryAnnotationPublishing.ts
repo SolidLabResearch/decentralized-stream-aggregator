@@ -9,7 +9,6 @@ import { editMetadata } from "../ldes-in-ldp/Util";
 const { quad, namedNode, literal } = DataFactory;
 
 export class QueryAnnotationPublishing {
-
     private logger: Logger<ILogObj>;
     public parser: RSPQLParser;
     public bucket_resources: {
@@ -21,7 +20,7 @@ export class QueryAnnotationPublishing {
         this.bucket_resources = {};
     }
 
-    public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, bucket_size_per_container: number, config: LDESConfig, session?: Session): Promise<void> {
+    public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, bucket_size_per_container: number, config: LDESConfig, start_time: Date, end_time: Date, session?: Session): Promise<void> {
         const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
         const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, comunication);
         const metadata_store = await ldes_in_ldp.readMetadata();
@@ -36,7 +35,7 @@ export class QueryAnnotationPublishing {
         const bucket_url = createBucketUrl(ldes_in_ldp_url, resource_timestamp);
         if ((await check_if_container_exists(ldes_in_ldp, bucket_url)) === false) {
             create_ldp_container(bucket_url, comunication);
-            let query_metadata = this.get_query_metadata(query);
+            let query_metadata = this.get_query_metadata(query, start_time, end_time);
             this.patch_metadata(query_metadata, bucket_url, comunication);
             bucket_resources[bucket_url] = [];
             for (const resource of resources) {
@@ -68,17 +67,17 @@ export class QueryAnnotationPublishing {
         await add_resources_with_metadata_to_buckets(bucket_resources, metadata, comunication);
     }
 
-    public get_query_metadata(query: string): Store {
+    public get_query_metadata(query: string, start_time: Date, end_time: Date): Store {
         const query_metadata = this.parser.parse(query);
         const stream_name = query_metadata.s2r[0].stream_name;
-        const latest_minutes_to_monitor = query_metadata.s2r[0].width;
         const store = new Store()
         store.addQuads(
             [
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Execution')),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('https://w3id.org/function/ontology#executes'), namedNode('http://example.org/aggregation_function')),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://w3id.org/rsp/vocals-sd#registeredStreams'), namedNode(`${stream_name}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/latest_minutes_to_monitor'), literal(`${latest_minutes_to_monitor}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_start_time'), literal(`${start_time}`)),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_end_time'), literal(`${end_time}`)),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), literal(`${Date.now()}`)),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode('http://example.org/aggregation_query_one')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Function')),
@@ -105,7 +104,6 @@ export class QueryAnnotationPublishing {
         let location_metadata = location + '.meta';
         ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
             if (response.status == 200 || 201 || 205) {
-                console.log("The metadata of the LDP container is patched successfully");
             }
         }).catch((error) => {
             console.error("There is an error while patching the metadata of the LDP container", error);

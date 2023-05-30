@@ -110,7 +110,6 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
 export async function create_ldp_container(url: string, communication: Communication) {
     if (url.endsWith('/')) {
         const response = await communication.put(url);
-        console.log(`Container created at ${url}`);
         if (response.status != 201) {
             console.error(`Could not create container at ${url} with status ${response.status}`);
         }
