@@ -10,17 +10,30 @@ export class AggregatorInstantiator {
     public query: string;
     public logger: Logger<ILogObj>;
 
+    /**
+     * Creates an instance of AggregatorInstantiator.
+     * @param {string} continuousQuery
+     * @param {number} latestMinutes
+     * @param {string} serverURL
+     * @memberof AggregatorInstantiator
+     */
     constructor(continuousQuery: string, latestMinutes: number, serverURL: string) {
         this.latestMinutes = latestMinutes;
         this.currentTime = new Date();
         this.solidServerURL = serverURL;
         this.query = continuousQuery;
         this.logger = new Logger();
-        this.discoverLIL(this.solidServerURL).then((result: void) => {
+        this.discoverLIL(this.solidServerURL).then(() => {
             this.logger.info(`The process to discover LILs has been started`);
         });
     }
 
+    /**
+     * Discovers the pods in the server which complies with the LDES in LDP
+     *  specification (https://woutslabbinck.github.io/LDESinLDP/) for storing streams in the Solid Pods.
+     * @param {string} solidServerURL
+     * @memberof AggregatorInstantiator
+     */
     async discoverLIL(solidServerURL: string) {
         const bindingStream = await linkTraversalEngine.queryBindings(`
             PREFIX tree: <https://w3id.org/tree#>
@@ -36,17 +49,23 @@ export class AggregatorInstantiator {
         });
 
         bindingStream.on('data', async (bindings: any) => {
-            await this.instantiateAggregator(bindings.get('LIL').value, this.query);
+            await this.instantiateAggregator(bindings.get('LIL').value);
         });
     }
 
-
-    async instantiateAggregator(LILContainer: string, query: string) {
-        new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
+    /**
+     * Instantiates the aggregator for each LDES in LDP compliant solid pod.
+     *
+     * @param {string} LILContainer
+     * @param {string} query
+     * @memberof AggregatorInstantiator
+     */
+    async instantiateAggregator(LILContainer: string) {
+        // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
         /**
          * The following line is for testing purposes only for historical data.
          */
-        // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", LILContainer);
+        new SinglePodAggregator(LILContainer, this.query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.latestMinutes);
     }
 
 }

@@ -1,13 +1,22 @@
+import { ParsedQuery } from "./ParsedQuery";
+const { Parser: SparqlParser } = require('sparqljs');
 export class RSPQLParser {
     r2s: Map<string, string> = new Map<string, string>();
     s2r: Array<string> = new Array<string>();
+    sparql_parser: typeof SparqlParser;
     constructor() {
-
+        this.sparql_parser = new SparqlParser();
     }
-
-    parse(rspqlQuery: string): ParsedQuery {
+    /**
+     * Parse a RSPQL query to a parsedQuery Object containing the R2S and S2R mappings along with the SPARQL query.
+     *
+     * @param {string} rspql_query
+     * @return {*}  {ParsedQuery}
+     * @memberof RSPQLParser
+     */
+    parse(rspql_query: string): ParsedQuery {
         let parsed = new ParsedQuery();
-        let split = rspqlQuery.split(/\r?\n/);
+        let split = rspql_query.split(/\r?\n/);
         let sparqlLines = new Array<string>();
         let prefixMapper = new Map<string, string>();
         split.forEach((line) => {
@@ -48,9 +57,18 @@ export class RSPQLParser {
             }
         });
         parsed.sparql = sparqlLines.join("\n");
+        let sparql_parsed = this.parse_sparql_query(parsed.sparql, parsed);
         return parsed;
     }
 
+    /**
+     * Unwraps a prefixed IRI to a full IRI.
+     *
+     * @param {string} prefixedIRI
+     * @param {Map<string, string>} prefixMapper
+     * @return {*} 
+     * @memberof RSPQLParser
+     */
     unwrap(prefixedIRI: string, prefixMapper: Map<string, string>) {
         if (prefixedIRI.trim().startsWith("<")) {
             return prefixedIRI.trim().slice(1, -1);
@@ -64,35 +82,27 @@ export class RSPQLParser {
             return "";
         }
     }
+
+    /**
+     * Returns the name of the sensor from the SPARQL query.
+    **/
+
+    get_sensor_name(parsed_query: ParsedQuery) {
+        console.log(parsed_query.sparql)
+    }
+
+    parse_sparql_query(sparqlQuery: string, parsed: ParsedQuery) {
+        let parsed_sparql_query = this.sparql_parser.parse(sparqlQuery);
+        let prefixes = parsed_sparql_query.prefixes;
+        Object.keys(prefixes).forEach((key) => {
+            parsed.prefixes.set(key, prefixes[key]);
+        });
+        for (let i = 0; i <= parsed_sparql_query.variables.length; i++) {
+            if (parsed_sparql_query.variables[i] !== undefined) {
+                parsed.projection_variables.push(parsed_sparql_query.variables[i].variable.value);
+                parsed.aggregation_function = parsed_sparql_query.variables[i].expression.aggregation;
+            }
+        }
+    }
 }
 
-export class ParsedQuery {
-    sparql: string;
-    r2s: R2S;
-    s2r: Array<WindowDefinition>;
-    constructor() {
-        this.sparql = "Select * WHERE{?s ?p ?o}";
-        this.r2s = { operator: "RStream", name: "undefined" };
-        this.s2r = new Array<WindowDefinition>();
-
-    }
-    set_sparql(sparql: string) {
-        this.sparql = sparql;
-    }
-    set_r2s(r2s: R2S) {
-        this.r2s = r2s;
-    }
-    add_s2r(s2r: WindowDefinition) {
-        this.s2r.push(s2r);
-    }
-}
-export type WindowDefinition = {
-    window_name: string,
-    stream_name: string,
-    width: number,
-    slide: number
-}
-type R2S = {
-    operator: "RStream" | "IStream" | "DStream",
-    name: string
-}

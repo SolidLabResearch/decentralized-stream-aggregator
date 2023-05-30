@@ -8,39 +8,44 @@ import {
     extractLdesMetadata,
     LDESConfig,
     VersionAwareLDESinLDP,
-    ILDES
+    ILDES,
 } from "@treecg/versionawareldesinldp";
-import { naiveAlgorithm } from "../utils/algorithms/naiveAlgorithm";
+import { QueryAnnotationPublishing } from "../../utils/algorithms/QueryAnnotationPublishing";
 import {
-    prefixesFromFilepath,
     initSession
-} from "../utils/EventSource";
-import * as CONFIG from '../config/ldes_properties.json';
-import { RSPQLParser } from "./RSPQLParser";
+} from "../../utils/ldes-in-ldp/EventSource";
+import * as CONFIG from '../../config/ldes_properties.json';
+import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
+import { EndpointQueries } from "../../server/EndpointQueries";
 
-export class AggregationLDESPublisher {
+export class LDESPublisher {
 
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
-    private lilURL = this.getextractedContainerNames(CONFIG.LIL_URL);
+    private lilURL: string = CONFIG.LIL_URL
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
-    public config: LDESConfig = {
-        LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
-    }
+    public config: LDESConfig;
     private amount = CONFIG.AMOUNT;
     private bucketSize = CONFIG.BUCKET_SIZE;
     private logLevel = CONFIG.LOG_LEVEL;
     private aggregationQuery: string = "";
     private parser: any;
+    private query_annotation_publisher: QueryAnnotationPublishing;
     public logger: Logger<ILogObj>;
+    public endpoint_queries: EndpointQueries;
 
-    constructor() {
-        this.initialise();
+    constructor(latest_minutes_to_retrieve: number) {
+        this.config = {
+            LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
+        }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
+        this.query_annotation_publisher = new QueryAnnotationPublishing();
+        this.endpoint_queries = new EndpointQueries(latest_minutes_to_retrieve);
+        this.initialise();
     }
 
     async initialise() {
@@ -49,7 +54,6 @@ export class AggregationLDESPublisher {
             console.log(`User logged in: ${s.info.webId}`);
         }
         this.session = s;
-
         const communication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
         const lil: ILDES = await new LDESinLDP(this.lilURL, communication);
         let metadata: LDESMetadata | undefined;
@@ -68,36 +72,23 @@ export class AggregationLDESPublisher {
             console.log(`No LDES is present.`);
         }
         const eventStreamURI = metadata ? metadata.ldesEventStreamIdentifier : this.lilURL + "#EventStream";
+        return true;
     }
 
-    publish(resourceList: any[]) {
+    publish(resourceList: any[], start_time: Date, end_time: Date) {
         if (resourceList.length === 0) {
             console.log("No resources to publish");
             return;
         }
-
-        const prefixes = prefixesFromFilepath(this.prefixFile, this.lilURL);
-        const config: LDESConfig = {
-            LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
-        }
-
-        naiveAlgorithm(this.lilURL, resourceList, this.treePath, this.bucketSize, config, this.session, this.logLevel)
-    }
-
-    setAggregationQuery(query: string) {
-        this.aggregationQuery = query;
-        console.log(this.aggregationQuery);
-    }
-
-    getextractedContainerNames(config_lil_url: string) {
-        if (this.aggregationQuery != undefined) {
-            let parsedAggregationQuery = this.parser.parse(this.aggregationQuery);
-            console.log(parsedAggregationQuery.sparql);
-        }
         else {
-            console.log(`The aggregationQuery is not set.`);
-            // this.logger.debug(`The aggregationQuery is not set.`)
+            const config: LDESConfig = {
+                LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
+            }
+            let query = this.endpoint_queries.get_query("averageHRPatient1")
+            if (query != undefined) {
+                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, start_time, end_time, this.session);
+            }
         }
-        return config_lil_url;
+
     }
 }
