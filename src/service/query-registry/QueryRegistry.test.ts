@@ -1,4 +1,4 @@
-import { QueryRegistry } from "../../query-registry/QueryRegistry";
+import { QueryRegistry } from "./QueryRegistry";
 describe("QueryRegistry", () => {
     it("register_one_query_to_registry", () => {
         let query_registry = new QueryRegistry();

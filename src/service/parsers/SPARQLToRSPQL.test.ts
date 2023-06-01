@@ -1,4 +1,4 @@
-import { SPARQLToRSPQL } from "../../parsers/SPARQLToRSPQL";
+import { SPARQLToRSPQL } from "./SPARQLToRSPQL";
 
 describe("parsing_sparql_to_rspql", () => {
     test("parsing_sparql_to_rspql", async () => {

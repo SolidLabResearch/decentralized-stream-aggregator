@@ -16,34 +16,26 @@ export class AggregationFocusExtractor {
         this.focus_of_query = {};
     }
 
+
     public extract_focus(): any {
         let parsed_query: ParsedQuery = this.parser.parse(this.query);
         let sparql_query = parsed_query.sparql;
         let sparql_query_parsed = sparql_parser.parse(sparql_query);
-        // console.log(sparql_query_parsed.where.length);
-        // console.log(sparql_query_parsed.where.patterns);
         for (let bgp_counter = 0; bgp_counter < sparql_query_parsed.where.length; bgp_counter++) {
-            let extracted_triples_from_query = sparql_query_parsed.where[bgp_counter].triples;
-            console.log(extracted_triples_from_query);
-            
-            // for (let graph_counter = 0; graph_counter < sparql_query_parsed.where.patterns; graph_counter++){
-            //     let extracted_triples_from_query = sparql_query_parsed.where[bgp_counter].patterns[graph_counter].triples;
-            //     let triple_counter = 0;
-            //     for (let triple of extracted_triples_from_query) {
-            //         if (triple.predicate.termType == 'NamedNode' && this.focus_predicates.includes(triple.predicate.value)) {
-            //             triple_counter++;
-            //             this.add_to_focus_of_query(triple.object.value, triple_counter);
-            //             console.log(triple.predicate.value);
-            //             console.log(this.focus_of_query);
-            //             return this.focus_of_query;
-            //         }
-            //     }
-            // }
+            for (let graph_counter = 0; graph_counter < sparql_query_parsed.where[bgp_counter].patterns.length; graph_counter++) {
+                sparql_query_parsed.where[bgp_counter].patterns[graph_counter].triples.forEach((triple: any) => {
+                    if (triple.predicate.termType == 'NamedNode' && this.focus_predicates.includes(triple.predicate.value)) {
+                        let focus_name = 'focus_' + (Object.keys(this.focus_of_query).length + 1);
+                        this.focus_of_query[focus_name] = triple.object.value;
+                    }
+                });
+            }
         }
+        return this.focus_of_query;
     }
 
     public add_to_focus_of_query(predicate_value: any, counter: number) {
-        this.focus_of_query['focus_' + counter] = predicate_value;
+        this.focus_of_query["focus_" + counter] = predicate_value;
     }
 
 }

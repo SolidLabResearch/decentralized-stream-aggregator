@@ -1,4 +1,4 @@
-import { RSPQLParser } from "../../parsers/RSPQLParser";
+import { RSPQLParser } from "./RSPQLParser";
 
 let simple_query = `PREFIX : <https://rsp.js/>
     REGISTER RStream <output> AS

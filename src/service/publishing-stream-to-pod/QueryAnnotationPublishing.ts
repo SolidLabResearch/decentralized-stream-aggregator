@@ -1,11 +1,14 @@
-import { addRelationToNode, createContainer, extractLdesMetadata, LDESConfig, LDESinLDP, LDESMetadata, LDPCommunication, login, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
+import { addRelationToNode, extractLdesMetadata, LDESConfig, LDESinLDP, LDESMetadata, LDPCommunication, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
 import { ILogObj, Logger } from "tslog";
-import { RSPQLParser } from "../../service/parsers/RSPQLParser";
-import { addResourcesToBuckets, calculateBucket, getTimeStamp, Resource } from "../ldes-in-ldp/EventSource";
+import { RSPQLParser } from "../parsers/RSPQLParser";
+import { getTimeStamp, Resource } from "../../utils/ldes-in-ldp/EventSource";
 import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 import { DataFactory, Store } from "n3";
-import { add_resources_with_metadata_to_buckets, check_if_container_exists, createBucketUrl, create_ldp_container } from "../ldes-in-ldp/EventSourceUtil";
-import { editMetadata } from "../ldes-in-ldp/Util";
+import { add_resources_with_metadata_to_buckets, check_if_container_exists, createBucketUrl, create_ldp_container } from "../../utils/ldes-in-ldp/EventSourceUtil";
+import { editMetadata } from "../../utils/ldes-in-ldp/Util";
+import { v4 as uuidv4 } from 'uuid';
+import { AggregationFocusExtractor } from "../parsers/AggregationFocusExtractor";
+import { ParsedQuery } from "../parsers/ParsedQuery";
 const { quad, namedNode, literal } = DataFactory;
 
 export class QueryAnnotationPublishing {
@@ -68,9 +71,22 @@ export class QueryAnnotationPublishing {
     }
 
     public get_query_metadata(query: string, start_time: Date, end_time: Date): Store {
-        const query_metadata = this.parser.parse(query);
+        let query_identifier_uuid = uuidv4();
+        const aggregation_query_identifier: string = `http://example.org/aggregation_query/${query_identifier_uuid}`;
+        const aggregation_focus_extractor = new AggregationFocusExtractor(query);
+        const focus_of_aggregation = aggregation_focus_extractor.extract_focus();
+        let focus: string = "";
+        Object.keys(focus_of_aggregation).forEach((key) => {
+            focus = focus_of_aggregation[key];
+        });
+        const query_metadata: ParsedQuery = this.parser.parse(query);
         const stream_name = query_metadata.s2r[0].stream_name;
-        const store = new Store()
+        const store = new Store();
+        const window_size = query_metadata.s2r[0].width;
+        const window_slide = query_metadata.s2r[0].slide;
+        const window_name = query_metadata.s2r[0].window_name;
+        const projection_variable = query_metadata.projection_variables[0];
+
         store.addQuads(
             [
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Execution')),
@@ -78,8 +94,8 @@ export class QueryAnnotationPublishing {
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://w3id.org/rsp/vocals-sd#registeredStreams'), namedNode(`${stream_name}`)),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_start_time'), literal(`${start_time}`)),
                 quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_end_time'), literal(`${end_time}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), literal(`${Date.now()}`)),
-                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode('http://example.org/aggregation_query_one')),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/last_execution_time'), literal(Date.now())),
+                quad(namedNode('http://example.org/aggregation_function_execution'), namedNode('http://example.org/aggregation_query'), namedNode(`${aggregation_query_identifier}`)),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('https://w3id.org/function/ontology#Function')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('https://w3id.org/function/ontology#name'), namedNode('aggregation_function')),
                 quad(namedNode('http://example.org/aggregation_function'), namedNode('http://purl.org/dc/terms/description'), literal('A function that executes an aggregation function on a RDF stream of data', 'en')),
@@ -94,9 +110,13 @@ export class QueryAnnotationPublishing {
                 quad(namedNode('http://example.org/aggregation_result_stream'), namedNode('http://purl.org/dc/terms/description'), literal('The stream of generated aggregation data that is the result of the aggregation function', 'en')),
                 quad(namedNode('http://example.org/continuous_monitoring_with_solid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Problem')),
                 quad(namedNode('http://argahsuknesib.github.io/asdo/parameters/aggregation_query'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Parameter')),
-
-                // TODO :add parameters of the aggregation query from parsing the query.
-
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://w3id.org/function/ontology#Query')),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_query_string'), literal(`${query}`)),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_projection_variable'), literal(`${projection_variable}`)),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_window_name'), namedNode(`${window_name}`)),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_window_size'), literal(window_size)),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_window_slide'), literal(window_slide)),
+                quad(namedNode(`${aggregation_query_identifier}`), namedNode('http://www.example.org/has_focus'), namedNode(`${focus}`)),
             ])
         return store;
     }
@@ -104,9 +124,10 @@ export class QueryAnnotationPublishing {
         let location_metadata = location + '.meta';
         ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
             if (response.status == 200 || 201 || 205) {
+                this.logger.debug("The metadata of the LDP container is patched successfully")
             }
         }).catch((error) => {
-            console.error("There is an error while patching the metadata of the LDP container", error);
+            this.logger.error("There is an error while patching the metadata of the LDP container", error);
         });
     }
 }

@@ -10,7 +10,7 @@ import {
     VersionAwareLDESinLDP,
     ILDES,
 } from "@treecg/versionawareldesinldp";
-import { QueryAnnotationPublishing } from "../../utils/algorithms/QueryAnnotationPublishing";
+import { QueryAnnotationPublishing } from "./QueryAnnotationPublishing";
 import {
     initSession
 } from "../../utils/ldes-in-ldp/EventSource";

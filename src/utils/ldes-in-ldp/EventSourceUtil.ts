@@ -7,7 +7,8 @@ import {
     storeToString
 } from "@treecg/versionawareldesinldp";
 import { Literal, Quad, Store } from "n3";
-
+import { DataFactory } from "rdf-data-factory";
+const factory = new DataFactory();
 // The semantics of Resource is the data point itself (!! not to be confused with an ldp:Resource)
 export type Resource = Quad[]
 // a dictionary which maps an ldp:containerURL to an array of Resources
@@ -82,16 +83,17 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
                 const response = await ldp_communication.post(containerURL, storeToString(resourceStore));
                 let uuid: string | null = response.headers.get('location');
                 if (uuid !== null) {
-                    let metadata_store = new Store();
-                    for (const resource_quad of resourceStore) {
-                        if (resource_quad.predicate.value == 'http://w3id.org/rsp/vocals-sd#startedAt' || resource_quad.predicate.value == 'http://w3id.org/rsp/vocals-sd#endedAt') {
-                            metadata_store.add(resource_quad);
-                        }
-                    }
-                    let resource_metadata_url = uuid + '.meta';
+                    const resource_subject = resourceStore.getSubjects(null, null, null)[0];
+                    const relation_to_resource_store = new Store();
+                    relation_to_resource_store.add(factory.quad(
+                        factory.namedNode(resource_subject.value),
+                        factory.namedNode('http://purl.org/dc/terms/source'),
+                        factory.namedNode(uuid)
+                    ));
+
                     ldp_communication.patch(
-                        resource_metadata_url,
-                        `INSERT DATA {${storeToString(metadata_store)}}`
+                        uuid,
+                        `INSERT DATA {${storeToString(relation_to_resource_store)}}`
                     ).then((response) => {
                     }
                     ).catch((error) => {

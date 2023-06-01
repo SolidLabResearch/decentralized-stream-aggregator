@@ -1,4 +1,4 @@
-import { AggregatorInstantiator } from "../../aggregator/AggregatorInstantiator";
+import { AggregatorInstantiator } from "./AggregatorInstantiator";
 
 describe("testing_aggregator_instantiator", () => {
 

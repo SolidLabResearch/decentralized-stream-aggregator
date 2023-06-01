@@ -1,4 +1,4 @@
-import { AggregationFocusExtractor } from "../../parsers/AggregationFocusExtractor";
+import { AggregationFocusExtractor } from "./AggregationFocusExtractor";
 
 describe('extracting_the_focus_of_an_query_which_is_being_aggregated', () => {
     it('should_return_one_focus_of_the_query_one_window', () => {
