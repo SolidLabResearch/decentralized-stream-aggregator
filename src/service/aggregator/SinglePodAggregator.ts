@@ -1,12 +1,14 @@
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
-const { LDPCommunication, LDESinLDP } = require('@treecg/versionawareldesinldp');
+const { LDPCommunication, LDESinLDP, login, isLoggedin, getSession } = require('@treecg/versionawareldesinldp');
 const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 import { v4 as uuidv4 } from 'uuid';
 const { Store } = require('n3');
+import { Session } from "@inrupt/solid-client-authn-node";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Logger, ILogObj } from "tslog";
 import { LDESPublisher } from "../publishing-stream-to-pod/LDESPublisher";
+import { SolidCommunication } from '@treecg/versionawareldesinldp';
 
 export type aggregation_object = {
     aggregation_event: string,
@@ -41,8 +43,8 @@ export class SinglePodAggregator {
      * @param {string} stream_name
      * @memberof SinglePodAggregator
      */
-    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, latest_minutes: number) {
-        this.ldp_communication = new LDPCommunication();
+    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, latest_minutes: number, session: Session) {
+        this.ldp_communication = new SolidCommunication(session);
         this.comunica_engine = new QueryEngine();
         this.ldesinldp = new LDESinLDP(ldes_container, this.ldp_communication);
         this.ldes_container = ldes_container;
@@ -115,8 +117,8 @@ export class SinglePodAggregator {
                         aggregation_window_from: this.start_time,
                         aggregation_window_to: this.end_time
                     }
-                    let aggregation_object_string = JSON.stringify(aggregation_object);        
-                    this.sendToServer(aggregation_object_string);    
+                    let aggregation_object_string = JSON.stringify(aggregation_object);
+                    this.sendToServer(aggregation_object_string);
                 }
             });
         });
@@ -129,7 +131,7 @@ export class SinglePodAggregator {
      * @memberof SinglePodAggregator
      */
     sendToServer(message: string) {
-        if (this.connection.connected) {            
+        if (this.connection.connected) {
             this.connection.sendUTF(message);
         }
         else {

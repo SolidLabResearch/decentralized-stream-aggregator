@@ -7,7 +7,7 @@ let logger: Logger<ILogObj> = new Logger();
 const mailDomain: string = '@protego.com'
 
 type multipod = {
-    podName: string,
+    pod_name: string,
     email: string,
     password: string
 }
@@ -27,7 +27,7 @@ export class prepareSolidPod {
         for await (const value of dir) {
             let fileName: string = value.name.slice(0, -3)
             let solidObject = {
-                podName: fileName,
+                pod_name: fileName,
                 email: fileName + mailDomain,
                 password: generator.generate({
                     length: 6,
@@ -42,7 +42,7 @@ export class prepareSolidPod {
     async writeJSONFile(object: multipod[]) {
         for await (const { } of object) {
             const podContent: string = JSON.stringify(fileObject.solidpod)
-            jsonFile.writeFile('multiSolidPod.json', JSON.parse(podContent), function (error: string) {
+            jsonFile.writeFile('pod_credentials.json', JSON.parse(podContent), function (error: string) {
                 if (error) {
                     logger.error(`The error is ${error}`);
                 }

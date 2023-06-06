@@ -104,3 +104,6 @@ dist
 .tern-port
 /scripts/data/
 /scripts/SolidEventSourcing
+docs/
+/scripts/auth-data/
+src/config/authentication_map.ts

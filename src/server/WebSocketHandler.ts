@@ -1,7 +1,6 @@
 import { Logger, ILogObj } from "tslog";
 import { Parser } from "n3";
 import * as CONFIG from '../config/ldes_properties.json';
-import { aggregation_object } from "../service/aggregator/SinglePodAggregator";
 export class WebSocketHandler {
     
     private aggregation_resource_list: any = [];

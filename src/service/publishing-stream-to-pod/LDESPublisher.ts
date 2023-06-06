@@ -9,12 +9,14 @@ import {
     LDESConfig,
     VersionAwareLDESinLDP,
     ILDES,
+    getAuthenticatedSession,
 } from "@treecg/versionawareldesinldp";
 import { QueryAnnotationPublishing } from "./QueryAnnotationPublishing";
 import {
     initSession
 } from "../../utils/ldes-in-ldp/EventSource";
 import * as CONFIG from '../../config/ldes_properties.json';
+import * as AGG_CONFIG from '../../config/pod_credentials.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
 import { EndpointQueries } from "../../server/EndpointQueries";
@@ -49,12 +51,12 @@ export class LDESPublisher {
     }
 
     async initialise() {
-        const s = await initSession(this.credentialsFileName);
-        if (s) {
-            console.log(`User logged in: ${s.info.webId}`);
-        }
-        this.session = s;
-        const communication = this.session ? new SolidCommunication(this.session) : new LDPCommunication();
+        this.session = await getAuthenticatedSession({
+            webId: AGG_CONFIG.aggregation_pod_web_id,
+            password: AGG_CONFIG.aggregation_pod_password,
+            email: AGG_CONFIG.aggregation_pod_email,
+        })
+        const communication = new SolidCommunication(this.session);
         const lil: ILDES = await new LDESinLDP(this.lilURL, communication);
         let metadata: LDESMetadata | undefined;
         const versionAware = new VersionAwareLDESinLDP(lil);
@@ -71,7 +73,6 @@ export class LDESPublisher {
             console.log(error);
             console.log(`No LDES is present.`);
         }
-        const eventStreamURI = metadata ? metadata.ldesEventStreamIdentifier : this.lilURL + "#EventStream";
         return true;
     }
 
