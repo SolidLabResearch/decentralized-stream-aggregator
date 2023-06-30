@@ -3,7 +3,7 @@
 `The aggregator is in active continuous development and will be changed frequently.`
 
 The Solid Stream Aggregator provides an aggregated view over streaming data stored in single or multiple solid pods.
-The Solid Stream Aggregator aggregates and stores the view in a solid pod and therefore reduces the overhead of querying multiple solid pods to build the specific view. 
+The Solid Stream Aggregator aggregates and stores the view in a solid pod and therefore reduces the overhead of querying multiple solid pods to build the specific view.
 The aggregated view is beneficial for applications such as for continuous monitoring.
 
 ## Usage

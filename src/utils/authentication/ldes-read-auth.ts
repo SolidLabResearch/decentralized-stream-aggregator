@@ -22,14 +22,15 @@ async function main() {
     //     email: 'dataset_participant1@protego.com',
     // })
     // session.info.isLoggedIn = true;
-    // await login(validatedOptions, session)
+    
+    await login(validatedOptions, session)
     if (session.info.isLoggedIn) {
         const ldes_in_ldp_identifier = "http://localhost:3000/dataset_participant1/data/"
         const communication = new SolidCommunication(session);        
         const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_identifier, communication);
         const ldes = await ldes_in_ldp.readAllMembers();
         ldes.on("data", (data: any) => {
-            // console.log(data); 
+            console.log(data); 
         });
         
     }
