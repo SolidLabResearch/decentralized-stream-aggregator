@@ -4,6 +4,7 @@ import { RSPQLParser } from "rsp-js";
 import { getAuthenticatedSession } from "css-auth-login";
 const QueryEngine = require('@comunica/query-sparql-link-traversal').QueryEngine;
 import { authenticated_session_object, authentication_map } from "../../config/authentication_map";
+import { LDPCommunication } from "@treecg/versionawareldesinldp";
 const parser = new RSPQLParser();
 const linkTraversalEngine = new QueryEngine();
 
@@ -61,12 +62,12 @@ export class AggregatorInstantiator {
      */
     async instantiateAggregator(stream_name: string) {
         let authentication_object: authenticated_session_object = authentication_map.get(this.stream_name)!;
-        this.session = await getAuthenticatedSession({
-            webId: authentication_object.web_id,
-            password: authentication_object.password,
-            email: authentication_object.email
-        })
-        // new SinglePodAggregator(LILContainer, query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, LILContainer);
+        // this.session = await getAuthenticatedSession({
+        //     webId: authentication_object.web_id,
+        //     password: authentication_object.password,
+        //     email: authentication_object.email
+        // })
+        // new SinglePodAggregator(stream_name, this.query, 'ws://localhost:8080/', new Date(this.currentTime - this.latestMinutes), this.currentTime, this.latestMinutes, this.session);
         /**
          * The following line is for testing purposes only for historical data.
          */

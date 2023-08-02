@@ -44,7 +44,8 @@ export class SinglePodAggregator {
      * @memberof SinglePodAggregator
      */
     constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, latest_minutes: number, session: Session) {
-        this.ldp_communication = new SolidCommunication(session);
+        // this.ldp_communication = new SolidCommunication(session);
+        this.ldp_communication = new LDPCommunication();
         this.comunica_engine = new QueryEngine();
         this.ldesinldp = new LDESinLDP(ldes_container, this.ldp_communication);
         this.ldes_container = ldes_container;
