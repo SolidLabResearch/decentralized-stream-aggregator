@@ -82,7 +82,11 @@ export class SinglePodAggregator {
         });
         this.client.on('connect', async (connection: typeof websocketConnection) => {
             this.logger.info(`WebSocket Client is connected.`);
-            let LILStream = await this.ldesinldp.readAllMembers(new Date(this.start_time), new Date(this.end_time));
+            let LILStream = await this.ldesinldp.readMembersSorted({
+                from: new Date(this.start_time),
+                to: new Date(this.end_time),
+                chronological: true
+            });
             LILStream.on('data', async (data: any) => {
                 let LILStreamStore = new Store(data.quads);
                 let binding_stream = await this.comunica_engine.queryBindings(`
