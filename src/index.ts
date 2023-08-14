@@ -26,7 +26,7 @@ program
         'http://localhost:3000/'
     )
     .action((options: any) => {
-        new HTTPServer(options.port, options.minutes, options.SolidServer);
+        new HTTPServer(options.port, options.SolidServer);
         console.log("The aggregation service is running.");
 
     });

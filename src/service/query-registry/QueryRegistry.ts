@@ -44,9 +44,9 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
 
-    register_query(rspql_query: string, latest_minutes_to_retrieve: number, solid_server_url: string, query_registry: QueryRegistry) {
+    register_query(rspql_query: string, solid_server_url: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
         if (query_registry.add_query_in_registry(rspql_query)) {
-            new AggregatorInstantiator(rspql_query, latest_minutes_to_retrieve, solid_server_url);
+            new AggregatorInstantiator(rspql_query, solid_server_url, from_timestamp, to_timestamp);
         }
         else {
             this.logger.debug(`The query you have registered is already executing.`);

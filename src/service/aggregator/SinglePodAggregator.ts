@@ -43,7 +43,7 @@ export class SinglePodAggregator {
      * @param {string} stream_name
      * @memberof SinglePodAggregator
      */
-    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, latest_minutes: number, session: Session) {
+    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, session: Session) {
         // this.ldp_communication = new SolidCommunication(session);
         this.ldp_communication = new LDPCommunication();
         this.comunica_engine = new QueryEngine();
@@ -65,7 +65,7 @@ export class SinglePodAggregator {
         else {
             this.logger.error(`The stream is undefined.`);
         }
-        this.ldes_publisher = new LDESPublisher(latest_minutes);
+        this.ldes_publisher = new LDESPublisher();
         this.ldes_publisher.initialise();
     }
     /**
@@ -84,11 +84,13 @@ export class SinglePodAggregator {
             this.logger.info(`WebSocket Client is connected.`);
             let LILStream = await this.ldesinldp.readMembersSorted({
                 from: new Date(this.start_time),
-                to: new Date(this.end_time),
+                until: new Date(this.end_time),
                 chronological: true
             });
             LILStream.on('data', async (data: any) => {
-                let LILStreamStore = new Store(data.quads);
+                console.log(data.quads);
+                
+                let LILStreamStore = new Store(data.quads);                
                 let binding_stream = await this.comunica_engine.queryBindings(`
                 PREFIX saref: <https://saref.etsi.org/core/>
                 SELECT ?time WHERE {
@@ -173,7 +175,7 @@ export class SinglePodAggregator {
         if (stream_name == undefined) {
             stream_name = "https://rsp.js/undefined";
         }
-        const timestamp_date = new Date(event_timestamp).toISOString();
+        const timestamp_date = new Date(event_timestamp).toISOString().replace('Z', '0');
         const timestamp_from_date = new Date(timestamp_from).toISOString();
         const timestamp_to_date = new Date(timestamp_to).toISOString();
         let uuid_random = uuidv4();

@@ -39,14 +39,14 @@ export class LDESPublisher {
     public logger: Logger<ILogObj>;
     public endpoint_queries: EndpointQueries;
 
-    constructor(latest_minutes_to_retrieve: number) {
+    constructor() {
         this.config = {
             LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
         }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
         this.query_annotation_publisher = new QueryAnnotationPublishing();
-        this.endpoint_queries = new EndpointQueries(latest_minutes_to_retrieve);
+        this.endpoint_queries = new EndpointQueries();
         this.initialise();
     }
 
@@ -85,7 +85,7 @@ export class LDESPublisher {
             const config: LDESConfig = {
                 LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
             }
-            let query = this.endpoint_queries.get_query("averageHRPatient1")
+            let query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
             if (query != undefined) {
                 this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, this.bucketSize, config, start_time, end_time, this.session);
             }

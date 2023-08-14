@@ -107,3 +107,4 @@ dist
 docs/
 /scripts/auth-data/
 src/config/authentication_map.ts
+src/utils/rsp.ts
