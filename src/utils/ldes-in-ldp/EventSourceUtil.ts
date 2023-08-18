@@ -1,6 +1,8 @@
 import {
     Communication,
+    DCT,
     extractTimestampFromLiteral,
+    ILDESinLDPMetadata,
     LDESinLDP,
     LDESMetadata,
     LDPCommunication,
@@ -21,9 +23,9 @@ export type BucketResources = { [p: string]: Resource[] }
  * @param metadata
  * @returns {string}
  */
-export function calculateBucket(resource: Resource, metadata: LDESMetadata): string {
-    const relations = metadata.views[0].relations
-    const resourceTs = getTimeStamp(resource, metadata.timestampPath)
+export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata): string {
+    const relations = metadata.view.relations
+    const resourceTs = getTimeStamp(resource, metadata.view.relations[0].path ?? DCT.created)
 
     let timestampJustSmaller = 0
     let correspondingUrl = "none";
@@ -75,9 +77,9 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
  * @returns {Promise<void>}
  */
 
-export async function add_resources_with_metadata_to_buckets(bucket_resources: BucketResources, metadata: LDESMetadata, ldp_communication: LDPCommunication) {
+export async function add_resources_with_metadata_to_buckets(bucket_resources: BucketResources, metadata: ILDESinLDPMetadata, ldp_communication: LDPCommunication) {
     for (const containerURL of Object.keys(bucket_resources)) {
-        for (const resource of bucket_resources[containerURL]) {
+            for (const resource of bucket_resources[containerURL]) {
             const resourceStore = new Store(resource);
             if (containerURL.includes('http')) {
                 const response = await ldp_communication.post(containerURL, storeToString(resourceStore));
@@ -136,7 +138,7 @@ export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_u
     }
 }
 
-export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: LDESMetadata, ldpComm: LDPCommunication) {
+export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication) {
     for (const containerURL of Object.keys(bucketResources)) {
         for (const resource of bucketResources[containerURL]) {
             const response = await ldpComm.post(containerURL, storeToString(new Store(resource)));

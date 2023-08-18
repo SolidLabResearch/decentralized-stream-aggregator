@@ -87,9 +87,7 @@ export class SinglePodAggregator {
                 until: new Date(this.end_time),
                 chronological: true
             });
-            LILStream.on('data', async (data: any) => {
-                console.log(data.quads);
-                
+            LILStream.on('data', async (data: any) => {                
                 let LILStreamStore = new Store(data.quads);                
                 let binding_stream = await this.comunica_engine.queryBindings(`
                 PREFIX saref: <https://saref.etsi.org/core/>
@@ -175,7 +173,7 @@ export class SinglePodAggregator {
         if (stream_name == undefined) {
             stream_name = "https://rsp.js/undefined";
         }
-        const timestamp_date = new Date(event_timestamp).toISOString().replace('Z', '0');
+        const timestamp_date = new Date(event_timestamp).toISOString();
         const timestamp_from_date = new Date(timestamp_from).toISOString();
         const timestamp_to_date = new Date(timestamp_to).toISOString();
         let uuid_random = uuidv4();

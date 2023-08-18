@@ -8,12 +8,12 @@
  * Created on 09/06/2022
  *****************************************/
 
-import {addResourcesToBuckets, calculateBucket, getTimeStamp, Resource} from "../ldes-in-ldp/EventSourceUtil";
+import {addResourcesToBuckets, calculateBucket, getTimeStamp, Resource} from "../ldes-in-ldp/EventSource";
 import {
-    extractLdesMetadata,
-    LDESinLDP,
     LDESConfig,
+    LDESinLDP,
     LDPCommunication,
+    MetadataParser,
     SolidCommunication,
     storeToString
 } from "@treecg/versionawareldesinldp";
@@ -24,6 +24,7 @@ import {rebalanceContainer} from "./NaiveRebalancing";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 import {performance, PerformanceObserver} from 'perf_hooks'
 import {editMetadata} from "../ldes-in-ldp/Util";
+
 const {quad, namedNode} = DataFactory
 
 
@@ -39,7 +40,7 @@ const {quad, namedNode} = DataFactory
  *    * 1000 resources (Resource[])
  *    * version ID
  */
-export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, session?: Session, loglevel: string = 'info'): Promise<void> {
+export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: any, session?: Session, loglevel: string = 'info'): Promise<void> {
 
     const logger = new Logger(naiveAlgorithm.name, loglevel)
 
@@ -72,12 +73,12 @@ export async function naiveAlgorithm(lilURL: string, resources: Resource[], vers
     // calculate correct bucket for each resources
     const metadataStore = await lil.readMetadata()
 
-    const metadata = extractLdesMetadata(metadataStore, lilURL + "#EventStream")
+    const metadata = MetadataParser.extractLDESinLDPMetadata(metadataStore, lilURL + "#EventStream")
 
 
     // create key value store for the buckets (and each resource will be placed in one of them)
     const bucketResources: {[key: string]: Resource[]} = {}
-    for (const relation of metadata.views[0].relations) {
+    for (const relation of metadata.view.relations) {
         bucketResources[relation.node] = []
     }
     bucketResources["none"] = []
@@ -89,16 +90,17 @@ export async function naiveAlgorithm(lilURL: string, resources: Resource[], vers
         bucketResources[bucket].push(resource)
 
         // calculate earliest resource
-        const resourceTs = getTimeStamp(resource, metadata.timestampPath)
+        const resourceTs = getTimeStamp(resource, config.treePath)
         if (earliestResourceTs > resourceTs) {
             earliestResourceTs = resourceTs
         }
-
-        // add version identifier to resource
+        // Note: this version is not versionaware
+         // add version identifier to resource
         const resourceStore = new Store(resource)
-        const subject = resourceStore.getSubjects(metadata.timestampPath, null, null)[0] // Note: kind of hardcoded to get subject of resource
-        resourceStore.add(quad(subject, namedNode(metadata.versionOfPath), namedNode(versionID)))
+        const subject = resourceStore.getSubjects(config.treePath, null, null)[0] // Note: kind of hardcoded to get subject of resource
+        // resourceStore.add(quad(subject, namedNode(metadata.versionOfPath), namedNode(versionID)))
     }
+    console.log(resources.length)
     // earliest time
     logger.debug("Time of oldest resource: " + new Date(earliestResourceTs).toISOString() + " |  in ms: " + earliestResourceTs)
 
@@ -124,7 +126,7 @@ export async function naiveAlgorithm(lilURL: string, resources: Resource[], vers
     }
     delete bucketResources["none"]
     // add resource to each bucket
-    await addResourcesToBuckets(bucketResources, metadata, comm);
+    await addResourcesToBuckets(bucketResources, metadata, comm, prefixes);
 
     performance.mark(step2);
 
@@ -132,7 +134,7 @@ export async function naiveAlgorithm(lilURL: string, resources: Resource[], vers
     // go over each bucket over the LDES that has more than 100 resources
     // and create new buckets such that at the end there are less than 100 per bucket.
     for (const bucketURL of Object.keys(bucketResources)) {
-        await rebalanceContainer(comm, metadata, bucketURL, bucketSize)
+        await rebalanceContainer(comm, metadata, bucketURL, bucketSize, prefixes)
     }
     performance.mark(step3);
 

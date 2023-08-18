@@ -1,21 +1,12 @@
 import {
+    DCT,
     extractTimestampFromLiteral,
-    LDESMetadata,
+    ILDESinLDPMetadata,
     LDPCommunication,
     turtleStringToStore
 } from "@treecg/versionawareldesinldp";
-import {
-    Literal,
-    Quad,
-    Quad_Object,
-    Store,
-    Writer,
-    DataFactory
-} from "n3";
-import {
-    existsSync,
-    readFileSync
-} from "fs";
+import {DataFactory, Literal, Quad, Quad_Object, Store, Writer} from "n3";
+import {existsSync, readFileSync} from "fs";
 import {Session} from "@rubensworks/solid-client-authn-isomorphic";
 
 const namedNode = DataFactory.namedNode;
@@ -52,9 +43,9 @@ export async function initSession(credentialsFilepath: string): Promise<Session 
  * @param metadata
  * @returns {string}
  */
-export function calculateBucket(resource: Resource, metadata: LDESMetadata): string {
-    const relations = metadata.views[0].relations
-    const resourceTs = getTimeStamp(resource, metadata.timestampPath)
+export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata): string {
+    const relations = metadata.view.relations
+    const resourceTs = getTimeStamp(resource, metadata.view.relations[0].path ?? DCT.created)
 
     let timestampJustSmaller = 0
     let correspondingUrl = "none";
@@ -189,7 +180,7 @@ export function resourceToOptimisedTurtle(resource: Resource, _prefixes: any): s
  * @param ldpComm
  * @returns {Promise<void>}
  */
-export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: LDESMetadata, ldpComm: LDPCommunication, prefixes: any) {
+export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication, prefixes: any) {
     for (const containerURL of Object.keys(bucketResources)) {
         for (const resource of bucketResources[containerURL]) {
             const response = await ldpComm.post(containerURL, resourceToOptimisedTurtle(resource, prefixes))
