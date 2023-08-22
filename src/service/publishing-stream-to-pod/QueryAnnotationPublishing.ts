@@ -41,6 +41,7 @@ export class QueryAnnotationPublishing {
             ldes_in_ldp.newFragment(new Date(resource_timestamp));
             let query_metadata = this.get_query_metadata(query, start_time, end_time);
             this.patch_metadata(query_metadata, bucket_url, communication);
+            console.log(`Patching metadata for ${bucket_url}`);
             bucketResources[bucket_url] = [];
             for (const relation of metadata.view.relations){
                 for (const resource of resources){
@@ -52,6 +53,8 @@ export class QueryAnnotationPublishing {
                     const subject = resource_store.getSubjects(config.treePath, null, null)[0];
                     resource_store.add(quad(subject, namedNode(config.treePath), namedNode(version_id)));
                 }
+                let query_metadata = this.get_query_metadata(query, start_time, end_time);
+                this.patch_metadata(query_metadata, relation.node, communication);
             }
     
         }

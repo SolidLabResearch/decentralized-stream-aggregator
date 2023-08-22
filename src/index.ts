@@ -16,11 +16,6 @@ program
         '8080'
     )
     .option(
-        '-s, --minutes <minutes>',
-        'The last x minutes to retrieve events from the solid pod and to aggregate over',
-        '1'
-    )
-    .option(
         '-ss --SolidServer <SolidServer>',
         'The URL of the Solid Pod server where the LDES streams are stored in a Solid Pod',
         'http://localhost:3000/'

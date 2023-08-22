@@ -2,7 +2,9 @@ import { IncomingMessage, ServerResponse } from "http";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import fs from 'fs';
 export class GETHandler {
-    public static async handle(req: IncomingMessage, res: ServerResponse, solid_server_url: string, query_registry: QueryRegistry, endpoint_queries: any, from_timestamp: number, to_timestamp: number) {
+    public static async handle(req: IncomingMessage, res: ServerResponse, solid_server_url: string, query_registry: QueryRegistry, endpoint_queries: any, latest_minutes: number) {
+        let to_timestamp = new Date().getTime(); // current time
+        let from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
         if (req.url !== undefined) {
             if (req.url.includes('/averageHRPatient1')) {
                 query_registry.register_query(endpoint_queries.get_query('averageHRPatient1', new Date(from_timestamp), new Date(to_timestamp)), solid_server_url, query_registry, from_timestamp, to_timestamp);

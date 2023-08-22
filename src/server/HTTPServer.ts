@@ -39,9 +39,8 @@ export class HTTPServer {
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
         switch (req.method) {
             case "GET":
-                let from_timestamp = new Date(parsed_url.query.from).getTime();
-                let to_timestamp = new Date(parsed_url.query.to).getTime();
-                GETHandler.handle(req, res, this.solid_server_url, this.query_registry, this.endpoint_queries, from_timestamp, to_timestamp);
+                let latest_minutes = new Date(parsed_url.query.latest_minutes).getTime();
+                GETHandler.handle(req, res, this.solid_server_url, this.query_registry, this.endpoint_queries, latest_minutes);
                 res.end();
                 break;
             default:
