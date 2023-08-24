@@ -10,6 +10,8 @@ import { Logger, ILogObj } from "tslog";
 import { LDESPublisher } from "../publishing-stream-to-pod/LDESPublisher";
 import WebSocket from 'ws';
 import { SolidCommunication } from '@treecg/versionawareldesinldp';
+import { Quad } from 'rdflib/lib/tf-types';
+import { quad, } from 'rdflib';
 const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 
@@ -30,7 +32,6 @@ export class SinglePodAggregator {
     public ldesinldp: any;
     public aggregation_server: string;
     public rsp_aggregation_emitter: any;
-    public counter: number;
     public client = new WebSocketClient();
     public connection: typeof websocketConnection;
     public observationCounter: number = 1;
@@ -59,7 +60,6 @@ export class SinglePodAggregator {
         this.end_time = end_time;
         this.aggregation_server = wssURL;
         this.connection = websocketConnection;
-        this.counter = 0;
         this.logger = new Logger();
         this.stream_name = this.rsp_engine.getStream(this.ldes_container);
         if (this.stream_name != undefined) {
@@ -93,25 +93,14 @@ export class SinglePodAggregator {
                 chronological: true
             });
 
+            // Subscribing to the latest events from the Solid Pod.
+            await this.subscribing_latest_events(stream_name);
             // Reading the events from the Solid Pod between two events and adding them to the RDF Stream Processing Engine.
             LILStream.on('data', async (data: any) => {
-                this.counter++;
                 let LILStreamStore = new Store(data.quads);
                 await this.add_event_store_to_rsp_engine(LILStreamStore, [stream_name]);
             });
-
-            // Subscribing to the RDF Stream Processing Engine to get the new aggregated events.
-            let subscripton_ws = await this.get_subscription_websocket_url(this.ldes_container);
-            this.logger.info(`The subscription websocket url is ${subscripton_ws}`);
-            const websocket = new WebSocket(subscripton_ws);
-            websocket.onmessage = async (event: any) => {
-                const parsed = JSON.parse(event.data);                
-                let resource_url = parsed.object;
-                let resource = await ldfetch.get(resource_url);
-                let resource_store = new Store(resource.triples);
-                console.log(resource_store);
-                this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
-            };
+            
 
             this.rsp_aggregation_emitter.on('RStream', async (object: any) => {
                 let window_timestamp_from = object.timestamp_from;
@@ -126,11 +115,25 @@ export class SinglePodAggregator {
                         aggregation_window_to: this.end_time
                     }
                     let aggregation_object_string = JSON.stringify(aggregation_object);
+                    console.log(aggregation_object_string);
                     this.sendToServer(aggregation_object_string);
                 }
             });
         });
 
+    }
+
+    async subscribing_latest_events(stream_name: RDFStream){
+            let subscripton_ws = await this.get_subscription_websocket_url(this.ldes_container);
+            this.logger.info(`The subscription websocket url is ${subscripton_ws}`);
+            const websocket = new WebSocket(subscripton_ws);
+            websocket.onmessage = async (event: any) => {
+                const parsed = JSON.parse(event.data);                
+                let resource_url = parsed.object;
+                let resource = await ldfetch.get(resource_url);
+                let resource_store = new Store(resource.triples);
+                this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+            };
     }
 
     async get_inbox_container(stream: string) {
@@ -217,8 +220,10 @@ export class SinglePodAggregator {
      * @memberof SinglePodAggregator
      */
     async add_event_to_rsp_engine(store: any, stream_name: RDFStream[], timestamp: number) {
+
         stream_name.forEach((stream: RDFStream) => {
-            for (const quad of store){
+            let quads = store.getQuads(null, null, null, null);
+            for (let quad of quads) {
                 stream.add(quad, timestamp);
             }
         });
