@@ -47,6 +47,7 @@ export class QueryRegistry {
     register_query(rspql_query: string, solid_server_url: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
         if (query_registry.add_query_in_registry(rspql_query)) {
             new AggregatorInstantiator(rspql_query, solid_server_url, from_timestamp, to_timestamp);
+            return true;
         }
         else {
             this.logger.debug(`The query you have registered is already executing.`);
