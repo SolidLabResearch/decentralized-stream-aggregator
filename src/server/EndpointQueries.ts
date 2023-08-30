@@ -3,7 +3,7 @@ export class EndpointQueries {
     get_query(name: string, from_timestamp: Date, to_timestamp: Date) {
         let from = Date.parse(from_timestamp.toString())
         let to = Date.parse(to_timestamp.toString())
-        let difference_seconds = (to - from) / 1000;
+        let difference_seconds = (to - from) / 1000;        
         if (name = "averageHRPatient1") {
             return `
                     PREFIX saref: <https://saref.etsi.org/core/> 
