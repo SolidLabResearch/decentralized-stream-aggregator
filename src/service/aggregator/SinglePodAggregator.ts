@@ -8,7 +8,12 @@ import { Session } from "@inrupt/solid-client-authn-node";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Logger, ILogObj } from "tslog";
 import { LDESPublisher } from "../publishing-stream-to-pod/LDESPublisher";
+import WebSocket from 'ws';
 import { SolidCommunication } from '@treecg/versionawareldesinldp';
+import { Quad } from 'rdflib/lib/tf-types';
+import { quad, } from 'rdflib';
+const ld_fetch = require('ldfetch');
+const ldfetch = new ld_fetch({});
 
 export type aggregation_object = {
     aggregation_event: string,
@@ -43,7 +48,7 @@ export class SinglePodAggregator {
      * @param {string} stream_name
      * @memberof SinglePodAggregator
      */
-    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, session: Session) {
+    constructor(ldes_container: string, query: string, wssURL: string, start_time: any, end_time: any, session?: Session) {
         // this.ldp_communication = new SolidCommunication(session);
         this.ldp_communication = new LDPCommunication();
         this.comunica_engine = new QueryEngine();
@@ -87,29 +92,16 @@ export class SinglePodAggregator {
                 until: new Date(this.end_time),
                 chronological: true
             });
-            LILStream.on('data', async (data: any) => {                
-                let LILStreamStore = new Store(data.quads);                
-                let binding_stream = await this.comunica_engine.queryBindings(`
-                PREFIX saref: <https://saref.etsi.org/core/>
-                SELECT ?time WHERE {
-                    ?s saref:hasTimestamp ?time .
-                }
-                `, {
-                    sources: [LILStreamStore]
-                });
 
-                binding_stream.on('data', async (bindings: any) => {
-                    let timestamp = await this.epoch(bindings.get('time').value);
-                    this.logger.info(`The timestamp is ${timestamp}`);
-                    if (stream_name) {
-                        this.logger.info(`Adding Event to ${stream_name}`);
-                        await this.add_event_to_rsp_engine(data, [stream_name], timestamp);
-                    }
-                    else {
-                        this.logger.error(`The stream is undefined`);
-                    }
-                });
+            // Subscribing to the latest events from the Solid Pod.
+            await this.subscribing_latest_events(stream_name);
+            // Reading the events from the Solid Pod between two events and adding them to the RDF Stream Processing Engine.
+            LILStream.on('data', async (data: any) => {
+                let LILStreamStore = new Store(data.quads);
+                await this.add_event_store_to_rsp_engine(LILStreamStore, [stream_name]);
             });
+            
+
             this.rsp_aggregation_emitter.on('RStream', async (object: any) => {
                 let window_timestamp_from = object.timestamp_from;
                 let window_timestamp_to = object.timestamp_to;
@@ -123,11 +115,86 @@ export class SinglePodAggregator {
                         aggregation_window_to: this.end_time
                     }
                     let aggregation_object_string = JSON.stringify(aggregation_object);
+                    console.log(aggregation_object_string);
                     this.sendToServer(aggregation_object_string);
                 }
             });
         });
 
+    }
+
+    async subscribing_latest_events(stream_name: RDFStream){
+            let subscripton_ws = await this.get_subscription_websocket_url(this.ldes_container);
+            this.logger.info(`The subscription websocket url is ${subscripton_ws}`);
+            const websocket = new WebSocket(subscripton_ws);
+            websocket.onmessage = async (event: any) => {
+                const parsed = JSON.parse(event.data);                
+                let resource_url = parsed.object;
+                let resource = await ldfetch.get(resource_url);
+                let resource_store = new Store(resource.triples);
+                this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+            };
+    }
+
+    async get_inbox_container(stream: string) {
+        this.logger.info(`Getting the inbox container from`, stream);
+        let ldes_in_ldp = new LDESinLDP(stream, this.ldp_communication);
+        let metadata = await ldes_in_ldp.readMetadata();
+        for (const quad of metadata) {
+            if (quad.predicate.value === 'http://www.w3.org/ns/ldp#inbox') {
+                console.log(quad.object.value);
+                if (quad.object.value != undefined) {
+                    return quad.object.value;
+
+                }
+            }
+        }
+    }
+
+    async get_subscription_websocket_url(ldes_stream: string): Promise<string> {
+        let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
+        let inbox_container = await this.get_inbox_container(ldes_stream);
+        let notification_server = solid_server + "/.notifications/WebSocketChannel2023/";
+        let post_body = {
+            "@context": ["https://www.w3.org/ns/solid/notification/v1"],
+            "type": "http://www.w3.org/ns/solid/notifications#WebSocketChannel2023",
+            "topic": `${inbox_container}`
+        }
+        const repsonse = await fetch(notification_server, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/ld+json',
+                'Accept': 'application/ld+json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(post_body)
+        })
+
+        const response_json = await repsonse.json();
+        return response_json.receiveFrom;
+    }
+
+    async add_event_store_to_rsp_engine(store: any, stream_name: RDFStream[]) {
+        const binding_stream = await this.comunica_engine.queryBindings(`
+        PREFIX saref: <https://saref.etsi.org/core/>
+        SELECT ?time WHERE {
+            ?s saref:hasTimestamp ?time .
+        }
+        `, {
+            sources: [store]
+        });
+
+        binding_stream.on('data', async (bindings: any) => {
+            let timestamp = await this.epoch(bindings.get('time').value);
+            this.logger.info(`The timestamp is ${timestamp}`);
+            if (stream_name) {
+                this.logger.info(`Adding Event to ${stream_name}`);
+                await this.add_event_to_rsp_engine(store, stream_name, timestamp);
+            }
+            else {
+                this.logger.error(`The stream is undefined`);
+            }
+        });
     }
 
     /**
@@ -152,10 +219,12 @@ export class SinglePodAggregator {
      * @param {number} timestamp
      * @memberof SinglePodAggregator
      */
-    async add_event_to_rsp_engine(data: any, stream_name: RDFStream[], timestamp: number) {
+    async add_event_to_rsp_engine(store: any, stream_name: RDFStream[], timestamp: number) {
+
         stream_name.forEach((stream: RDFStream) => {
-            for (let i = 0; i < data.quads.length; i++) {
-                stream.add(data.quads[i], timestamp);
+            let quads = store.getQuads(null, null, null, null);
+            for (let quad of quads) {
+                stream.add(quad, timestamp);
             }
         });
     }
@@ -215,4 +284,6 @@ export class SinglePodAggregator {
     async epoch(date: any) {
         return Date.parse(date);
     }
+
+
 }

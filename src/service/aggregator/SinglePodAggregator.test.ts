@@ -12,7 +12,7 @@ describe('testing_the_single_pod_aggregator', () => {
                 }
             `
     let wssURL = "ws://localhost:8080/";
-    // let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", 3);
+    let singlePodAggregator = new SinglePodAggregator("http://localhost:3000/dataset_participant1/data/", query, "http://localhost:8080/", "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890");
 
     it('connect_with_server_function_test', async () => {
 
@@ -24,5 +24,12 @@ describe('testing_the_single_pod_aggregator', () => {
         let date = "2016-12-31T23:59:59Z";
         // let epoch = await singlePodAggregator.epoch(date);
         // expect(epoch).toBe(1483228799000)
+    })
+
+    it('get_subscription_websocket_url', async () => {
+        let inbox_container = "http://localhost:3000/aggregation_pod/aggregation_new/1692373487374/";
+        let container = singlePodAggregator.get_subscription_websocket_url(inbox_container);
+        console.log(container);
+        
     })
 });

@@ -73,8 +73,10 @@ export class AggregatorInstantiator {
         /**
          * The following line is for testing purposes only for historical data.
          */
-        // new SinglePodAggregator(stream_name, this.query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.latestMinutes, this.session);
-        new SinglePodAggregator(stream_name, this.query, 'ws://localhost:8080', from_timestamp, to_timestamp, this.session);        
+        new SinglePodAggregator(stream_name, this.query, 'ws://localhost:8080/', "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890");
+
+        // Original Code Block
+        // new SinglePodAggregator(stream_name, this.query, 'ws://localhost:8080', from_timestamp, to_timestamp, this.session);        
     }
 
 }
