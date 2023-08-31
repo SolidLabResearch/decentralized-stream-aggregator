@@ -124,9 +124,9 @@ export class SinglePodAggregator {
     }
 
     async subscribing_latest_events(stream_name: RDFStream){
-            let subscripton_ws = await this.get_subscription_websocket_url(this.ldes_container);
-            this.logger.info(`The subscription websocket url is ${subscripton_ws}`);
-            const websocket = new WebSocket(subscripton_ws);
+            let subscription_ws = await this.get_subscription_websocket_url(this.ldes_container);
+            this.logger.info(`The subscription websocket url is ${subscription_ws}`);
+            const websocket = new WebSocket(subscription_ws);
             websocket.onmessage = async (event: any) => {
                 const parsed = JSON.parse(event.data);                
                 let resource_url = parsed.object;
