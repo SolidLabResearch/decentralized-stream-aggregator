@@ -4,6 +4,7 @@ import { Logger, ILogObj } from "tslog";
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { EndpointQueries } from "./EndpointQueries";
+import { POSTHandler } from "./POSTHandler";
 import { WebSocketHandler } from "./WebSocketHandler";
 const websocket = require('websocket');
 const url = require('url');
@@ -34,6 +35,7 @@ export class HTTPServer {
     }
 
     private request_handler(req: IncomingMessage, res: ServerResponse) {
+        console.log(`Requested URL is`, req.url);
         const parsed_url = url.parse(req.url, true);
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
@@ -44,11 +46,19 @@ export class HTTPServer {
                 GETHandler.handle(req, res, this.solid_server_url, this.query_registry, this.endpoint_queries, latest_minutes);
                 res.end();
                 break;
+            case "POST":
+                this.logger.debug(`POST request received.`);
+                if (req.url = '/registerQuery') {
+                    console.log(`registering query`);
+                    POSTHandler.handle(req, res, this.query_registry, this.solid_server_url);
+                }
+                break;
             default:
                 this.logger.debug(`Such request is not supported by the server.`)
                 res.writeHead(405, { 'Content-Type': 'text/plain' });
                 break;
         }
+
         if (req.method === 'OPTIONS') {
             res.writeHead(200, {
                 'Access-Control-Allow-Origin': '*',

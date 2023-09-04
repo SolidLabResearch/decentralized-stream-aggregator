@@ -2,6 +2,10 @@ import { QueryEngine } from "@comunica/query-sparql-link-traversal";
 import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 const { Store } = require('n3');
+const ld_fetch = require('ldfetch');
+const ldfetch = new ld_fetch({});
+import WebSocket from 'ws';
+
 
 export class LDESReader {
     public ldes_stream: string;
@@ -27,7 +31,9 @@ export class LDESReader {
             until: new Date(this.to_date),
             chronological: true
         })
-
+        if (this.stream_name !== undefined) {
+            await this.subscribing_latest_events(this.stream_name);
+        }
         stream.on("data", async (data: any) => {
             let stream_store = new Store(data.quads);
             if (this.stream_name !== undefined) {
@@ -70,5 +76,57 @@ export class LDESReader {
 
     async epoch(date: any) {
         return Date.parse(date);
+    }
+
+
+    async subscribing_latest_events(stream_name: RDFStream) {
+        let subscription_ws = await this.get_subscription_websocket_url(this.ldes_stream);
+        console.log(`The subscription websocket url is ${subscription_ws}`);
+        const websocket = new WebSocket(subscription_ws);
+        websocket.onmessage = async (event: any) => {
+            const parsed = JSON.parse(event.data);
+            let resource_url = parsed.object;
+            let resource = await ldfetch.get(resource_url);
+            let resource_store = new Store(resource.triples);
+            this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+        };
+    }
+
+    async get_inbox_container(stream: string) {
+        console.log(`Getting the inbox container from`, stream);
+        let ldes_in_ldp = new LDESinLDP(stream, new LDPCommunication());
+        let metadata = await ldes_in_ldp.readMetadata();
+        for (const quad of metadata) {
+            if (quad.predicate.value === 'http://www.w3.org/ns/ldp#inbox') {
+                console.log(quad.object.value);
+                if (quad.object.value != undefined) {
+                    return quad.object.value;
+
+                }
+            }
+        }
+    }
+
+    async get_subscription_websocket_url(ldes_stream: string): Promise<string> {
+        let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
+        let inbox_container = await this.get_inbox_container(ldes_stream);
+        let notification_server = solid_server + "/.notifications/WebSocketChannel2023/";
+        let post_body = {
+            "@context": ["https://www.w3.org/ns/solid/notification/v1"],
+            "type": "http://www.w3.org/ns/solid/notifications#WebSocketChannel2023",
+            "topic": `${inbox_container}`
+        }
+        const repsonse = await fetch(notification_server, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/ld+json',
+                'Accept': 'application/ld+json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(post_body)
+        })
+
+        const response_json = await repsonse.json();
+        return response_json.receiveFrom;
     }
 }
