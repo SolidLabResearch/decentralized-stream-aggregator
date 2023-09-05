@@ -6,7 +6,6 @@ const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 import WebSocket from 'ws';
 
-
 export class LDESReader {
     public ldes_stream: string;
     public from_date: string;
@@ -26,6 +25,7 @@ export class LDESReader {
     }
 
     public async initiateLDESReader() {
+        console.log(`Initiating LDES Reader for ${this.ldes_stream}`);
         const stream = await this.ldes.readMembersSorted({
             from: new Date(this.from_date),
             until: new Date(this.to_date),
@@ -80,16 +80,37 @@ export class LDESReader {
 
 
     async subscribing_latest_events(stream_name: RDFStream) {
-        let subscription_ws = await this.get_subscription_websocket_url(this.ldes_stream);
-        console.log(`The subscription websocket url is ${subscription_ws}`);
-        const websocket = new WebSocket(subscription_ws);
-        websocket.onmessage = async (event: any) => {
+        let inbox = await this.get_inbox_container(this.ldes_stream);
+        let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
+        const stream_websocket = new WebSocket(stream_subscription_ws);
+        if (inbox !== undefined) {
+            let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
+            const websocket = new WebSocket(subscription_ws);
+            websocket.onmessage = async (event: any) => {
+                const parsed = JSON.parse(event.data);
+                let resource_url = parsed.object;
+                let resource = await ldfetch.get(resource_url);
+                let resource_store = new Store(resource.triples);
+                this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+            };
+        }
+
+        stream_websocket.onmessage = async (event: any) => {
             const parsed = JSON.parse(event.data);
-            let resource_url = parsed.object;
-            let resource = await ldfetch.get(resource_url);
-            let resource_store = new Store(resource.triples);
-            this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
-        };
+            inbox = parsed.object;
+            if (inbox !== undefined) {
+                let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
+                const websocket = new WebSocket(subscription_ws);
+                websocket.onmessage = async (event: any) => {
+                    const parsed = JSON.parse(event.data);
+                    let resource_url = parsed.object;
+                    let resource = await ldfetch.get(resource_url);
+                    let resource_store = new Store(resource.triples);
+                    this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+                };
+            }
+        }
+
     }
 
     async get_inbox_container(stream: string) {
@@ -107,9 +128,30 @@ export class LDESReader {
         }
     }
 
-    async get_subscription_websocket_url(ldes_stream: string): Promise<string> {
+    async get_stream_subscription_websocket_url(ldes_stream: string): Promise<string> {
         let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
-        let inbox_container = await this.get_inbox_container(ldes_stream);
+        let notification_server = solid_server + "/.notifications/WebSocketChannel2023/";
+        let post_body = {
+            "@context": ["https://www.w3.org/ns/solid/notification/v1"],
+            "type": "http://www.w3.org/ns/solid/notifications#WebSocketChannel2023",
+            "topic": `${ldes_stream}`
+        }
+        const repsonse = await fetch(notification_server, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/ld+json',
+                'Accept': 'application/ld+json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(post_body)
+        });
+        const response_json = await repsonse.json();
+        return response_json.receiveFrom;
+
+    }
+
+    async get_inbox_subscription_websocket_url(ldes_stream: string, inbox_container: string): Promise<string> {
+        let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
         let notification_server = solid_server + "/.notifications/WebSocketChannel2023/";
         let post_body = {
             "@context": ["https://www.w3.org/ns/solid/notification/v1"],

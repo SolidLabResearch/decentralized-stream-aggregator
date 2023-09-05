@@ -28,7 +28,7 @@ export class AggregatorInstantiator {
         this.from_date = new Date(from_timestamp);
         this.to_date = new Date(to_timestamp);
         this.stream_array = [];
-        this.connection = websocketConnection;
+        this.connection = websocketConnection;        
         parser.parse(this.query).s2r.forEach((stream) => {
             this.stream_array.push(stream.stream_name);
         });
@@ -37,6 +37,8 @@ export class AggregatorInstantiator {
     }
 
     public async intiateLDESReader() {
+        console.log(`Initiating LDES Reader for ${this.stream_array}`);
+        
         for (const stream of this.stream_array) {
             new LDESReader(stream, "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.rsp_engine);
 
@@ -66,7 +68,6 @@ export class AggregatorInstantiator {
                         aggregation_window_to: this.to_date,
                     };
                     let aggregation_object_string = JSON.stringify(aggregation_object);
-                    console.log(aggregation_object_string);
                     this.sendToServer(aggregation_object_string);
                 }
     
