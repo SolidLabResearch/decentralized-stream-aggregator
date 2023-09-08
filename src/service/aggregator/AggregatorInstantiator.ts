@@ -1,6 +1,6 @@
 import { RSPEngine } from "rsp-js";
 import { RSPQLParser } from "../parsers/RSPQLParser";
-import { LDESReader } from "./LDESReader";
+import { DecentralizedFileStreamer } from "./DecentralizedFileStreamer";
 import { v4 as uuidv4 } from 'uuid';
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
@@ -33,17 +33,17 @@ export class AggregatorInstantiator {
             this.stream_array.push(stream.stream_name);
         });
         this.rsp_emitter = this.rsp_engine.register();
-        this.intiateLDESReader();
+        this.intiateDecentralizedFileStreamer();
     }
 
-    public async intiateLDESReader() {
+    public async intiateDecentralizedFileStreamer() {
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
         
         for (const stream of this.stream_array) {
-            new LDESReader(stream, "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.rsp_engine);
+            // new DecentralizedFileStreamer(stream, "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.rsp_engine);
 
             // uncomment the line below.
-            // new LDESReader(stream, this.from_date, this.to_date, this.rsp_engine);
+            new DecentralizedFileStreamer(stream, this.from_date, this.to_date, this.rsp_engine);
         }
         this.executeRSP();
     }

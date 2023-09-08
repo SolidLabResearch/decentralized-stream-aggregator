@@ -1,34 +1,34 @@
 import { QueryEngine } from "@comunica/query-sparql-link-traversal";
 import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
-import { RDFStream, RSPEngine } from "rsp-js";
+import { RDFStream } from "rsp-js";
 const { Store } = require('n3');
 const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 import WebSocket from 'ws';
 
-export class LDESReader {
+export class DecentralizedFileStreamer {
     public ldes_stream: string;
-    public from_date: string;
-    public to_date: string;
+    public from_date: Date;
+    public to_date: Date;
     public stream_name: RDFStream | undefined;
     public ldes: LDESinLDP;
     public comunica_engine: any;
 
-    constructor(ldes_stream: string, from_date: string, to_date: string, rsp_engine: any) {
+    constructor(ldes_stream: string, from_date: Date, to_date: Date, rsp_engine: any) {
         this.ldes_stream = ldes_stream;
         this.ldes = new LDESinLDP(this.ldes_stream, new LDPCommunication());
         this.from_date = from_date;
         this.to_date = to_date;
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
         this.comunica_engine = new QueryEngine();
-        this.initiateLDESReader();
+        this.initiateDecentralizedFileStreamer();
     }
 
-    public async initiateLDESReader() {
+    public async initiateDecentralizedFileStreamer() {
         console.log(`Initiating LDES Reader for ${this.ldes_stream}`);
         const stream = await this.ldes.readMembersSorted({
-            from: new Date(this.from_date),
-            until: new Date(this.to_date),
+            from: this.from_date,
+            until: this.to_date,
             chronological: true
         })
         if (this.stream_name !== undefined) {
@@ -99,10 +99,10 @@ export class LDESReader {
             const parsed = JSON.parse(event.data);
             inbox = parsed.object;
             if (inbox !== undefined) {
-                let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
+                let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);                
                 const websocket = new WebSocket(subscription_ws);
                 websocket.onmessage = async (event: any) => {
-                    const parsed = JSON.parse(event.data);
+                    const parsed = JSON.parse(event.data);                    
                     let resource_url = parsed.object;
                     let resource = await ldfetch.get(resource_url);
                     let resource_store = new Store(resource.triples);
