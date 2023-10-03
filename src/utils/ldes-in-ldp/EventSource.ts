@@ -8,6 +8,7 @@ import {
 import {DataFactory, Literal, Quad, Quad_Object, Store, Writer} from "n3";
 import {existsSync, readFileSync} from "fs";
 import {Session} from "@rubensworks/solid-client-authn-isomorphic";
+import { Prefixes } from "../Types";
 
 const namedNode = DataFactory.namedNode;
 
@@ -114,7 +115,7 @@ export async function prefixesFromFilepath(path: string, url?: string): Promise<
  *  value a string representing its URI. Example: `{"rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}`
  * @returns {string}
  */
-export function resourceToOptimisedTurtle(resource: Resource, _prefixes: any): string {
+export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixes): string {
     // get a grouped overview of this resource's content
     const named = new Map<string, Map<string, Quad_Object[]>>();
     const blank = new Map<string, Map<string, Quad_Object[]>>();
@@ -180,7 +181,7 @@ export function resourceToOptimisedTurtle(resource: Resource, _prefixes: any): s
  * @param ldpComm
  * @returns {Promise<void>}
  */
-export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication, prefixes: any) {
+export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication, prefixes: Prefixes) {
     for (const containerURL of Object.keys(bucketResources)) {
         for (const resource of bucketResources[containerURL]) {
             const response = await ldpComm.post(containerURL, resourceToOptimisedTurtle(resource, prefixes))

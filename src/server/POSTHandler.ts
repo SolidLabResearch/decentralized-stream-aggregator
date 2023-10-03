@@ -1,10 +1,10 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
+import { RequestBody } from "../utils/Types";
 
 export class POSTHandler {
-
-    static request_body: any;
+    static request_body: RequestBody;
     static sparql_to_rspql: SPARQLToRSPQL;
 
     constructor() {

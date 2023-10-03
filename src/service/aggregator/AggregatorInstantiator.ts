@@ -2,11 +2,16 @@ import { RSPEngine } from "rsp-js";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { DecentralizedFileStreamer } from "./DecentralizedFileStreamer";
 import { v4 as uuidv4 } from 'uuid';
+import * as websocket from 'websocket';
+import { EventEmitter } from "events";
+import { BindingsWithTimestamp } from "../../utils/Types";
+import { hash_string } from "../../utils/Util";
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const parser = new RSPQLParser();
 
 export type aggregation_object = {
+    query_hash: string,
     aggregation_event: string,
     aggregation_window_from: Date,
     aggregation_window_to: Date
@@ -15,20 +20,21 @@ export type aggregation_object = {
 export class AggregatorInstantiator {
     public query: string;
     public rsp_engine: RSPEngine;
-    public rsp_emitter: any;
-    public websocket_server: any;
+    public rsp_emitter: EventEmitter;
     public from_date: Date;
     public stream_array: string[];
+    public hash_string: string;
     public to_date: Date;
     public client = new WebSocketClient();
     public connection: typeof websocketConnection;
     public constructor(query: string, from_timestamp: number, to_timestamp: number) {
         this.query = query;
+        this.hash_string = hash_string(query);
         this.rsp_engine = new RSPEngine(query);
         this.from_date = new Date(from_timestamp);
         this.to_date = new Date(to_timestamp);
         this.stream_array = [];
-        this.connection = websocketConnection;        
+        this.connection = websocketConnection;
         parser.parse(this.query).s2r.forEach((stream) => {
             this.stream_array.push(stream.stream_name);
         });
@@ -38,12 +44,11 @@ export class AggregatorInstantiator {
 
     public async intiateDecentralizedFileStreamer() {
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
-        
-        for (const stream of this.stream_array) {
-            // new DecentralizedFileStreamer(stream, "2022-11-07T09:27:17.5890", "2024-11-07T09:27:17.5890", this.rsp_engine);
 
+        for (const stream of this.stream_array) {
+            new DecentralizedFileStreamer(stream, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine);
             // uncomment the line below.
-            new DecentralizedFileStreamer(stream, this.from_date, this.to_date, this.rsp_engine);
+            // new DecentralizedFileStreamer(stream, this.from_date, this.to_date, this.rsp_engine);
         }
         this.executeRSP();
     }
@@ -51,11 +56,10 @@ export class AggregatorInstantiator {
     public async executeRSP() {
         // RSP Engine event emitter.
         this.connect_with_server('ws://localhost:8080/').then(() => {
-            console.log(`The connection with the server has been established.`);
         });
         this.client.on('connect', (connection: typeof websocketConnection) => {
             console.log(`The connection with the server has been established.`);
-            this.rsp_emitter.on('RStream', async (object: any) => {
+            this.rsp_emitter.on('RStream', async (object: BindingsWithTimestamp) => {
                 let window_timestamp_from = object.timestamp_from;
                 let window_timestamp_to = object.timestamp_to;
                 let iterable = object.bindings.values();
@@ -63,6 +67,7 @@ export class AggregatorInstantiator {
                     let aggregation_event_timestamp = new Date().getTime();
                     let data = item.value;
                     let aggregation_object: aggregation_object = {
+                        query_hash: this.hash_string,
                         aggregation_event: this.generate_aggregation_event(data, aggregation_event_timestamp, this.stream_array, window_timestamp_from, window_timestamp_to),
                         aggregation_window_from: this.from_date,
                         aggregation_window_to: this.to_date,
@@ -70,12 +75,11 @@ export class AggregatorInstantiator {
                     let aggregation_object_string = JSON.stringify(aggregation_object);
                     this.sendToServer(aggregation_object_string);
                 }
-    
+
             })
         });
     }
-
-    generate_aggregation_event(value: any, event_timestamp: number, stream_array: string[] | undefined, timestamp_from: number, timestamp_to: number): string {
+    generate_aggregation_event(value: string, event_timestamp: number, stream_array: string[] | undefined, timestamp_from: number, timestamp_to: number): string {
         if (stream_array === undefined) {
             throw new Error("The stream array is undefined. ");
         }
@@ -94,7 +98,7 @@ export class AggregatorInstantiator {
         `;
             for (let stream of stream_array) {
                 aggregation_event += `<https://rsp.js/aggregation_event/${uuid_random}> <http://www.w3.org/ns/prov#generatedBy> <${stream}> .`
-            }            
+            }
             return aggregation_event;
         }
     }
@@ -102,7 +106,7 @@ export class AggregatorInstantiator {
 
     async connect_with_server(wssURL: string) {
         this.client.connect(wssURL, 'echo-protocol');
-        this.client.on('connectFailed', (error: any) => {
+        this.client.on('connectFailed', (error: Error) => {
             console.log('Connect Error: ' + error.toString());
         });
         this.client.setMaxListeners(Infinity);
@@ -112,6 +116,7 @@ export class AggregatorInstantiator {
     }
 
     sendToServer(message: string) {
+        console.log(`Is the connection established? ${this.connection.connected}`)
         if (this.connection.connected) {
             this.connection.sendUTF(message);
         }

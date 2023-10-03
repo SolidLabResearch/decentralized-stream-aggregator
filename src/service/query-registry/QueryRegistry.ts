@@ -5,17 +5,20 @@ import { Logger, ILogObj } from "tslog";
 import { BlankNode } from "n3";
 import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
 import { is_equivalent } from "rspql-query-equivalence";
+import { string } from "rdflib/lib/utils-js";
 let sparqlParser = require('sparqljs').Parser;
+import { createHash } from 'crypto';
 let SPARQLParser = new sparqlParser();
 
 export class QueryRegistry {
     registered_queries: Map<number, string>;
-    executed_queries: any[];
-    future_queries: any[];
-    executing_queries: any[];
+    executed_queries: string[];
+    future_queries: string[];
+    executing_queries: string[];
     query_count: number;
-    parser: any;
+    parser: RSPQLParser;
     logger: Logger<ILogObj>;
+    query_hash_map: Map<string, string>;
 
     /**
      * Creates an instance of QueryRegistry.
@@ -31,6 +34,7 @@ export class QueryRegistry {
          */
         this.executing_queries = [];
         this.executed_queries = [];
+        this.query_hash_map = new Map();
         this.future_queries = [];
         this.query_count = 0;
         this.parser = new RSPQLParser();
@@ -46,10 +50,17 @@ export class QueryRegistry {
 
     register_query(rspql_query: string, solid_server_url: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
         if (query_registry.add_query_in_registry(rspql_query)) {
-            new AggregatorInstantiator(rspql_query,from_timestamp, to_timestamp);
+            /*
+            The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
+            */
+            new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp);
             return true;
         }
         else {
+            /*
+            The query is already computed and stored in the Solid Stream Aggregator's Solid Pod. So, read from there and send via a websocket.
+            TODO : make a result dispatcher module.
+            */
             this.logger.debug(`The query you have registered is already executing.`);
         }
 
@@ -92,7 +103,7 @@ export class QueryRegistry {
      */
     checkUniqueQuery(query: string) {
         let registered_queries = this.get_registered_queries();
-        let queryArray: any[] = [];
+        let queryArray: string[] = [];
         registered_queries.forEach((value, key) => {
             queryArray.push(value);
         })
@@ -104,6 +115,18 @@ export class QueryRegistry {
         return false;
     }
 
+    register_query_hash(query: string) {
+        query = query.replace(/\s/g, '');
+        let hash_string = this.hash_string(query);
+        this.query_hash_map.set(hash_string, query);
+    }
+
+
+    hash_string(input_string: string) {
+        const hash = createHash('md5');
+        hash.update(input_string);
+        return hash.digest('hex');
+    }
 
     get_executing_queries() {
         return this.executing_queries;

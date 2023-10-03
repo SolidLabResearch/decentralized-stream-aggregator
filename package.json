@@ -18,7 +18,8 @@
     "license": "ISC",
     "devDependencies": {
         "@types/jest": "^29.2.4",
-        "@types/node-fetch": "^2.6.4",
+        "@types/node-fetch": "^2.6.0",
+        "@types/websocket": "^1.0.6",
         "jest": "^29.3.1",
         "ldfetch": "^1.2.8",
         "rsp-js": "^1.1.2",
@@ -28,6 +29,7 @@
     },
     "dependencies": {
         "@comunica/query-sparql-link-traversal": "^0.0.2-alpha.8.0",
+        "@comunica/types": "^2.8.2",
         "@treecg/ldes-snapshot": "^0.1.1",
         "@treecg/versionawareldesinldp": "^0.2.2",
         "cors": "^2.8.5",

@@ -1,4 +1,6 @@
+import { Bindings } from "@comunica/types";
 import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
+import { QuadWithID } from "../Types";
 
 const N3 = require('n3');
 const writer = new N3.Writer()
@@ -23,8 +25,9 @@ export async function get_metadata_container(resource: string) {
 
 export async function trace_original_events(resource: string) {
     let stream = await get_container_stream_metadata(resource).then((stream: string) => {
-        let resource_metadata = fetch.get(resource).catch((error: any) => {
+        let resource_metadata = fetch.get(resource).catch((error: Error) => {
             console.log(error);
+            // TODO: add the type for the resource metadata
         }).then(async (resource_metadata: any) => {
             const store = await new N3.Store(await resource_metadata.triples);
             const binding_stream = await myEngine.queryBindings(`
@@ -35,27 +38,31 @@ export async function trace_original_events(resource: string) {
             `, {
                 sources: [store]
             });
-            binding_stream.on('data', async (binding: any) => {
-                await get_original_events(stream, binding.get('timestamp_from').value, binding.get('timestamp_to').value);
+            binding_stream.on('data', async (binding: Bindings) => {
+                let timestamp_from = binding.get('timestamp_from');
+                let timestamp_to = binding.get('timestamp_to');
+                if (timestamp_from !== undefined && timestamp_to !== undefined) {
+                    await get_original_events(stream, timestamp_from.value, timestamp_to.value);
+                }
             });
         });
     });
 }
 
-async function get_original_events(registered_stream: string, aggregation_event_window_start: Date, aggregation_event_window_end: Date) {
+async function get_original_events(registered_stream: string, aggregation_event_window_start: string, aggregation_event_window_end: string) {
     const communication = new LDPCommunication();
     const ldes_in_ldp = new LDESinLDP(registered_stream, communication);
     let aggregation_event_window_start_date = new Date(aggregation_event_window_start);
     let aggregation_event_window_end_date = new Date(aggregation_event_window_end);
     const lil_stream = ldes_in_ldp.readAllMembers(aggregation_event_window_start_date, aggregation_event_window_end_date);
-    (await lil_stream).on('data', (member: any) => {
+    (await lil_stream).on('data', (member: QuadWithID) => {
         console.log(member.quads[0].subject.value);
     });
 }
 
 async function get_container_stream_metadata(ldp_resource: string) {
     let ldp_container_meta: string = ldp_resource.split("/").slice(0, -1).join("/") + "/.meta";
-    let metadata = await fetch.get(ldp_container_meta).catch((error: any) => {
+    let metadata = await fetch.get(ldp_container_meta).catch((error: Error) => {
         console.log(error);
     });
     if (metadata !== undefined) {

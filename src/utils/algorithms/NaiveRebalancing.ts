@@ -20,6 +20,7 @@ import {Store} from "n3";
 import {addRelationToNode, createContainer} from "@treecg/versionawareldesinldp/dist/ldes/Util";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 import {performance, PerformanceObserver} from "perf_hooks";
+import { Prefixes } from "../Types";
 
 /**
  * In order to correctly rebalance the container,
@@ -32,7 +33,7 @@ import {performance, PerformanceObserver} from "perf_hooks";
  * @returns {Promise<void>}
  */
 export async function rebalanceContainer(ldpCommunication: Communication, metadata: ILDESinLDPMetadata, containerURL: string,
-                                         bucketSize: number, prefixes: any, loglevel: string = 'info'): Promise<void> {
+                                         bucketSize: number, prefixes: Prefixes, loglevel: string = 'info'): Promise<void> {
 
     const logger = new Logger(rebalanceContainer.name, loglevel)
     // https://dev.to/typescripttv/measure-execution-times-in-browsers-node-js-js-ts-1kik

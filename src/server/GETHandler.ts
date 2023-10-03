@@ -1,8 +1,9 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import fs from 'fs';
+import { EndpointQueries } from "./EndpointQueries";
 export class GETHandler {
-    public static async handle(req: IncomingMessage, res: ServerResponse, solid_server_url: string, query_registry: QueryRegistry, endpoint_queries: any, latest_minutes: number) {
+    public static async handle(req: IncomingMessage, res: ServerResponse, solid_server_url: string, query_registry: QueryRegistry, endpoint_queries: EndpointQueries, latest_minutes: number) {
         let to_timestamp = new Date().getTime(); // current time
         let from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
         console.log(`from: ${from_timestamp}, to: ${to_timestamp}`);

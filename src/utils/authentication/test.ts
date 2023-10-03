@@ -23,6 +23,10 @@ async function main() {
         const communication = new SolidCommunication(session);   
         const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_identifier, communication);
         const ldes = await ldes_in_ldp.readAllMembers();
+
+        ldes.on("data", (data) => {
+            console.log(data);
+        });
     }
 }
 main();

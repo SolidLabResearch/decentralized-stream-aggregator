@@ -24,6 +24,7 @@ import {rebalanceContainer} from "./NaiveRebalancing";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 import {performance, PerformanceObserver} from 'perf_hooks'
 import {editMetadata} from "../ldes-in-ldp/Util";
+import { Prefixes } from "../Types";
 
 const {quad, namedNode} = DataFactory
 
@@ -40,7 +41,7 @@ const {quad, namedNode} = DataFactory
  *    * 1000 resources (Resource[])
  *    * version ID
  */
-export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: any, session?: Session, loglevel: string = 'info'): Promise<void> {
+export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: Prefixes, session?: Session, loglevel: string = 'info'): Promise<void> {
 
     const logger = new Logger(naiveAlgorithm.name, loglevel)
 
