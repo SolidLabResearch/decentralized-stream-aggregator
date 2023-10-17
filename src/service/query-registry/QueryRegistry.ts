@@ -6,15 +6,17 @@ import { BlankNode } from "n3";
 import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
 import { is_equivalent } from "rspql-query-equivalence";
 import { string } from "rdflib/lib/utils-js";
+import { WriteLockArray } from "../../utils/query-registry/Util";
 let sparqlParser = require('sparqljs').Parser;
 import { createHash } from 'crypto';
+import { query } from "express";
 let SPARQLParser = new sparqlParser();
 
 export class QueryRegistry {
-    registered_queries: Map<number, string>;
-    executed_queries: string[];
+    registered_queries: WriteLockArray<string>;
+    executed_queries: WriteLockArray<string>;
     future_queries: string[];
-    executing_queries: string[];
+    executing_queries: WriteLockArray<string>;
     query_count: number;
     parser: RSPQLParser;
     logger: Logger<ILogObj>;
@@ -28,14 +30,14 @@ export class QueryRegistry {
         /**
          * Map of registered queries which are the queries without any analysis by the QueryRegistry but only registered.  
         */
-        this.registered_queries = new Map();
+        this.registered_queries = new WriteLockArray<string>();
         /**
          * Array of executing queries which were unique as compared to all the existing queries in the QueryRegistry. 
          */
-        this.executing_queries = [];
-        this.executed_queries = [];
+        this.executing_queries = new WriteLockArray<string>();
+        this.executed_queries = new WriteLockArray<string>();
         this.query_hash_map = new Map();
-        this.future_queries = [];
+        this.future_queries = new Array<string>();
         this.query_count = 0;
         this.parser = new RSPQLParser();
         this.logger = new Logger();
@@ -48,11 +50,13 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
 
-    register_query(rspql_query: string, solid_server_url: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
+    register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
         if (query_registry.add_query_in_registry(rspql_query)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
+           console.log(query);
+
             new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp);
             return true;
         }
@@ -67,8 +71,7 @@ export class QueryRegistry {
     }
 
     add_query_in_registry(rspql_query: string) {
-        this.registered_queries.set(this.query_count, rspql_query);
-        this.query_count++;
+        this.registered_queries.addItem(rspql_query);
         if (this.checkUniqueQuery(rspql_query)) {
             /*
             The query you have registered is already executing.
@@ -91,7 +94,7 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
     add_to_executing_queries(query: string) {
-        this.executing_queries.push(query);
+        this.executing_queries.addItem(query);
     }
 
     /**
@@ -103,13 +106,10 @@ export class QueryRegistry {
      */
     checkUniqueQuery(query: string) {
         let registered_queries = this.get_registered_queries();
-        let queryArray: string[] = [];
-        registered_queries.forEach((value, key) => {
-            queryArray.push(value);
-        })
-        if (queryArray.length > 1) {
-            for (let i = 0; i < queryArray.length; i++) {
-                return is_equivalent(query, queryArray[i]);
+        let array_length = registered_queries.get_length();
+        if (array_length > 1) {
+            for (let i = 0; i < array_length; i++) {
+                return is_equivalent(query, registered_queries.get_item(i));
             }
         }
         return false;

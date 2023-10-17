@@ -8,26 +8,61 @@ import { Quad } from "rdflib/lib/tf-types";
 import { Quads } from "sparqljs";
 import { v4 as uuidv4 } from 'uuid';
 import { aggregation_object } from "../service/aggregator/AggregatorInstantiator";
+import { hash_string } from "../utils/Util";
+import { sleep } from "@treecg/versionawareldesinldp";
+import { POSTHandler } from "./POSTHandler";
+import { RSPQLParser } from "../service/parsers/RSPQLParser";
+import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
     private readonly aggregation_resource_list_batch_size: number = CONFIG.BUCKET_SIZE;
     public logger: Logger<ILogObj>;
+    private connections: Map<string, WebSocket>;
+    private parser: RSPQLParser;
+    private query_registry: QueryRegistry;
 
     constructor() {
         this.aggregation_resource_list = [];
         this.logger = new Logger();
+        this.connections = new Map<string, WebSocket>();
+        this.parser = new RSPQLParser();
+        this.query_registry = new QueryRegistry();
     }
 
     public handle_wss(websocket_server: WebSocket.server, event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
         // TODO: find the type of the request object
+
+        websocket_server.on('connect', (request: any) => {
+            console.log(request.remoteAddress);
+
+        });
+
         websocket_server.on('request', async (request: any) => {
-            let connection = request.accept('echo-protocol', request.origin);
+            let connection = request.accept('solid-stream-aggregator-protocol', request.origin);
             this.logger.debug(`New connection from ${connection.remoteAddress}`);
             connection.on('message', (message: WebSocket.Message) => {
                 if (message.type === 'utf8') {
                     let message_utf8 = message.utf8Data;
-                    event_emitter.emit('aggregation_event', message_utf8);
+                    let ws_message = JSON.parse(message_utf8);
+                    if (Object.keys(ws_message).includes('query')) {
+                        let parsed = this.parser.parse(ws_message.query);
+                        let width = parsed.s2r[0].width;
+                        let query_hashed = hash_string(ws_message.query);
+                        this.connections.set(query_hashed, connection);
+                        this.process_query(ws_message.query, width);
+                    }
+                    else if (Object.keys(ws_message).includes('aggregation_event')) {
+                        let query_hash = ws_message.query_hash;
+                        for (let [key, value] of this.connections) {
+                            if (key === query_hash) {
+                                value.send(JSON.stringify(ws_message));
+                            }
+                        }
+                    }
+                    else {
+                        throw new Error('Unknown message, not handled.');
+                    }
                 }
             });
             connection.on('close', (reason_code: string, description: string) => {
@@ -41,28 +76,19 @@ export class WebSocketHandler {
         this.aggregation_event_publisher(event_emitter, aggregation_publisher);
     }
 
-    // public client_response_publisher(event_emitter: EventEmitter, websocket_server: WebSocket.server) {
-    //     websocket_server.on('request', async (request: any) => {
-    //         let connection = request.accept('echo-protocol', request.origin);
-    //         connection.on('message', (message: WebSocket.Message) => {
-    //             console.log(`Message received from client: ${message}`);
-                
-    //             // const query_id = process_query(message.toString());
-    //             // associateChannelWithQuery(query_id, connection);
-
-    //         });
-    //     });
-    // }
-    public client_response_publisher(event_emitter: EventEmitter) {
+    public async client_response_publisher(event_emitter: EventEmitter) {
         event_emitter.on('aggregation_event', (object: string) => {
-            console.log(object);
-            
+            let event = JSON.parse(object)
+            let query_id = event.query_hash;
+            let connection = this.connections.get(query_id);
+            if (connection) {
+                connection.send(event.aggregation_event);
+            }
         });
     }
 
     public aggregation_event_publisher(event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
         event_emitter.on('aggregation_event', (object: string) => {
-            console.log(object);
             const parser = new Parser({ format: 'N-Triples' });
             let aggregation_event = JSON.parse(object)
             const event_quad: any = parser.parse(aggregation_event.aggregation_event);
@@ -88,23 +114,31 @@ export class WebSocketHandler {
             this.logger.debug(`End of aggregation event publisher.`);
         });
     }
-}
-let queryChannels = new Map<string, WebSocket>();
 
-export function associateChannelWithQuery(queryId: string, ws: WebSocket) {
-    queryChannels.set(queryId, ws);
-}
-
-export function sendResultToClient(queryId: string, result: any) {
-    const ws = queryChannels.get(queryId);
-    if (ws) {
-        ws.send(JSON.stringify(result));
+    public associate_channel_with_query(query_id: string, ws: WebSocket) {
+        this.connections.set(query_id, ws);
     }
-}
 
-export function process_query(query: string): string {
-    const query_id = uuidv4();
-    // TODO: add query result here.
-    sendResultToClient(query_id, "result");
-    return query_id;
+    public send_result_to_client(query_id: string, result: any) {
+        const ws = this.connections.get(query_id);
+        if (ws) {
+            ws.send(JSON.stringify(result));
+        }
+        else {
+            this.logger.debug(`No connection found for query id: ${query_id}`);
+        }
+    }
+
+    public process_query(query: string, width: number) {
+        let minutes = width / 60;
+        POSTHandler.handle_ws_query(query, minutes, this.query_registry);
+        // POSTHandler.handle()
+    }
+
+    public send_test(query: string) {
+        let ws = this.connections.get(query);
+        if (ws) {
+            ws.send(JSON.stringify({ "test": "test", "query": query }));
+        }
+    }
 }

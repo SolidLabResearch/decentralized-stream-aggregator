@@ -1,5 +1,5 @@
 // // import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
-// // import { quick_sort_queue, StreamEventQueue } from "./StreamEventQueue";
+import { quick_sort_queue, StreamEventQueue } from "./StreamEventQueue";
 // // import { QuadWithID } from "./Types";
 // // let location_ldes = "http://localhost:3000/dataset_participant1/data/";
 
@@ -25,16 +25,18 @@
 
 // // main();
 
-// // async function test() {
-// //     let queue = new StreamEventQueue<string>([]);
-// //     for (let i = 0; i < 10; i++) {
-// //         queue.enqueue("test" + i, Math.random() * 100);
-// //     }
-// //     let sorted_queue = quick_sort_queue(queue);
-// //     console.log(sorted_queue)
-// // }
+async function test() {
+    let queue = new StreamEventQueue<string>([]);
+    for (let i = 0; i < 10; i++) {
+        queue.enqueue("test" + i, Math.random() * 100);
+    }
+    let sorted_queue = quick_sort_queue(queue);
+    for (let i = 0; i < sorted_queue.size(); i++){
+      console.log(sorted_queue.dequeue());
+    }
+}
 
-// // // test();
+test();
 
 // // //  can make a buffer size and after that you push to RSP and then you start listening only to the new events
 
@@ -60,3 +62,30 @@
 // }
 
 // test();
+
+// type Credentials = {
+//     [key: string]: {
+//       id: string;
+//       secret: string;
+//       idp: string;
+//     };
+//   };
+  
+//   const CRED: Credentials = {
+//     'http://localhost:3000/dataset_participant1/data/': {
+//       id: 'participant1',
+//       secret: 'secret1',
+//       idp: 'idp1',
+//     },
+//     'http://localhost:3000/dataset_partiticipant2/data/': {
+//       id: 'participant2',
+//       secret: 'secret2',
+//       idp: 'idp2',
+//     },
+//   };
+  
+//   let stream: string = 'http://localhost:3000/dataset_participant1/data/';
+  
+//   console.log(CRED['http://localhost:3000/dataset_participant1/data/']);
+//   console.log(CRED[stream]);
+

@@ -1,5 +1,5 @@
 import { QueryEngine } from "@comunica/query-sparql-link-traversal";
-import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
+import { LDESinLDP, LDPCommunication, SolidCommunication } from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Bindings } from '@comunica/types';
 import { quick_sort_queue, StreamEventQueue } from "../../utils/StreamEventQueue";
@@ -9,30 +9,43 @@ const ldfetch = new ld_fetch({});
 import { Quad } from "n3";
 import WebSocket from 'ws';
 import { QuadWithID, WebSocketMessage } from "../../utils/Types";
+import { session_with_credentials } from "../../utils/authentication/css-auth";
 
 export class DecentralizedFileStreamer {
     public ldes_stream: string;
     public from_date: Date;
     public to_date: Date;
     public stream_name: RDFStream | undefined;
-    public ldes: LDESinLDP;
+    public ldes!: LDESinLDP;
     public comunica_engine: QueryEngine;
+    public communication: Promise<SolidCommunication | LDPCommunication>;
+    public session: any;
     public file_streamer_start_time: number = 0;
     public websocket_listening_time: number = 0;
     public missing_event_queue: StreamEventQueue<Set<Quad>>;
 
-    constructor(ldes_stream: string, from_date: Date, to_date: Date, rsp_engine: RSPEngine) {
+    constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine) {
         this.ldes_stream = ldes_stream;
-        this.ldes = new LDESinLDP(this.ldes_stream, new LDPCommunication());
+        this.communication= this.get_communication(session_credentials);
         this.from_date = from_date;
         this.to_date = to_date;
         this.missing_event_queue = new StreamEventQueue<Set<Quad>>([]);
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
         this.comunica_engine = new QueryEngine();
         this.initiateDecentralizedFileStreamer().then(() => {
-            console.log(`Decentralized File Streamer initiated for ${this.ldes_stream}`);
             this.add_missing_events_to_rsp_engine();
         });
+    }
+
+    public async get_communication(credentials: session_credentials) {
+        let session = await this.get_session(credentials);
+        if (session) {
+            return new SolidCommunication(session);
+        }
+        else {
+            return new LDPCommunication();
+
+        }
     }
 
     /**
@@ -50,7 +63,7 @@ export class DecentralizedFileStreamer {
             chronological: true
         });
         stream.on("data", async (data: QuadWithID) => {
-            console.log(data);
+            // console.log(data);
             let stream_store = new Store(data.quads);
             const binding_stream = await this.comunica_engine.queryBindings(`
             PREFIX saref: <https://saref.etsi.org/core/>
@@ -71,7 +84,9 @@ export class DecentralizedFileStreamer {
         });
     }
 
-    public async initiateDecentralizedFileStreamer() {
+    public async initiateDecentralizedFileStreamer(): Promise<void> {
+        const communication = await this.communication;
+        this.ldes = new LDESinLDP(this.ldes_stream, communication);
         this.file_streamer_start_time = Date.now();
         const stream = await this.ldes.readMembersSorted({
             from: this.from_date,
@@ -167,7 +182,8 @@ export class DecentralizedFileStreamer {
                     });
 
                     let sorted_queue = quick_sort_queue(this.missing_event_queue);
-                    this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+
+                    // this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
                 };
             }
         }
@@ -210,6 +226,13 @@ export class DecentralizedFileStreamer {
 
     }
 
+    async add_sorted_queue_to_rsp_engine(sorted_queue: StreamEventQueue<Set<Quad>>) {
+        for (let i = 0; i < sorted_queue.size(); i++){
+            let element = sorted_queue.dequeue();
+            console.log(element);
+        }
+    }
+
     async get_inbox_subscription_websocket_url(ldes_stream: string, inbox_container: string): Promise<string> {
         let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
         let notification_server = solid_server + "/.notifications/WebSocketChannel2023/";
@@ -240,4 +263,14 @@ export class DecentralizedFileStreamer {
         return this.file_streamer_start_time;
     }
 
+    async get_session(credentials: session_credentials) {
+        return await session_with_credentials(credentials);
+    }
+
+}
+
+type session_credentials = {
+    id: string;
+    secret: string;
+    idp: string;
 }

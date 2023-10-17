@@ -28,6 +28,7 @@ export class HTTPServer {
         this.websocket_server = new websocket.server({
             httpServer: this.http_server
         });
+        this.http_server.keepAliveTimeout = 6000;
         this.aggregation_publisher = new LDESPublisher();
         this.query_registry = new QueryRegistry();
         this.endpoint_queries = new EndpointQueries();

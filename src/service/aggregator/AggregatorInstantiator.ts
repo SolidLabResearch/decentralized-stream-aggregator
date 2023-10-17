@@ -4,6 +4,7 @@ import { DecentralizedFileStreamer } from "./DecentralizedFileStreamer";
 import { v4 as uuidv4 } from 'uuid';
 import * as websocket from 'websocket';
 import { EventEmitter } from "events";
+import * as CREDENTIALS from '../../config/PodToken.json';
 import { BindingsWithTimestamp } from "../../utils/Types";
 import { hash_string } from "../../utils/Util";
 const WebSocketClient = require('websocket').client;
@@ -16,6 +17,14 @@ export type aggregation_object = {
     aggregation_window_from: Date,
     aggregation_window_to: Date
 }
+
+export type Credentials = {
+    [key: string]: {
+        id: string;
+        secret: string;
+        idp: string;
+    };
+};
 
 export class AggregatorInstantiator {
     public query: string;
@@ -46,9 +55,11 @@ export class AggregatorInstantiator {
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
 
         for (const stream of this.stream_array) {
-            new DecentralizedFileStreamer(stream, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine);
-            // uncomment the line below.
-            // new DecentralizedFileStreamer(stream, this.from_date, this.to_date, this.rsp_engine);
+            // uncomment the line below            
+            let session_credentials = this.get_session_credentials(stream);
+            // new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine);
+            new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine);
+
         }
         this.executeRSP();
     }
@@ -56,6 +67,8 @@ export class AggregatorInstantiator {
     public async executeRSP() {
         // RSP Engine event emitter.
         this.connect_with_server('ws://localhost:8080/').then(() => {
+            console.log(`The connection with the websocket server has been established.`);
+            this.connection.connected = true;
         });
         this.client.on('connect', (connection: typeof websocketConnection) => {
             console.log(`The connection with the server has been established.`);
@@ -105,7 +118,7 @@ export class AggregatorInstantiator {
 
 
     async connect_with_server(wssURL: string) {
-        this.client.connect(wssURL, 'echo-protocol');
+        this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
         this.client.on('connectFailed', (error: Error) => {
             console.log('Connect Error: ' + error.toString());
         });
@@ -116,13 +129,20 @@ export class AggregatorInstantiator {
     }
 
     sendToServer(message: string) {
-        console.log(`Is the connection established? ${this.connection.connected}`)
         if (this.connection.connected) {
             this.connection.sendUTF(message);
         }
         else {
-            console.log(`The connection is not established yet.`);
+            this.connect_with_server('ws://localhost:8080/').then(() => {
+                console.log(`The connection with the websocket server was not established. It is now established.`);
+            });
         }
+    }
+
+    get_session_credentials(stream_name: string) {
+        let credentials: Credentials = CREDENTIALS;
+        let session_credentials = credentials[stream_name];
+        return session_credentials;
     }
 
 }

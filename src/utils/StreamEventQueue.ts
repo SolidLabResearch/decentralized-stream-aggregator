@@ -24,7 +24,7 @@ export class StreamEventQueue<T> {
             const index = this.items.indexOf(earliest_event);
             if (index !== -1) {
                 this.items.splice(index, 1);
-                return earliest_event.event;
+                return earliest_event as T;
             }
             else {
                 throw new Error(`The event ${earliest_event} was not found in the queue.`);
