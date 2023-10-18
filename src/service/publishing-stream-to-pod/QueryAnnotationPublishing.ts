@@ -1,4 +1,4 @@
-import { addRelationToNode, LDESConfig, LDESinLDP, LDPCommunication, MetadataParser, SolidCommunication } from "@treecg/versionawareldesinldp";
+import { addRelationToNode, LDESConfig, LDESinLDP, LDPCommunication, MetadataParser, patchSparqlUpdateInsert, SolidCommunication } from "@treecg/versionawareldesinldp";
 import { ILogObj, Logger } from "tslog";
 import { createBucketUrl, getTimeStamp, Resource } from "../../utils/ldes-in-ldp/EventSource";
 import { RSPQLParser } from "../parsers/RSPQLParser";
@@ -85,8 +85,11 @@ export class QueryAnnotationPublishing {
         }
 
         delete bucket_resources["none"];
-        await add_resources_with_metadata_to_buckets(bucket_resources, metadata, communication);
+        await add_resources_with_metadata_to_buckets(bucket_resources, metadata, communication).then(() => {
+        });
     }
+
+
 
 
     public get_query_metadata(rspql_query: string, start_time: Date, end_time: Date): Store {

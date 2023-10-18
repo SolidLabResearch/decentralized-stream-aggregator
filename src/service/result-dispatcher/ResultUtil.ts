@@ -68,9 +68,7 @@ export async function if_aggregated_events_exist(rspql_query: string): Promise<b
 
     for (let aggregation_focus of focus) {
         for (let description of fno_description) {
-            let description_quads = description[1];
-            console.log(description_quads);
-            
+            let description_quads = description[1];            
             for (let quad of description_quads) {
                 if ((quad.object.value == aggregation_focus)) {
                     fragment_with_focus.push(description[0]);
@@ -213,14 +211,22 @@ export async function aggregation_results_exist(rspql_query: string): Promise<bo
     }
 
     for (let description of fno_description) {
-
+        for (let quad of description[1]){
+            if ((quad.object.value == query_hash)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
     }
-    return true;
 
+    return false;
+    
 }
 
 async function main() {
-    let value = if_aggregated_events_exist(`
+    let value = aggregation_results_exist(`
     PREFIX saref: <https://saref.etsi.org/core/> 
     PREFIX dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/>
     PREFIX : <https://rsp.js/>
@@ -231,7 +237,8 @@ async function main() {
         WINDOW :w1 { ?s saref:hasValue ?o .
                      ?s saref:relatesToProperty dahccsensors:wearable.bvp .}
     } 
-    `)
+    `);
+
     console.log(await value);
 }
 

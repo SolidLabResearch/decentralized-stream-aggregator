@@ -22,6 +22,8 @@ import * as CONFIG from '../../config/ldes_properties.json';
 import * as AGG_CONFIG from '../../config/pod_credentials.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
+const ld_fetch = require('ldfetch');
+const ldfetch = new ld_fetch({});
 import { EndpointQueries } from "../../server/EndpointQueries";
 
 export class LDESPublisher {
@@ -91,9 +93,38 @@ export class LDESPublisher {
             }
             let query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
             if (query != undefined) {
-                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session);
+                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session).then(() => {
+                    console.log("Published query annotation");
+                    this.update_latest_inbox(this.lilURL);
+                });
             }
         }
 
+    }
+
+    public update_latest_inbox(aggregation_pod_ldes_location: string) {
+        let inbox_location:string[] = [];
+        ldfetch.get(aggregation_pod_ldes_location).then((response: any) => {
+            for (let quad of response.triples) {
+                if (quad.predicate.value == "http://www.w3.org/ns/ldp#inbox") {
+                    inbox_location.push(quad.object.value);
+                }
+            }
+            let latest_inbox = inbox_location.sort()[inbox_location.length - 1];
+            fetch(aggregation_pod_ldes_location, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/sparql-update'
+                },
+                body: "INSERT DATA { <" + aggregation_pod_ldes_location + "> <http://www.w3.org/ns/ldp#inbox> <" + latest_inbox + "> }",
+            }).then((response) => {
+                if (response.status == 200 || 201 || 205) {
+                    this.logger.debug(`The latest inbox of the LDP container is patched successfully.`)
+                }
+                else {
+                    this.logger.error(`The latest inbox of the LDP container could not be patched. ${response}`)
+                }
+            })
+        })
     }
 }

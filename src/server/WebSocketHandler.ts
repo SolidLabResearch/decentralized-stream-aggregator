@@ -20,6 +20,7 @@ export class WebSocketHandler {
     public logger: Logger<ILogObj>;
     private connections: Map<string, WebSocket>;
     private parser: RSPQLParser;
+    private n3_parser: Parser;
     private query_registry: QueryRegistry;
 
     constructor() {
@@ -28,6 +29,8 @@ export class WebSocketHandler {
         this.connections = new Map<string, WebSocket>();
         this.parser = new RSPQLParser();
         this.query_registry = new QueryRegistry();
+        this.n3_parser = new Parser({ format: 'N-Triples' });
+
     }
 
     public handle_wss(websocket_server: WebSocket.server, event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
@@ -56,6 +59,7 @@ export class WebSocketHandler {
                         let query_hash = ws_message.query_hash;
                         for (let [key, value] of this.connections) {
                             if (key === query_hash) {
+                                this.publish_aggregation_event(ws_message, aggregation_publisher);
                                 value.send(JSON.stringify(ws_message));
                             }
                         }
@@ -90,7 +94,7 @@ export class WebSocketHandler {
     public aggregation_event_publisher(event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
         event_emitter.on('aggregation_event', (object: string) => {
             const parser = new Parser({ format: 'N-Triples' });
-            let aggregation_event = JSON.parse(object)
+            let aggregation_event = JSON.parse(object)            
             const event_quad: any = parser.parse(aggregation_event.aggregation_event);
             this.aggregation_resource_list.push(event_quad);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
@@ -126,6 +130,18 @@ export class WebSocketHandler {
         }
         else {
             this.logger.debug(`No connection found for query id: ${query_id}`);
+        }
+    }
+
+    public publish_aggregation_event(aggregation_event: any, aggregation_publisher: LDESPublisher) {        
+        let event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
+        this.aggregation_resource_list.push(event_quad);
+        if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
+            aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
+            this.aggregation_resource_list = [];
+        }
+        if (this.aggregation_resource_list.length == 0) {
+            this.logger.debug(`No aggregation events to publish.`);
         }
     }
 
