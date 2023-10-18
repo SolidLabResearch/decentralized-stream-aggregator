@@ -1,6 +1,7 @@
 let {Parser: SparqlParser} = require('sparqljs');
 let parser = new SparqlParser();
 const Store = require('n3').Store;
+import { Quad } from 'rdflib/lib/tf-types';
 import * as RSPQLConfig from '../../config/rspql_query.json';
 
 export class SPARQLToRSPQL {
@@ -68,7 +69,7 @@ export class SPARQLToRSPQL {
         WHERE 
         { 
             WINDOW :w1 { `+
-            this.extractedGraphPatterns.getQuads().map((quad: any) => {
+            this.extractedGraphPatterns.getQuads().map((quad: Quad) => {
                 return `?${quad.subject.value} ?${quad.predicate.value} ?${quad.object.value} .`;
             })
             + ` }

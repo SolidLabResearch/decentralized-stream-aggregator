@@ -1,5 +1,5 @@
 import { HTTPServer } from "./server/HTTPServer";
-
+import { AggregatorServerOptions } from "./utils/Types";
 const program = require('commander');
 
 program
@@ -16,16 +16,16 @@ program
         '8080'
     )
     .option(
-        '-ss --SolidServer <SolidServer>',
+        '-ss --solid_server_url <SolidServer>',
         'The URL of the Solid Pod server where the LDES streams are stored in a Solid Pod',
         'http://localhost:3000/'
     )
-    .action((options: any) => {
-        new HTTPServer(options.port, options.SolidServer);
+    .action((options: AggregatorServerOptions) => {
+        new HTTPServer(options.port, options.solid_server_url);
         console.log("The aggregation service is running.");
 
     });
-    
+
 program.parse();
 
 
