@@ -102,7 +102,7 @@ export class LDESPublisher {
 
     }
 
-    public update_latest_inbox(aggregation_pod_ldes_location: string) {
+    public async update_latest_inbox(aggregation_pod_ldes_location: string) {
         let inbox_location:string[] = [];
         ldfetch.get(aggregation_pod_ldes_location).then((response: any) => {
             for (let quad of response.triples) {
