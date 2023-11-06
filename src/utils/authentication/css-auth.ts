@@ -124,7 +124,7 @@ export async function session_with_credentials(credentials: any): Promise<Sessio
     }
     catch (e: unknown) {
         const error = e as Error
-        console.log(error);
+        console.log(`Error while creating session: ${error.message}`);
     }
 
     return session

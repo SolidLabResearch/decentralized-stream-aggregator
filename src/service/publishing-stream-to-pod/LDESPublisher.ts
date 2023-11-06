@@ -15,9 +15,8 @@ import {
 } from "@treecg/versionawareldesinldp";
 import { QueryAnnotationPublishing } from "./QueryAnnotationPublishing";
 import {
-    initSession, Resource
+    initSession
 } from "../../utils/ldes-in-ldp/EventSource";
-import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 import * as CONFIG from '../../config/ldes_properties.json';
 import * as AGG_CONFIG from '../../config/pod_credentials.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
@@ -28,17 +27,17 @@ import { EndpointQueries } from "../../server/EndpointQueries";
 
 export class LDESPublisher {
     public initialised: boolean = false;
-    private credentialsFileName: string | null = CONFIG.CREDENTIALS_FILE_NAME;
-    private session: Session | undefined = undefined;
-    public lilURL: string = CONFIG.LIL_URL
+    private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
+    private session: any;
+    private lilURL: string = CONFIG.LIL_URL
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: VLILConfig;
-    private amount: number = CONFIG.AMOUNT;
-    private bucketSize: number = CONFIG.BUCKET_SIZE;
-    private logLevel: string = CONFIG.LOG_LEVEL;
+    private amount = CONFIG.AMOUNT;
+    private bucketSize = CONFIG.BUCKET_SIZE;
+    private logLevel = CONFIG.LOG_LEVEL;
     private aggregationQuery: string = "";
-    private parser: RSPQLParser;
+    private parser: any;
     private query_annotation_publisher: QueryAnnotationPublishing;
     public logger: Logger<ILogObj>;
     public endpoint_queries: EndpointQueries;
@@ -82,7 +81,7 @@ export class LDESPublisher {
         return true;
     }
 
-    publish(resourceList: Resource[], start_time: Date, end_time: Date) {
+    publish(resourceList: any[], start_time: Date, end_time: Date) {
         if (resourceList.length === 0) {
             console.log("No resources to publish");
             return;

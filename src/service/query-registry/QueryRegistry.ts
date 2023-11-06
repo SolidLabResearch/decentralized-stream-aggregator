@@ -115,18 +115,6 @@ export class QueryRegistry {
         return false;
     }
 
-    register_query_hash(query: string) {
-        query = query.replace(/\s/g, '');
-        let hash_string_md5 = this.hash_string_md5(query);
-        this.query_hash_map.set(hash_string_md5, query);
-    }
-
-
-    hash_string_md5(input_string: string) {
-        const hash = createHash('md5');
-        hash.update(input_string);
-        return hash.digest('hex');
-    }
 
     get_executing_queries() {
         return this.executing_queries;

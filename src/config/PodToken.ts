@@ -30,9 +30,7 @@ export async function create_authentication_token_css(json_file: string, service
             id: token.id,
             secret: token.secret,
             idp: identity_provider
-        }
-        console.log(credentials);
-        
+        }        
         auth_token_map.set(cred.email, credentials);
 
     }

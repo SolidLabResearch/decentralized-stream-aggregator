@@ -1,7 +1,6 @@
 import { sleep } from "@treecg/versionawareldesinldp";
 import { AggregatorPod } from "./server/AggregatorPod";
 import { HTTPServer } from "./server/HTTPServer";
-import { create_aggregator_pod } from "./utils/Util";
 
 const program = require('commander');
 
@@ -19,7 +18,7 @@ program
         '8080'
     )
     .option(
-        '-ss --SolidServer <SolidServer>',
+        '-ss --solid_server_url <SolidServer>',
         'The URL of the Solid Pod server where the LDES streams are stored in a Solid Pod',
         'http://localhost:3000/'
     )
@@ -33,7 +32,7 @@ program
         // }  
           new HTTPServer(options.port, options.SolidServer);
     });
-    
+
 program.parse();
 
 

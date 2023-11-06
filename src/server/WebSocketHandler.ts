@@ -2,6 +2,8 @@ import { Logger, ILogObj } from "tslog";
 import { Parser } from "n3";
 import * as WebSocket from 'websocket';
 import { EventEmitter } from "events";
+import * as WebSocket from 'websocket';
+import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
 import { Quad } from "rdflib/lib/tf-types";
@@ -73,6 +75,7 @@ export class WebSocketHandler {
             });
         });
         this.client_response_publisher(event_emitter);
+        this.client_response_publisher(event_emitter);
         this.aggregation_event_publisher(event_emitter, aggregation_publisher);
     }
 
@@ -107,6 +110,7 @@ export class WebSocketHandler {
             this.logger.debug(`Closing the aggregation event publisher.`);
         });
 
+        event_emitter.on('error', (error: Error) => {
         event_emitter.on('error', (error: Error) => {
             this.logger.debug(`Error in aggregation event publisher: ${error}`);
         });

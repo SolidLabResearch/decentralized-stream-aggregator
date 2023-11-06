@@ -7,6 +7,7 @@ export class AggregationFocusExtractor {
     public query: string;
     public parser: RSPQLParser;
     public focus_predicates: string[];
+    // TODO add the type for focus_of_query
     public focus_of_query: any;
 
     constructor(rspql_query: string) {
