@@ -2,8 +2,6 @@ import { Logger, ILogObj } from "tslog";
 import { Parser } from "n3";
 import * as WebSocket from 'websocket';
 import { EventEmitter } from "events";
-import * as WebSocket from 'websocket';
-import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
 import { Quad } from "rdflib/lib/tf-types";
@@ -45,7 +43,7 @@ export class WebSocketHandler {
             connection.on('message', (message: WebSocket.Message) => {
                 if (message.type === 'utf8') {
                     let message_utf8 = message.utf8Data;
-                    let ws_message = JSON.parse(message_utf8);                    
+                    let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
                         let parsed = this.parser.parse(ws_message.query);
                         let width = parsed.s2r[0].width;
@@ -89,11 +87,23 @@ export class WebSocketHandler {
             }
         });
     }
+    public publish_aggregation_event(aggregation_event: any, aggregation_publisher: LDESPublisher) {
+        let event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
+        this.aggregation_resource_list.push(event_quad);
+        if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
+            aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
+            this.aggregation_resource_list = [];
+        }
+        if (this.aggregation_resource_list.length == 0) {
+            this.logger.debug(`No aggregation events to publish.`);
+        }
+    }
+
 
     public aggregation_event_publisher(event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
         event_emitter.on('aggregation_event', (object: string) => {
             const parser = new Parser({ format: 'N-Triples' });
-            let aggregation_event = JSON.parse(object)            
+            let aggregation_event = JSON.parse(object)
             const event_quad: any = parser.parse(aggregation_event.aggregation_event);
             this.aggregation_resource_list.push(event_quad);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
@@ -111,15 +121,18 @@ export class WebSocketHandler {
         });
 
         event_emitter.on('error', (error: Error) => {
-        event_emitter.on('error', (error: Error) => {
-            this.logger.debug(`Error in aggregation event publisher: ${error}`);
-        });
+            event_emitter.on('error', (error: Error) => {
+                this.logger.debug(`Error in aggregation event publisher: ${error}`);
+            });
 
-        event_emitter.on('end', () => {
-            this.logger.debug(`End of aggregation event publisher.`);
+            event_emitter.on('end', () => {
+                this.logger.debug(`End of aggregation event publisher.`);
+            });
+
+
+
         });
     }
-
     public associate_channel_with_query(query_id: string, ws: WebSocket) {
         this.connections.set(query_id, ws);
     }
@@ -131,18 +144,6 @@ export class WebSocketHandler {
         }
         else {
             this.logger.debug(`No connection found for query id: ${query_id}`);
-        }
-    }
-
-    public publish_aggregation_event(aggregation_event: any, aggregation_publisher: LDESPublisher) {        
-        let event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
-        this.aggregation_resource_list.push(event_quad);
-        if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
-            aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
-            this.aggregation_resource_list = [];
-        }
-        if (this.aggregation_resource_list.length == 0) {
-            this.logger.debug(`No aggregation events to publish.`);
         }
     }
 

@@ -29,7 +29,7 @@ export class LDESPublisher {
     public initialised: boolean = false;
     private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
-    private lilURL: string = CONFIG.LIL_URL
+    public lilURL: string = CONFIG.LIL_URL
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: VLILConfig;

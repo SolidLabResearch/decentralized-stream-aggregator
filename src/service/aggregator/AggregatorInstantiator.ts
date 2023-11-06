@@ -6,7 +6,7 @@ import * as websocket from 'websocket';
 import { EventEmitter } from "events";
 import * as CREDENTIALS from '../../config/PodToken.json';
 import { BindingsWithTimestamp } from "../../utils/Types";
-import { hash_string } from "../../utils/Util";
+import { hash_string_md5 } from "../../utils/Util";
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const parser = new RSPQLParser();
@@ -38,7 +38,7 @@ export class AggregatorInstantiator {
     public connection: typeof websocketConnection;
     public constructor(query: string, from_timestamp: number, to_timestamp: number) {
         this.query = query;
-        this.hash_string = hash_string(query);
+        this.hash_string = hash_string_md5(query);
         this.rsp_engine = new RSPEngine(query);
         this.from_date = new Date(from_timestamp);
         this.to_date = new Date(to_timestamp);
