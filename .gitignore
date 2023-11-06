@@ -110,3 +110,4 @@ src/config/authentication_map.ts
 src/utils/rsp.ts
 src/utils/DecentralizedFileStreamer.ts
 src/utils/UpdateLDES.ts
+aggregation-data
