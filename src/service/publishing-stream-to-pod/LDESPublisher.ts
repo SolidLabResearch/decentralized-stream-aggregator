@@ -53,19 +53,22 @@ export class LDESPublisher {
         this.endpoint_queries = new EndpointQueries();
     }
 
-    async initialise() {
+    async initialise() {        
         this.session = await getAuthenticatedSession({
             webId: AGG_CONFIG.aggregation_pod_web_id,
             password: AGG_CONFIG.aggregation_pod_password,
             email: AGG_CONFIG.aggregation_pod_email,
         })
-        const communication = new SolidCommunication(this.session);
+        // const communication = new SolidCommunication(this.session);
+        const communication = new LDPCommunication();
         const lil: ILDES = new LDESinLDP(this.lilURL, communication);
         let metadata: LDESMetadata | undefined;
         // this.config.date = new Date(0);
         // await lil.initialise(this.config);
         const vlil: VersionAwareLDESinLDP = new VersionAwareLDESinLDP(lil)
         await vlil.initialise(this.config)
+        console.log(`Initialised LDES at ${this.lilURL}`);
+        
         try {
             const metadataStore = await lil.readMetadata();
             const ldes = metadataStore.getSubjects(RDF.type, LDES.EventStream, null);
