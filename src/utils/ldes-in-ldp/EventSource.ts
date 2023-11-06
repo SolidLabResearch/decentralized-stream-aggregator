@@ -1,13 +1,25 @@
 import {
     DCT,
+    extractMembers,
     extractTimestampFromLiteral,
+    filterRelation,
     ILDESinLDPMetadata,
+    isContainerIdentifier,
+    LDESinLDP,
     LDPCommunication,
+    SolidCommunication,
     turtleStringToStore
 } from "@treecg/versionawareldesinldp";
-import {DataFactory, Literal, Quad, Quad_Object, Store, Writer} from "n3";
-import {existsSync, readFileSync} from "fs";
-import {Session} from "@rubensworks/solid-client-authn-isomorphic";
+import { DataFactory, Literal, Quad, Quad_Object, Store, Writer } from "n3";
+import { existsSync, readFileSync } from "fs";
+import { Session } from "@rubensworks/solid-client-authn-isomorphic";
+import { Prefixes } from "../Types";
+import { extractDateFromMember, extractLdesMetadata } from "../../service/result-dispatcher/ResultUtil";
+import { Readable } from "stream";
+import { RateLimitCommunication } from "./RateLimitCommunication";
+import { AxiosResponse } from "axios";
+import {Member} from "@treecg/types";
+import { TREE } from "@treecg/ldes-snapshot";
 
 const namedNode = DataFactory.namedNode;
 
@@ -189,3 +201,106 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
         }
     }
 }
+
+
+
+/**
+ *  Rate limiting read members function so that the GET requests are
+ * not sent too fast to the server so that the CSS server does not crash.
+ *
+ * @export
+ */
+
+export async function readMembersRateLimited(opts: {
+    from?: Date,
+    to?: Date,
+    ldes: LDESinLDP,
+    communication: LDPCommunication | SolidCommunication
+    rate: number
+}): Promise<Readable> {
+
+    let { from, to, rate } = opts ?? {};
+    from = opts.from ?? new Date(0);
+    to = opts.to ?? new Date();
+    rate = opts.rate;
+    const member_stream = new Readable({
+        objectMode: true,
+        read() {
+
+        }
+    });
+
+    const metadata = await extractLdesMetadata(opts.ldes);
+    const relations = filterRelation(metadata, from, to);
+    const rate_limit_comm = new RateLimitCommunication(rate);
+    for (const relation of relations) {
+        const resources = readPageRateLimited(opts.ldes, relation.node, rate_limit_comm, metadata);
+        const members: Member[] = [];
+        for await (const resource of resources){
+            let member_id = resource.getSubjects(relation.path, null, null)[0].value;
+            resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
+
+            const member: Member = {
+                id: namedNode(member_id),
+                quads: resource.getQuads(null, null, null, null)
+            }
+            
+            const member_date_time = extractDateFromMember(member, relation.path);
+            if (from <= member_date_time && member_date_time <= to){
+                members.push(member);
+            }
+        }
+
+        const sorted_members = members.sort((a:Member, b:Member) => {
+            const date_a = extractDateFromMember(a, relation.path);
+            const date_b = extractDateFromMember(b, relation.path);
+            return date_a.getTime() - date_b.getTime();
+        });     
+
+        sorted_members.forEach(member => member_stream.push(member));
+    }
+
+    return member_stream;
+}
+
+/**
+ * readPage function which is rate limited so that there are
+ * not a lot of GET requests so that the CSS server does not crash.
+ */
+
+
+export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string, rate_limit_comm: RateLimitCommunication, metadata: ILDESinLDPMetadata): AsyncIterable<Store> {
+    if (isContainerIdentifier(fragment_url)) {
+        const store = await readRateLimited(ldes, fragment_url, rate_limit_comm);
+        const objects = store.getObjects(null, namedNode("http://www.w3.org/ns/ldp#contains"), null);
+        for (const object of objects) {
+            const resource_store = await readRateLimited(ldes, object.id, rate_limit_comm);
+            if (resource_store.countQuads(metadata.eventStreamIdentifier, TREE.member, null, null) === 0) {
+                yield resource_store;
+            } else {
+                const members = extractMembers(resource_store, metadata.eventStreamIdentifier);
+                for (const member of members) {
+                    yield member;
+                }
+            }
+        }
+    }
+}
+
+/**
+ * read function which is rate limited so that there are not a lot of GET requests
+ * so that the CSS server does not crash.
+ */
+
+export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitCommunication) {
+    const response: AxiosResponse = await rate_limit_comm.getRateLimited(resource_identifier);
+    if (response.status !== 200) {
+        throw new Error(`Resource not found: ${resource_identifier}`)
+    }
+    if (response.headers['content-type'] !== 'text/turtle') {
+        throw new Error('Works only on rdf data')
+    }
+    const text = await response.data;
+    return await turtleStringToStore(text, resource_identifier);
+}
+

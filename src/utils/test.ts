@@ -1,15 +1,20 @@
-import WebSocket from "ws";
+import { LDPCommunication, LDESinLDP } from "@treecg/versionawareldesinldp";
+import { readMembersRateLimited } from "./ldes-in-ldp/EventSource";
 
 async function main(){
-    const websocket = new WebSocket("ws://localhost:3000/.notifications/WebSocketChannel2023/d77aa5ea-9aeb-464b-b80f-add705fa7831");
-    websocket.on("open", () => {
-        console.log("open");
+    // fetch("http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/").then(async (response) => {
+        // console.log(await response.text());
+    // });
+    let ldes = new LDESinLDP("http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/", new LDPCommunication());
+    // const ldes = new LDESinLDP("http://localhost:3000/dataset_participant1/data/", new LDPCommunication())
+    const stream = await readMembersRateLimited({
+        ldes: ldes,
+        communication: new LDPCommunication(),
+        rate: 10
     });
-    websocket.on("message", (data) => {
-        console.log("message", data.toString());
-    });
-    websocket.on("close", () => {
-        console.log("close");
+    // const stream = await ldes.readAllMembers();
+    stream.on('data', (data) => {
+        console.log(data);
     });
 }
 

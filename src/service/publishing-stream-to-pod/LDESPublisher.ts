@@ -15,33 +15,36 @@ import {
 } from "@treecg/versionawareldesinldp";
 import { QueryAnnotationPublishing } from "./QueryAnnotationPublishing";
 import {
-    initSession
+    initSession, Resource
 } from "../../utils/ldes-in-ldp/EventSource";
+import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 import * as CONFIG from '../../config/ldes_properties.json';
 import * as AGG_CONFIG from '../../config/pod_credentials.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
+const ld_fetch = require('ldfetch');
+const ldfetch = new ld_fetch({});
 import { EndpointQueries } from "../../server/EndpointQueries";
 
 export class LDESPublisher {
-
     public initialised: boolean = false;
-    private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
-    private session: any;
-    private lilURL: string = CONFIG.LIL_URL
+    private credentialsFileName: string | null = CONFIG.CREDENTIALS_FILE_NAME;
+    private session: Session | undefined = undefined;
+    public lilURL: string = CONFIG.LIL_URL
     private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: VLILConfig;
-    private amount = CONFIG.AMOUNT;
-    private bucketSize = CONFIG.BUCKET_SIZE;
-    private logLevel = CONFIG.LOG_LEVEL;
+    private amount: number = CONFIG.AMOUNT;
+    private bucketSize: number = CONFIG.BUCKET_SIZE;
+    private logLevel: string = CONFIG.LOG_LEVEL;
     private aggregationQuery: string = "";
-    private parser: any;
+    private parser: RSPQLParser;
     private query_annotation_publisher: QueryAnnotationPublishing;
     public logger: Logger<ILogObj>;
     public endpoint_queries: EndpointQueries;
 
     constructor() {
+        this.initialise();
         this.config = {
             treePath: this.treePath, versionOfPath : "1.0"
         }
@@ -49,7 +52,6 @@ export class LDESPublisher {
         this.logger = new Logger();
         this.query_annotation_publisher = new QueryAnnotationPublishing();
         this.endpoint_queries = new EndpointQueries();
-        this.initialise();
     }
 
     async initialise() {
@@ -80,7 +82,7 @@ export class LDESPublisher {
         return true;
     }
 
-    publish(resourceList: any[], start_time: Date, end_time: Date) {
+    publish(resourceList: Resource[], start_time: Date, end_time: Date) {
         if (resourceList.length === 0) {
             console.log("No resources to publish");
             return;
@@ -91,9 +93,38 @@ export class LDESPublisher {
             }
             let query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
             if (query != undefined) {
-                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session);
+                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session).then(() => {
+                    console.log("Published query annotation");
+                    this.update_latest_inbox(this.lilURL);
+                });
             }
         }
 
+    }
+
+    public async update_latest_inbox(aggregation_pod_ldes_location: string) {
+        let inbox_location:string[] = [];
+        ldfetch.get(aggregation_pod_ldes_location).then((response: any) => {
+            for (let quad of response.triples) {
+                if (quad.predicate.value == "http://www.w3.org/ns/ldp#inbox") {
+                    inbox_location.push(quad.object.value);
+                }
+            }
+            let latest_inbox = inbox_location.sort()[inbox_location.length - 1];
+            fetch(aggregation_pod_ldes_location, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/sparql-update'
+                },
+                body: "INSERT DATA { <" + aggregation_pod_ldes_location + "> <http://www.w3.org/ns/ldp#inbox> <" + latest_inbox + "> }",
+            }).then((response) => {
+                if (response.status == 200 || 201 || 205) {
+                    this.logger.debug(`The latest inbox of the LDP container is patched successfully.`)
+                }
+                else {
+                    this.logger.error(`The latest inbox of the LDP container could not be patched. ${response}`)
+                }
+            })
+        })
     }
 }
