@@ -33,5 +33,17 @@
     "css:config/util/resource-locker/file.json",
     "css:config/util/variables/default.json"
   ],
-  "@graph": []
+   "@graph": [
+    {
+      "comment": "The new expiration time for inactive locks, in milliseconds.",
+      "@type": "Override",
+      "overrideInstance": {
+        "@id": "urn:solid-server:default:ResourceLocker"
+      },
+      "overrideParameters": {
+        "@type": "WrappedExpiringReadWriteLocker",
+        "expiration": 20000
+      }
+    }
+  ]
 }

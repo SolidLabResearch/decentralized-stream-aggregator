@@ -34,7 +34,7 @@ export class WebSocketHandler {
 
     public handle_wss(websocket_server: WebSocket.server, event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
         // TODO: find the type of the request object
-
+        console.log(`Handling the websocket server.`);
         websocket_server.on('connect', (request: any) => {
         });
 
@@ -45,7 +45,7 @@ export class WebSocketHandler {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
-                        let parsed = this.parser.parse(ws_message.query);
+                        let parsed = this.parser.parse(ws_message.query);                        
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ws_message.query);
                         this.connections.set(query_hashed, connection);
@@ -60,6 +60,15 @@ export class WebSocketHandler {
                             }
                         }
                     }
+                    else if (Object.keys(ws_message).includes('stream_status')) {
+                        let query_hash = ws_message.query_hash;
+                        for (let [key, value] of this.connections) {
+                            if (key === query_hash) {
+                                value.send(JSON.stringify(ws_message));
+                            }
+                        }
+                        
+                    }
                     else {
                         throw new Error('Unknown message, not handled.');
                     }
@@ -73,8 +82,7 @@ export class WebSocketHandler {
             });
         });
         this.client_response_publisher(event_emitter);
-        this.client_response_publisher(event_emitter);
-        this.aggregation_event_publisher(event_emitter, aggregation_publisher);
+        // this.aggregation_event_publisher(event_emitter, aggregation_publisher);
     }
 
     public async client_response_publisher(event_emitter: EventEmitter) {

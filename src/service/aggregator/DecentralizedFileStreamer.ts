@@ -1,4 +1,4 @@
-import { QueryEngine } from "@comunica/query-sparql-link-traversal";
+import { QueryEngine } from "@comunica/query-sparql";
 import { LDESinLDP, LDPCommunication, SolidCommunication } from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Bindings } from '@comunica/types';
@@ -6,33 +6,44 @@ import { quick_sort_queue, StreamEventQueue } from "../../utils/StreamEventQueue
 const { Store } = require('n3');
 const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
+const websocketConnection = require('websocket').connection;
+const WebSocketClient = require('websocket').client;
 import { Quad } from "n3";
 import WebSocket from 'ws';
 import { QuadWithID, WebSocketMessage } from "../../utils/Types";
 import { session_with_credentials } from "../../utils/authentication/css-auth";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
+import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
+import { hash_string_md5 } from "../../utils/Util";
 
 export class DecentralizedFileStreamer {
     public ldes_stream: string;
     public from_date: Date;
     public to_date: Date;
+    static connection: typeof websocketConnection;
+    public static client: any = new WebSocketClient();
     public stream_name: RDFStream | undefined;
     public ldes!: LDESinLDP;
     public comunica_engine: QueryEngine;
-    public communication: Promise<SolidCommunication | LDPCommunication>;
+    public communication: Promise<SolidCommunication | LDPCommunication | RateLimitedLDPCommunication>;
     public session: any;
+    public query: string
     public file_streamer_start_time: number = 0;
     public websocket_listening_time: number = 0;
     public missing_event_queue: StreamEventQueue<Set<Quad>>;
 
-    constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine) {
+    constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine, query: string) {
         this.ldes_stream = ldes_stream;
         this.communication= this.get_communication(session_credentials);
         this.from_date = from_date;
         this.to_date = to_date;
+        this.query = query;
         this.missing_event_queue = new StreamEventQueue<Set<Quad>>([]);
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
         this.comunica_engine = new QueryEngine();
+        DecentralizedFileStreamer.connect_with_server('ws://localhost:8080/').then(() => {
+            console.log(`The connection with the websocket server was established.`);
+        });
         this.initiateDecentralizedFileStreamer().then(() => {
             this.add_missing_events_to_rsp_engine();
         });
@@ -40,12 +51,12 @@ export class DecentralizedFileStreamer {
 
     public async get_communication(credentials: session_credentials) {
         let session = await this.get_session(credentials);
+        
         if (session) {
             return new SolidCommunication(session);
         }
         else {
-            return new LDPCommunication();
-
+            return new RateLimitedLDPCommunication(30)
         }
     }
 
@@ -60,11 +71,11 @@ export class DecentralizedFileStreamer {
         let end_time = this.get_websocket_listening_time();
         const stream = await readMembersRateLimited({
             ldes: this.ldes,
+            rate: 30,
             communication: await this.communication,
-            rate: 80
+            interval: 1000
                 })
         stream.on("data", async (data: QuadWithID) => {
-            // console.log(data);
             let stream_store = new Store(data.quads);
             const binding_stream = await this.comunica_engine.queryBindings(`
             PREFIX saref: <https://saref.etsi.org/core/>
@@ -83,6 +94,12 @@ export class DecentralizedFileStreamer {
                 }
             });
         });
+
+        stream.on("end", async () => {
+            console.log(`The stream has ended.`);
+            
+        });
+
     }
 
     public async initiateDecentralizedFileStreamer(): Promise<void> {
@@ -92,7 +109,8 @@ export class DecentralizedFileStreamer {
         const stream = await readMembersRateLimited({ 
             ldes: this.ldes, 
             communication: communication, 
-            rate: 80
+            rate: 30,
+            interval: 1000
          });
         if (this.stream_name !== undefined) {
             await this.subscribing_latest_events(this.stream_name);
@@ -102,6 +120,20 @@ export class DecentralizedFileStreamer {
             if (this.stream_name !== undefined) {
                 await this.add_event_store_to_rsp_engine(stream_store, [this.stream_name]);
             }
+        });
+
+        stream.on("end", async () => {
+            console.log(`The stream has ended.`);
+            let query_hash = hash_string_md5(this.query);
+            DecentralizedFileStreamer.sendToServer(`{
+                "query_hash": "${query_hash}",
+                "stream_name": "${this.stream_name}",
+                "stream_status": "ended"
+            }`);
+        });
+
+        stream.on("error", async (error: Error) => {
+            console.log(`The reading from the solid pod ldes stream has an error: ${error}`);       
         });
     }
 
@@ -183,7 +215,6 @@ export class DecentralizedFileStreamer {
                     });
 
                     let sorted_queue = quick_sort_queue(this.missing_event_queue);
-
                     // this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
                 };
             }
@@ -266,6 +297,28 @@ export class DecentralizedFileStreamer {
 
     async get_session(credentials: session_credentials) {
         return await session_with_credentials(credentials);
+    }
+
+    static sendToServer(message: string) {
+        if (this.connection.connected) {
+            this.connection.sendUTF(message);
+        }
+        else {
+            this.connect_with_server('ws://localhost:8080/').then(() => {
+                console.log(`The connection with the websocket server was not established. It is now established.`);
+            });
+        }
+    }
+
+    static async connect_with_server(wssURL: string) {
+        this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
+        this.client.on('connect', (connection: typeof websocketConnection) => {
+            DecentralizedFileStreamer.connection = connection;
+        });
+        this.client.setMaxListeners(Infinity);
+        this.client.on('connectFailed', (error: Error) => {
+            console.log('Connect Error: ' + error.toString());
+        });
     }
 
 }

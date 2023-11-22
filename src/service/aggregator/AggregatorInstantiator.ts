@@ -53,12 +53,11 @@ export class AggregatorInstantiator {
 
     public async intiateDecentralizedFileStreamer() {
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
-
         for (const stream of this.stream_array) {
             // uncomment the line below            
             let session_credentials = this.get_session_credentials(stream);
             // new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine);
-            new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine);
+            new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine, this.query);
 
         }
         this.executeRSP();
@@ -76,6 +75,7 @@ export class AggregatorInstantiator {
                 let window_timestamp_from = object.timestamp_from;
                 let window_timestamp_to = object.timestamp_to;
                 let iterable = object.bindings.values();
+                console.log(object.bindings.size);
                 for (let item of iterable) {
                     let aggregation_event_timestamp = new Date().getTime();
                     let data = item.value;
@@ -92,6 +92,8 @@ export class AggregatorInstantiator {
             })
         });
     }
+
+    // TODO : add extra projection variables to the aggregation event.
     generate_aggregation_event(value: string, event_timestamp: number, stream_array: string[] | undefined, timestamp_from: number, timestamp_to: number): string {
         if (stream_array === undefined) {
             throw new Error("The stream array is undefined. ");

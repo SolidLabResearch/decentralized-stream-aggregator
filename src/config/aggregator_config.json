@@ -1,3 +1,4 @@
 {
-    "aggregation_pod_location" : "http://localhost:3000/aggregation_pod/aggregation/"
+    "aggregation_pod_ldes_location" : "http://localhost:3000/aggregation_pod/aggregation/",
+    "aggregator_rate_limit": 30
 }

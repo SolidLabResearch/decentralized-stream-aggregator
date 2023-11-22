@@ -1,15 +1,25 @@
+import { storeToString } from "@treecg/versionawareldesinldp";
 import { IncomingMessage, ServerResponse } from "http";
+import { Store } from "rdflib";
 import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
+import { AggregationDispatcher } from "../service/result-dispatcher/AggregationDispatcher";
 import { RequestBody } from "../utils/Types";
+import { hash_string_md5 } from "../utils/Util";
+const websocketConnection = require('websocket').connection;
+const WebSocketClient = require('websocket').client;
+const N3 = require('n3');
 
 export class POSTHandler {
-
+    static connection: typeof websocketConnection;
+    public static client: any;
     static request_body: RequestBody;
     static sparql_to_rspql: SPARQLToRSPQL;
 
     constructor() {
         POSTHandler.sparql_to_rspql = new SPARQLToRSPQL();
+        POSTHandler.connection = websocketConnection;
+        POSTHandler.client = new WebSocketClient();
     }
 
     public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string) {
@@ -36,10 +46,57 @@ export class POSTHandler {
         });
     }
 
-    public static handle_ws_query(query: string, width: number, query_registry: QueryRegistry) {
+    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry) {
+        let aggregation_dispatcher = new AggregationDispatcher(query);
         let to_timestamp = new Date().getTime(); // current time
         let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
-        query_registry.register_query(query, query_registry, from_timestamp, to_timestamp);
-    
+        let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp);
+        if (is_query_unique) {
+            console.log(`The query is unique. It will be computed and sent via the websocket.`);
+        } else {
+            console.log(`The query is not unique. It will be read from the Solid Stream Aggregator's Solid Pod and sent via the websocket.`);
+            let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
+            if (aggregated_events_exist) {
+                console.log(`The aggregated events exist.`);
+                let aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({
+                });
+                aggregation_stream.on('data', async (data) => {
+                    let store = new N3.Store(data.quads);
+                    let aggregation_event = storeToString(store)
+                    let object = {
+                        query_hash: hash_string_md5(query),
+                        aggregation_event: aggregation_event,
+                    }
+                    let object_string = JSON.stringify(object);
+                    this.sendToServer(object_string);
+                });
+            }
+            else {
+                console.log(`The aggregated events do not exist.`);
+            }
+        }
+
+    }
+
+    static async connect_with_server(wssURL: string) {
+        this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
+        this.client.on('connect', (connection: typeof websocketConnection) => {
+            POSTHandler.connection = connection;
+        });
+        this.client.setMaxListeners(Infinity);
+        this.client.on('connectFailed', (error: Error) => {
+            console.log('Connect Error: ' + error.toString());
+        });
+    }
+
+    static sendToServer(message: string) {
+        if (this.connection.connected) {
+            this.connection.sendUTF(message);
+        }
+        else {
+            this.connect_with_server('ws://localhost:8080/').then(() => {
+                console.log(`The connection with the websocket server was not established. It is now established.`);
+            });
+        }
     }
 }

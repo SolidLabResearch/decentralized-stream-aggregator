@@ -66,6 +66,7 @@ export class QueryRegistry {
             TODO : make a result dispatcher module.
             */
             this.logger.debug(`The query you have registered is already executing.`);
+            return false;
         }
 
     }

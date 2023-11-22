@@ -13,13 +13,12 @@ import {
 import { DataFactory, Literal, Quad, Quad_Object, Store, Writer } from "n3";
 import { existsSync, readFileSync } from "fs";
 import { Session } from "@rubensworks/solid-client-authn-isomorphic";
-import { extractDateFromMember, extractLdesMetadata } from "../../service/result-dispatcher/ResultUtil";
+import { extractDateFromMember, extractLdesMetadata } from "../../service/result-dispatcher/AggregationDispatcher";
 import { Readable } from "stream";
-import { RateLimitCommunication } from "./RateLimitCommunication";
-import { AxiosResponse } from "axios";
-import {Member} from "@treecg/types";
+import { Member } from "@treecg/types";
 import { TREE } from "@treecg/ldes-snapshot";
 import { Prefixes } from "../Types";
+import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 
 const namedNode = DataFactory.namedNode;
 
@@ -131,33 +130,33 @@ export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixe
     const named = new Map<string, Map<string, Quad_Object[]>>();
     const blank = new Map<string, Map<string, Quad_Object[]>>();
     addElements:
-        for (const quad of resource) {
-            const data = quad.subject.termType == "BlankNode" ? blank : named;
-            if (data.has(quad.subject.id)) {
-                const props = data.get(quad.subject.id)!;
-                if (props.has(quad.predicate.id)) {
-                    // check if value is already in array, if it is, dont add it anymore
-                    const objs = props.get(quad.predicate.id)!;
-                    for (const obj of objs) {
-                        // while it might offer better performance to use a set instead
-                        // of an array, the custom type Quad_Object would not work correctly
-                        // with Set.has(), and thus would require a seperate container storing
-                        // the IDs (which would in turn not be memory efficient)
-                        if (obj.equals(quad.object)) {
-                            continue addElements;
-                        }
+    for (const quad of resource) {
+        const data = quad.subject.termType == "BlankNode" ? blank : named;
+        if (data.has(quad.subject.id)) {
+            const props = data.get(quad.subject.id)!;
+            if (props.has(quad.predicate.id)) {
+                // check if value is already in array, if it is, dont add it anymore
+                const objs = props.get(quad.predicate.id)!;
+                for (const obj of objs) {
+                    // while it might offer better performance to use a set instead
+                    // of an array, the custom type Quad_Object would not work correctly
+                    // with Set.has(), and thus would require a seperate container storing
+                    // the IDs (which would in turn not be memory efficient)
+                    if (obj.equals(quad.object)) {
+                        continue addElements;
                     }
-                    objs.push(quad.object);
-                } else {
-                    props.set(quad.predicate.id, new Array(quad.object));
                 }
+                objs.push(quad.object);
             } else {
-                data.set(quad.subject.id, new Map([[quad.predicate.id, new Array(quad.object)]]));
+                props.set(quad.predicate.id, new Array(quad.object));
             }
+        } else {
+            data.set(quad.subject.id, new Map([[quad.predicate.id, new Array(quad.object)]]));
         }
+    }
     // converting all the entries of the blank map first
     // with the ordered view done, a more compact turtle string can be generated
-    const writer = new Writer({prefixes: _prefixes});
+    const writer = new Writer({ prefixes: _prefixes });
     for (const [subject, properties] of named) {
         for (const [predicate, objects] of properties) {
             for (const object of objects) {
@@ -215,8 +214,9 @@ export async function readMembersRateLimited(opts: {
     from?: Date,
     to?: Date,
     ldes: LDESinLDP,
-    communication: LDPCommunication | SolidCommunication
-    rate: number
+    communication: LDPCommunication | SolidCommunication | RateLimitedLDPCommunication,
+    rate: number,
+    interval: number
 }): Promise<Readable> {
 
     let { from, to, rate } = opts ?? {};
@@ -232,11 +232,13 @@ export async function readMembersRateLimited(opts: {
 
     const metadata = await extractLdesMetadata(opts.ldes);
     const relations = filterRelation(metadata, from, to);
-    const rate_limit_comm = new RateLimitCommunication(rate);
+    const rate_limit_comm = new RateLimitedLDPCommunication(rate)
+    // const rate_limit_comm = new RateLimitCommunication(rate);
     for (const relation of relations) {
         const resources = readPageRateLimited(opts.ldes, relation.node, rate_limit_comm, metadata);
         const members: Member[] = [];
-        for await (const resource of resources){
+        for await (const resource of resources) {
+            if (resource !== undefined){
             let member_id = resource.getSubjects(relation.path, null, null)[0].value;
             resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
 
@@ -244,22 +246,23 @@ export async function readMembersRateLimited(opts: {
                 id: namedNode(member_id),
                 quads: resource.getQuads(null, null, null, null)
             }
-            
+
             const member_date_time = extractDateFromMember(member, relation.path);
-            if (from <= member_date_time && member_date_time <= to){
+            if (from <= member_date_time && member_date_time <= to) {
                 members.push(member);
-            }
+            }}
         }
 
-        const sorted_members = members.sort((a:Member, b:Member) => {
+        const sorted_members = members.sort((a: Member, b: Member) => {
             const date_a = extractDateFromMember(a, relation.path);
             const date_b = extractDateFromMember(b, relation.path);
             return date_a.getTime() - date_b.getTime();
-        });     
+        });
 
         sorted_members.forEach(member => member_stream.push(member));
     }
 
+    member_stream.push(null);
     return member_stream;
 }
 
@@ -269,7 +272,7 @@ export async function readMembersRateLimited(opts: {
  */
 
 
-export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string, rate_limit_comm: RateLimitCommunication, metadata: ILDESinLDPMetadata): AsyncIterable<Store> {
+export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string, rate_limit_comm: RateLimitedLDPCommunication, metadata: ILDESinLDPMetadata): AsyncIterable<Store> {
     if (isContainerIdentifier(fragment_url)) {
         const store = await readRateLimited(ldes, fragment_url, rate_limit_comm);
         const objects = store.getObjects(null, namedNode("http://www.w3.org/ns/ldp#contains"), null);
@@ -292,15 +295,16 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
  * so that the CSS server does not crash.
  */
 
-export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitCommunication) {
-    const response: AxiosResponse = await rate_limit_comm.getRateLimited(resource_identifier);
-    if (response.status !== 200) {
-        throw new Error(`Resource not found: ${resource_identifier}`)
+export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
+    const response = await rate_limit_comm.get(resource_identifier);
+    if (response && response.status !== 200) {
+        console.log(`Resource not found: ${resource_identifier}`);        
     }
-    if (response.headers['content-type'] !== 'text/turtle') {
-        throw new Error('Works only on rdf data')
+    if (response && response.headers.get('content-type') !== 'text/turtle') {
+        console.log(`Resource is not turtle: ${resource_identifier}`);        
     }
-    const text = await response.data;
+    const text = response ? await response.text() : '';
     return await turtleStringToStore(text, resource_identifier);
 }
+
 

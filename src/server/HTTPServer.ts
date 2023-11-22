@@ -21,13 +21,13 @@ export class HTTPServer {
     public aggregation_publisher: any;
     public endpoint_queries: EndpointQueries;
     public websocket_handler: any;
-    constructor(http_port: number, solid_server_url: string) {
+    constructor(http_port: number, solid_server_url: string) {        
         this.solid_server_url = solid_server_url;
         this.http_server = createServer(this.request_handler.bind(this)).listen(http_port);
         this.logger = new Logger();
         this.websocket_server = new websocket.server({
             httpServer: this.http_server
-        });
+        });        
         this.http_server.keepAliveTimeout = 6000;
         this.aggregation_publisher = new LDESPublisher();
         this.query_registry = new QueryRegistry();
