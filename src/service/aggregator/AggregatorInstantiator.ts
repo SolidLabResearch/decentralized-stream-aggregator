@@ -11,21 +11,6 @@ const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const parser = new RSPQLParser();
 
-export type aggregation_object = {
-    query_hash: string,
-    aggregation_event: string,
-    aggregation_window_from: Date,
-    aggregation_window_to: Date
-}
-
-export type Credentials = {
-    [key: string]: {
-        id: string;
-        secret: string;
-        idp: string;
-    };
-};
-
 export class AggregatorInstantiator {
     public query: string;
     public rsp_engine: RSPEngine;
@@ -56,8 +41,9 @@ export class AggregatorInstantiator {
         for (const stream of this.stream_array) {
             // uncomment the line below            
             let session_credentials = this.get_session_credentials(stream);
+            new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query);
             // new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine);
-            new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine, this.query);
+            // new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine, this.query);
 
         }
         this.executeRSP();
@@ -148,3 +134,18 @@ export class AggregatorInstantiator {
     }
 
 }
+
+export type aggregation_object = {
+    query_hash: string,
+    aggregation_event: string,
+    aggregation_window_from: Date,
+    aggregation_window_to: Date
+}
+
+export type Credentials = {
+    [key: string]: {
+        id: string;
+        secret: string;
+        idp: string;
+    };
+};

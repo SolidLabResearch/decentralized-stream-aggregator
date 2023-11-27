@@ -82,7 +82,7 @@ export class WebSocketHandler {
             });
         });
         this.client_response_publisher(event_emitter);
-        // this.aggregation_event_publisher(event_emitter, aggregation_publisher);
+        this.aggregation_event_publisher(event_emitter, aggregation_publisher);
     }
 
     public async client_response_publisher(event_emitter: EventEmitter) {

@@ -48,7 +48,8 @@ export class POSTHandler {
 
     public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry) {
         let aggregation_dispatcher = new AggregationDispatcher(query);
-        let to_timestamp = new Date().getTime(); // current time
+        // let to_timestamp = new Date().getTime(); // current time
+        let to_timestamp = new Date("2023-11-15T08:58:12.2870Z").getTime(); // time setup for the testing (the BVP query)
         let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
         let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp);
         if (is_query_unique) {

@@ -1,6 +1,8 @@
 import { sleep } from "@treecg/versionawareldesinldp";
 import { AggregatorPod } from "./server/AggregatorPod";
 import { HTTPServer } from "./server/HTTPServer";
+import { AggregatorInstantiator } from "./service/aggregator/AggregatorInstantiator";
+import { DecentralizedFileStreamer } from "./service/aggregator/DecentralizedFileStreamer";
 
 const program = require('commander');
 
@@ -22,7 +24,7 @@ program
         'The URL of the Solid Pod server where the LDES streams are stored in a Solid Pod',
         'http://localhost:3000/'
     )
-    .action(async(options: any) => {
+    .action(async (options: any) => {
         // if (await create_aggregator_pod()){
         //     sleep(5000);
         //     fetch("http://localhost:3000/aggregation_pod/aggregation/").then(async (response) => {
@@ -30,7 +32,7 @@ program
         //         new HTTPServer(options.port, options.SolidServer);
         //     });            
         // }  
-          new HTTPServer(options.port, options.SolidServer);
+        new HTTPServer(options.port, options.SolidServer);
     });
 
 program.parse();

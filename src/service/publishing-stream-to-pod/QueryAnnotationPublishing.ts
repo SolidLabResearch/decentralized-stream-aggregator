@@ -9,6 +9,7 @@ import { editMetadata } from "../../utils/ldes-in-ldp/Util";
 import { v4 as uuidv4 } from 'uuid';
 import { AggregationFocusExtractor } from "../parsers/AggregationFocusExtractor";
 import { ParsedQuery } from "../parsers/ParsedQuery";
+import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 const { quad, namedNode, literal } = DataFactory;
 const ldfetch = require('ldfetch');
 const fetch = new ldfetch({});
@@ -26,8 +27,9 @@ export class QueryAnnotationPublishing {
     }
 
     public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, config: LDESConfig, start_time: Date, end_time: Date, session?: Session): Promise<void> {
-        const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
-        const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, comunication);
+        // const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
+        const communication = new RateLimitedLDPCommunication(30, 1000);
+        const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, communication);
         const metadata_store = await ldes_in_ldp.readMetadata();
         const metadata = MetadataParser.extractLDESinLDPMetadata(metadata_store, ldes_in_ldp_url + "#EventStream")
         // const metadata: LDESMetadata = extractLdesMetadata(metadata_store, ldes_in_ldp_url + "#EventStream");
@@ -42,7 +44,7 @@ export class QueryAnnotationPublishing {
         if ((await check_if_container_exists(ldes_in_ldp, bucket_url)) === false) {
             ldes_in_ldp.newFragment(new Date(resource_timestamp)).then(() => {
                 let query_metadata = this.get_query_metadata(query, start_time, end_time);
-                this.patch_metadata(query_metadata, bucket_url, comunication);
+                this.patch_metadata(query_metadata, bucket_url, communication);
             });
             bucket_resources[bucket_url] = [];
             for (const resource of resources) {
@@ -66,13 +68,13 @@ export class QueryAnnotationPublishing {
                         treePath: config.treePath,
                     });
                     const insertBody = `INSERT DATA {${storeToString(store)}}`;
-                    await editMetadata(ldes_in_ldp_url, comunication, insertBody);
+                    await editMetadata(ldes_in_ldp_url, communication, insertBody);
                     bucket_resources[new_container_url] = bucket_resources["none"];
                 });
             }
         }
         delete bucket_resources["none"];
-        await add_resources_with_metadata_to_buckets(bucket_resources, metadata, comunication).then(async () => {
+        await add_resources_with_metadata_to_buckets(bucket_resources, metadata, communication).then(async () => {
             const response = await fetch.get(ldes_in_ldp_url);
             const current_inbox_store = new Store();
             const store = new Store(response.triples);
@@ -95,9 +97,9 @@ export class QueryAnnotationPublishing {
                     )
                 ]
             )
-            await comunication.patch(ldes_in_ldp_url, patchSparqlUpdateDelete(current_inbox_store))
+            await communication.patch(ldes_in_ldp_url, patchSparqlUpdateDelete(current_inbox_store))
             .then(async () => {
-                const ldp_response = await comunication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
+                const ldp_response = await communication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
                 console.log("response is: ", ldp_response);
 
             })
