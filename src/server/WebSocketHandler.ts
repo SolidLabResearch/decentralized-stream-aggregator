@@ -45,7 +45,7 @@ export class WebSocketHandler {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
-                        let parsed = this.parser.parse(ws_message.query);                        
+                        let parsed = this.parser.parse(ws_message.query);
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ws_message.query);
                         this.connections.set(query_hashed, connection);
@@ -60,14 +60,14 @@ export class WebSocketHandler {
                             }
                         }
                     }
-                    else if (Object.keys(ws_message).includes('stream_status')) {
+                    else if (Object.keys(ws_message).includes('status')) {
                         let query_hash = ws_message.query_hash;
                         for (let [key, value] of this.connections) {
                             if (key === query_hash) {
                                 value.send(JSON.stringify(ws_message));
                             }
                         }
-                        
+
                     }
                     else {
                         throw new Error('Unknown message, not handled.');
@@ -109,13 +109,13 @@ export class WebSocketHandler {
 
 
     public aggregation_event_publisher(event_emitter: EventEmitter, aggregation_publisher: LDESPublisher) {
-        event_emitter.on('aggregation_event', (object: string) => {
+        event_emitter.on('aggregation_event', async (object: string) => {
             const parser = new Parser({ format: 'N-Triples' });
             let aggregation_event = JSON.parse(object)
             const event_quad: any = parser.parse(aggregation_event.aggregation_event);
             this.aggregation_resource_list.push(event_quad);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
-                aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
+                await aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
                 this.aggregation_resource_list = [];
             }
             if (this.aggregation_resource_list.length == 0) {

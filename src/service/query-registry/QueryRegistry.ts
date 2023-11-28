@@ -1,16 +1,10 @@
-import { isomorphic } from "rdf-isomorphic";
-import { DataFactory, Quad } from "rdf-data-factory";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { Logger, ILogObj } from "tslog";
-import { BlankNode } from "n3";
 import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
 import { is_equivalent } from "rspql-query-equivalence";
-import { string } from "rdflib/lib/utils-js";
 import { WriteLockArray } from "../../utils/query-registry/Util";
-let sparqlParser = require('sparqljs').Parser;
-import { createHash } from 'crypto';
-import { query } from "express";
-let SPARQLParser = new sparqlParser();
+const websocketConnection = require('websocket').connection;
+const WebSocketClient = require('websocket').client;
 
 export class QueryRegistry {
     registered_queries: WriteLockArray<string>;
@@ -21,6 +15,8 @@ export class QueryRegistry {
     parser: RSPQLParser;
     logger: Logger<ILogObj>;
     query_hash_map: Map<string, string>;
+    static connection: typeof websocketConnection;
+    public static client: any = new WebSocketClient();
 
     /**
      * Creates an instance of QueryRegistry.
@@ -41,6 +37,9 @@ export class QueryRegistry {
         this.query_count = 0;
         this.parser = new RSPQLParser();
         this.logger = new Logger();
+        QueryRegistry.connect_with_server('ws://localhost:8080').then(() => {
+            console.log(`Connection of the QueryRegistry with the websocket server is established.`);
+        });
     }
     /**
      *  Register a query in the QueryRegistry.
@@ -55,8 +54,9 @@ export class QueryRegistry {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
-           console.log(query);
-
+            QueryRegistry.send_to_server(`{
+                "status": "unique_query_registered"
+            }`);
             new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp);
             return true;
         }
@@ -66,6 +66,9 @@ export class QueryRegistry {
             TODO : make a result dispatcher module.
             */
             this.logger.debug(`The query you have registered is already executing.`);
+            QueryRegistry.send_to_server(`{
+                "status": "query_already_registered"
+            }`);
             return false;
         }
 
@@ -124,4 +127,27 @@ export class QueryRegistry {
     get_registered_queries() {
         return this.registered_queries;
     }
+
+    static send_to_server(message: string) {
+        if (this.connection.connected) {
+            this.connection.sendUTF(message);
+        }
+        else {
+            this.connect_with_server('ws://localhost:8080').then(() => {
+                console.log(`The connection with the websocket server was not established. It is now established.`);
+            });
+        }
+    }
+
+    static async connect_with_server(websocketURL: string) {
+        this.client.connect(websocketURL, 'solid-stream-aggregator-protocol');
+        this.client.on('connect', (connection: typeof websocketConnection) => {
+            QueryRegistry.connection = connection;
+        });
+        this.client.setMaxListeners(Infinity);
+        this.client.on('connectFailed', (error: any) => {
+            console.log('Connect Error: ' + error.toString());
+        });
+    }
+
 }

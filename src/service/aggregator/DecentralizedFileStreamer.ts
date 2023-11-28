@@ -8,13 +8,14 @@ const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
+import fs from 'fs';
 import { Quad } from "n3";
 import WebSocket from 'ws';
 import { QuadWithID, WebSocketMessage } from "../../utils/Types";
 import { session_with_credentials } from "../../utils/authentication/css-auth";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
-import { hash_string_md5 } from "../../utils/Util";
+import { hash_string_md5, insertion_sort, quick_sort } from "../../utils/Util";
 
 export class DecentralizedFileStreamer {
     public ldes_stream: string;
@@ -73,7 +74,7 @@ export class DecentralizedFileStreamer {
         let end_time = this.get_websocket_listening_time();
         const stream = await readMembersRateLimited({
             ldes: this.ldes,
-            rate: 30,
+            rate: 60,
             communication: await this.communication,
             interval: 1000
         })
@@ -118,6 +119,7 @@ export class DecentralizedFileStreamer {
             await this.subscribing_latest_events(this.stream_name);
         }
         stream.on("data", async (data: QuadWithID) => {
+            let time_start = Date.now();
             let stream_store = new Store(data.quads);
             const binding_stream = await this.comunica_engine.queryBindings(`
             select ?s where {
@@ -129,11 +131,11 @@ export class DecentralizedFileStreamer {
             binding_stream.on('data', async (binding: any) => {
                 for (let subject of binding.values()) {
                     this.observation_array.push(subject.id);
+                    this.observation_array = insertion_sort(this.observation_array);
                 }
             });
 
             binding_stream.on('end', async () => {
-                this.observation_array = this.observation_array.sort();
                 let unique_observation_array = [...new Set(this.observation_array)];
                 for (let observation of unique_observation_array) {
                     let observation_store = new Store(stream_store.getQuads(observation, null, null, null));
@@ -152,6 +154,13 @@ export class DecentralizedFileStreamer {
                             if (time !== undefined) {
                                 console.log(`Timestamp: ${time.value}`);
                                 let timestamp = await this.epoch(time.value);
+                                let time_end = Date.now();
+                                fs.appendFileSync('time.txt', `${(time_end - time_start) / 1000}s\n`);
+                                time_start = time_end;
+                                DecentralizedFileStreamer.sendToServer(`{
+                                    "status" : "event_preprocessed",
+                                    "time_taken": "${time_end - time_start}"
+                                }`);
                                 if (this.stream_name) {
                                     await this.add_event_to_rsp_engine(observation_store, [this.stream_name], timestamp);
                                 }
@@ -168,7 +177,7 @@ export class DecentralizedFileStreamer {
             DecentralizedFileStreamer.sendToServer(`{
                 "query_hash": "${query_hash}",
                 "stream_name": "${this.stream_name}",
-                "stream_status": "ended"
+                "status": "stream_reader_ended"
             }`);
         });
 
@@ -255,7 +264,7 @@ export class DecentralizedFileStreamer {
                     });
 
                     let sorted_queue = quick_sort_queue(this.missing_event_queue);
-                    // this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+                    this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
                 };
             }
         }

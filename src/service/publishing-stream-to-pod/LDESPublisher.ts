@@ -84,10 +84,10 @@ export class LDESPublisher {
         return true;
     }
 
-    publish(resourceList: any[], start_time: Date, end_time: Date) {
+    async publish(resourceList: any[], start_time: Date, end_time: Date): Promise<boolean> {
         if (resourceList.length === 0) {
             console.log("No resources to publish");
-            return;
+            return false;
         }
         else {
             const config: LDESConfig = {
@@ -95,10 +95,15 @@ export class LDESPublisher {
             }
             let query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
             if (query != undefined) {
-                this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session).then(() => {
+                await this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session).then(() => {
                     console.log("Published query annotation");
                     this.update_latest_inbox(this.lilURL);
                 });
+                return true;
+            }
+            else {
+                console.log("The query is undefined and thus could not be published.");
+                return false;
             }
         }
 
