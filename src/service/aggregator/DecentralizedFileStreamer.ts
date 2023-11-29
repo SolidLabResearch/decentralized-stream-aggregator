@@ -111,8 +111,8 @@ export class DecentralizedFileStreamer {
         this.file_streamer_start_time = Date.now();
         console.log(`The file streamer has started for ${this.ldes_stream}`);
         const stream = await this.ldes.readMembersSorted({
-            // from: this.from_date,
-            // until: this.to_date,
+            from: this.from_date,
+            until: this.to_date,
             chronological: true
         })
         if (this.stream_name !== undefined) {
