@@ -3,6 +3,7 @@ import { Logger, ILogObj } from "tslog";
 import { AggregatorInstantiator } from "../aggregator/AggregatorInstantiator";
 import { is_equivalent } from "rspql-query-equivalence";
 import { WriteLockArray } from "../../utils/query-registry/Util";
+import { hash_string_md5 } from "../../utils/Util";
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
 
@@ -50,11 +51,13 @@ export class QueryRegistry {
      */
 
     register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
+        let query_hash = hash_string_md5(rspql_query);
         if (query_registry.add_query_in_registry(rspql_query)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
             QueryRegistry.send_to_server(`{
+                "query_hash" : "${query_hash}",
                 "status": "unique_query_registered"
             }`);
             new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp);
@@ -67,6 +70,7 @@ export class QueryRegistry {
             */
             this.logger.debug(`The query you have registered is already executing.`);
             QueryRegistry.send_to_server(`{
+                "query_hash" : "${query_hash}",
                 "status": "query_already_registered"
             }`);
             return false;
@@ -110,12 +114,17 @@ export class QueryRegistry {
      */
     checkUniqueQuery(query: string) {
         let registered_queries = this.get_registered_queries();
+        let query_hash = hash_string_md5(query);
         let array_length = registered_queries.get_length();
         if (array_length > 1) {
             for (let i = 0; i < array_length; i++) {
                 return is_equivalent(query, registered_queries.get_item(i));
             }
         }
+        QueryRegistry.send_to_server(`{
+            "query_hash" : "${query_hash}",
+            "status": "isomorphic_check_done"
+        }`)
         return false;
     }
 

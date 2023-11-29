@@ -30,6 +30,7 @@ export class DecentralizedFileStreamer {
     public session: any;
     public observation_array: any[];
     public query: string
+    public query_hash: string;
     public file_streamer_start_time: number = 0;
     public websocket_listening_time: number = 0;
     public missing_event_queue: StreamEventQueue<Set<Quad>>;
@@ -40,6 +41,7 @@ export class DecentralizedFileStreamer {
         this.from_date = from_date;
         this.to_date = to_date;
         this.query = query;
+        this.query_hash = hash_string_md5(query);
         this.missing_event_queue = new StreamEventQueue<Set<Quad>>([]);
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
         this.comunica_engine = new QueryEngine();
@@ -54,12 +56,11 @@ export class DecentralizedFileStreamer {
 
     public async get_communication(credentials: session_credentials) {
         let session = await this.get_session(credentials);
-
         if (session) {
             return new SolidCommunication(session);
         }
         else {
-            return new RateLimitedLDPCommunication(30)
+            return new LDPCommunication();
         }
     }
 
@@ -99,8 +100,7 @@ export class DecentralizedFileStreamer {
         });
 
         stream.on("end", async () => {
-            console.log(`The stream has ended.`);
-
+            console.log(`The missing event stream has ended.`);
         });
 
     }
@@ -109,12 +109,12 @@ export class DecentralizedFileStreamer {
         const communication = await this.communication;
         this.ldes = new LDESinLDP(this.ldes_stream, communication);
         this.file_streamer_start_time = Date.now();
-        const stream = await readMembersRateLimited({
-            ldes: this.ldes,
-            communication: communication,
-            rate: 60,
-            interval: 1000
-        });
+        console.log(`The file streamer has started for ${this.ldes_stream}`);
+        const stream = await this.ldes.readMembersSorted({
+            // from: this.from_date,
+            // until: this.to_date,
+            chronological: true
+        })
         if (this.stream_name !== undefined) {
             await this.subscribing_latest_events(this.stream_name);
         }
@@ -131,7 +131,7 @@ export class DecentralizedFileStreamer {
             binding_stream.on('data', async (binding: any) => {
                 for (let subject of binding.values()) {
                     this.observation_array.push(subject.id);
-                    this.observation_array = insertion_sort(this.observation_array);
+                    this.observation_array = insertion_sort(this.observation_array);                    
                 }
             });
 
@@ -152,15 +152,16 @@ export class DecentralizedFileStreamer {
                         timestamp_stream.on('data', async (bindings: Bindings) => {
                             let time = bindings.get('time');
                             if (time !== undefined) {
-                                console.log(`Timestamp: ${time.value}`);
                                 let timestamp = await this.epoch(time.value);
                                 let time_end = Date.now();
-                                fs.appendFileSync('time.txt', `${(time_end - time_start) / 1000}s\n`);
-                                time_start = time_end;
+                                let time_taken = (time_end - time_start) / 1000;
+                                fs.appendFileSync('time.txt', `${time_taken}s\n`);
                                 DecentralizedFileStreamer.sendToServer(`{
+                                    "query_hash": "${this.query_hash}",
                                     "status" : "event_preprocessed",
-                                    "time_taken": "${time_end - time_start}"
+                                    "time_taken": "${time_taken}"
                                 }`);
+                                time_start = time_end;
                                 if (this.stream_name) {
                                     await this.add_event_to_rsp_engine(observation_store, [this.stream_name], timestamp);
                                 }
@@ -168,14 +169,20 @@ export class DecentralizedFileStreamer {
                         });
                     }
                 }
+                DecentralizedFileStreamer.sendToServer(`{
+                    "query_hash": "${this.query_hash}",
+                    "status": "preprocessing_ended",
+                    "time_taken": "${(Date.now() - this.file_streamer_start_time) / 1000}"
+                }`);
+                console.log(`Preprocessing of the events has ended.`);
+                
             });
         });
 
         stream.on("end", async () => {
             console.log(`The stream has ended.`);
-            let query_hash = hash_string_md5(this.query);
             DecentralizedFileStreamer.sendToServer(`{
-                "query_hash": "${query_hash}",
+                "query_hash": "${this.query_hash}",
                 "stream_name": "${this.stream_name}",
                 "status": "stream_reader_ended"
             }`);
