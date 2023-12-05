@@ -229,39 +229,42 @@ export async function readMembersRateLimited(opts: {
 
         }
     });
-
     const metadata = await extractLdesMetadata(opts.ldes);
     const relations = filterRelation(metadata, from, to);
     const rate_limit_comm = new RateLimitedLDPCommunication(rate)
-    // const rate_limit_comm = new RateLimitCommunication(rate);
-    for (const relation of relations) {
+    const pre_process_end = performance.now();
+    for (const relation of relations) {        
+        const start_loop = performance.now();
         const resources = readPageRateLimited(opts.ldes, relation.node, rate_limit_comm, metadata);
+        const readPage = performance.now();
         const members: Member[] = [];
+        let resource_counter = 0;
         for await (const resource of resources) {
-            if (resource !== undefined){
-            let member_id = resource.getSubjects(relation.path, null, null)[0].value;
-            resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
+            resource_counter++;
+            if (resource !== undefined) {
+                let members_id = resource.getSubjects(relation.path, null, null);
+                for (let member_id of members_id) {
+                    resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
+                    const member: Member = {
+                        id: namedNode(member_id.value),
+                        quads: resource.getQuads(null, null, null, null)
+                    };
 
-            const member: Member = {
-                id: namedNode(member_id),
-                quads: resource.getQuads(null, null, null, null)
+                    const member_date_time = extractDateFromMember(member, relation.path);
+                    if (from <= member_date_time && member_date_time <= to) {
+                        members.push(member);
+                    }
+                }
             }
-
-            const member_date_time = extractDateFromMember(member, relation.path);
-            if (from <= member_date_time && member_date_time <= to) {
-                members.push(member);
-            }}
         }
-
         const sorted_members = members.sort((a: Member, b: Member) => {
             const date_a = extractDateFromMember(a, relation.path);
             const date_b = extractDateFromMember(b, relation.path);
             return date_a.getTime() - date_b.getTime();
         });
-
         sorted_members.forEach(member => member_stream.push(member));
     }
-
+    const end = performance.now();
     member_stream.push(null);
     return member_stream;
 }
@@ -298,10 +301,10 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
 export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
     const response = await rate_limit_comm.get(resource_identifier);
     if (response && response.status !== 200) {
-        console.log(`Resource not found: ${resource_identifier}`);        
+        console.log(`Resource not found: ${resource_identifier}`);
     }
     if (response && response.headers.get('content-type') !== 'text/turtle') {
-        console.log(`Resource is not turtle: ${resource_identifier}`);        
+        console.log(`Resource is not turtle: ${resource_identifier}`);
     }
     const text = response ? await response.text() : '';
     return await turtleStringToStore(text, resource_identifier);

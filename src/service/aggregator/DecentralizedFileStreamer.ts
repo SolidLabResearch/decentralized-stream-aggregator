@@ -32,15 +32,17 @@ export class DecentralizedFileStreamer {
     public query: string
     public query_hash: string;
     public file_streamer_start_time: number = 0;
+    public logger: any
     public websocket_listening_time: number = 0;
     public missing_event_queue: StreamEventQueue<Set<Quad>>;
 
-    constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine, query: string) {
+    constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine, query: string, logger: any) {
         this.ldes_stream = ldes_stream;
         this.communication = this.get_communication(session_credentials);
         this.from_date = from_date;
         this.to_date = to_date;
         this.query = query;
+        this.logger = logger;
         this.query_hash = hash_string_md5(query);
         this.missing_event_queue = new StreamEventQueue<Set<Quad>>([]);
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
@@ -57,6 +59,7 @@ export class DecentralizedFileStreamer {
     public async get_communication(credentials: session_credentials) {
         let session = await this.get_session(credentials);
         if (session) {
+
             return new SolidCommunication(session);
         }
         else {
@@ -109,7 +112,7 @@ export class DecentralizedFileStreamer {
         const communication = await this.communication;
         this.ldes = new LDESinLDP(this.ldes_stream, communication);
         this.file_streamer_start_time = Date.now();
-        console.log(`The file streamer has started for ${this.ldes_stream}`);
+        this.logger.info({ query_id: this.query_hash }, `file_streamer_started for ${this.ldes_stream}`)
         const stream = await this.ldes.readMembersSorted({
             from: this.from_date,
             until: this.to_date,
@@ -119,7 +122,7 @@ export class DecentralizedFileStreamer {
             await this.subscribing_latest_events(this.stream_name);
         }
         stream.on("data", async (data: QuadWithID) => {
-            let time_start = Date.now();
+
             let stream_store = new Store(data.quads);
             const binding_stream = await this.comunica_engine.queryBindings(`
             select ?s where {
@@ -131,7 +134,7 @@ export class DecentralizedFileStreamer {
             binding_stream.on('data', async (binding: any) => {
                 for (let subject of binding.values()) {
                     this.observation_array.push(subject.id);
-                    this.observation_array = insertion_sort(this.observation_array);                    
+                    this.observation_array = insertion_sort(this.observation_array);
                 }
             });
 
@@ -152,35 +155,22 @@ export class DecentralizedFileStreamer {
                         timestamp_stream.on('data', async (bindings: Bindings) => {
                             let time = bindings.get('time');
                             if (time !== undefined) {
-                                let timestamp = await this.epoch(time.value);
-                                let time_end = Date.now();
-                                let time_taken = (time_end - time_start) / 1000;
-                                fs.appendFileSync('time.txt', `${time_taken}s\n`);
-                                DecentralizedFileStreamer.sendToServer(`{
-                                    "query_hash": "${this.query_hash}",
-                                    "status" : "event_preprocessed",
-                                    "time_taken": "${time_taken}"
-                                }`);
-                                time_start = time_end;
+                                let timestamp = await this.epoch(time.value);                                
                                 if (this.stream_name) {
+                                    this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
                                     await this.add_event_to_rsp_engine(observation_store, [this.stream_name], timestamp);
                                 }
                             }
                         });
                     }
                 }
-                DecentralizedFileStreamer.sendToServer(`{
-                    "query_hash": "${this.query_hash}",
-                    "status": "preprocessing_ended",
-                    "time_taken": "${(Date.now() - this.file_streamer_start_time) / 1000}"
-                }`);
-                console.log(`Preprocessing of the events has ended.`);
                 
             });
         });
 
         stream.on("end", async () => {
             console.log(`The stream has ended.`);
+            this.logger.info({ query_id: this.query_hash }, `file_streamer_ended for ${this.ldes_stream}`)
             DecentralizedFileStreamer.sendToServer(`{
                 "query_hash": "${this.query_hash}",
                 "stream_name": "${this.stream_name}",
@@ -252,7 +242,6 @@ export class DecentralizedFileStreamer {
                     let resource_url = parsed.object;
                     let resource = await ldfetch.get(resource_url);
                     let resource_store = new Store(resource.triples);
-
                     const binding_stream = await this.comunica_engine.queryBindings(`
                     PREFIX saref: <https://saref.etsi.org/core/>
                     SELECT ?time WHERE {

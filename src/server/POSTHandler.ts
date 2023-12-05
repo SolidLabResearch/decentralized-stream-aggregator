@@ -22,7 +22,7 @@ export class POSTHandler {
         POSTHandler.client = new WebSocketClient();
     }
 
-    public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string) {
+    public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string, logger: any) {
         let to_timestamp = new Date().getTime(); // current time
         req.on('data', (data) => {
             this.request_body = JSON.parse(data);
@@ -34,11 +34,11 @@ export class POSTHandler {
             let query_type = body.query_type;
             let from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
             if (query_type === 'rspql') {
-                query_registry.register_query(query, query_registry, from_timestamp, to_timestamp);
+                query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else if (query_type === 'sparql') {
                 let rspql_query = this.sparql_to_rspql.getRSPQLQuery(query);
-                query_registry.register_query(rspql_query, query_registry, from_timestamp, to_timestamp);
+                query_registry.register_query(rspql_query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else {
                 throw new Error('Query type not supported by the Solid Stream Aggregator.');
@@ -46,19 +46,19 @@ export class POSTHandler {
         });
     }
 
-    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry) {
+    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any) {
         let aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
         let to_timestamp = new Date("2023-11-15T08:58:12.2870Z").getTime(); // time setup for the testing (the BVP query)
         let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
-        let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp);
+        let query_hashed = hash_string_md5(query);
+        let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
         if (is_query_unique) {
-            console.log(`The query is unique. It will be computed and sent via the websocket.`);
+            logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
-            console.log(`The query is not unique. It will be read from the Solid Stream Aggregator's Solid Pod and sent via the websocket.`);
+            logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
             let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
             if (aggregated_events_exist) {
-                console.log(`The aggregated events exist.`);
                 let aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({
                 });
                 aggregation_stream.on('data', async (data) => {

@@ -1,8 +1,29 @@
-import { sleep } from "@treecg/versionawareldesinldp";
-import { AggregatorPod } from "./server/AggregatorPod";
+
 import { HTTPServer } from "./server/HTTPServer";
-import { AggregatorInstantiator } from "./service/aggregator/AggregatorInstantiator";
-import { DecentralizedFileStreamer } from "./service/aggregator/DecentralizedFileStreamer";
+import * as bunyan from 'bunyan';
+import * as fs from 'fs';
+import stringify from 'csv-stringify/lib/sync';
+
+const log_file = fs.createWriteStream('./logs/aggregation.log', { flags: 'a' });
+
+const logger = bunyan.createLogger({
+    name: 'solid-stream-aggregator',
+    streams: [
+        {
+            level: 'info',
+            stream: log_file
+        },
+    ],
+    serializers: {
+        log: (log_data: any) => {
+            return {
+                ...log_data,
+                query_id: log_data.query_id || 'no_query_id',
+            }
+        }
+    }
+});
+
 
 const program = require('commander');
 
@@ -25,14 +46,7 @@ program
         'http://localhost:3000/'
     )
     .action(async (options: any) => {
-        // if (await create_aggregator_pod()){
-        //     sleep(5000);
-        //     fetch("http://localhost:3000/aggregation_pod/aggregation/").then(async (response) => {
-        //         console.log(await response.text());
-        //         new HTTPServer(options.port, options.SolidServer);
-        //     });            
-        // }  
-        new HTTPServer(options.port, options.SolidServer);
+        new HTTPServer(options.port, options.SolidServer, logger);
     });
 
 program.parse();

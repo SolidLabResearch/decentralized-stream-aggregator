@@ -18,11 +18,13 @@ export class AggregatorInstantiator {
     public from_date: Date;
     public stream_array: string[];
     public hash_string: string;
+    public logger: any;
     public to_date: Date;
     public client = new WebSocketClient();
     public connection: typeof websocketConnection;
-    public constructor(query: string, from_timestamp: number, to_timestamp: number) {
+    public constructor(query: string, from_timestamp: number, to_timestamp: number, logger: any) {
         this.query = query;
+        this.logger = logger;
         this.hash_string = hash_string_md5(query);
         this.rsp_engine = new RSPEngine(query);
         this.from_date = new Date(from_timestamp);
@@ -37,14 +39,15 @@ export class AggregatorInstantiator {
     }
 
     public async intiateDecentralizedFileStreamer() {
+        let query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
         for (const stream of this.stream_array) {
             // uncomment the line below            
             let session_credentials = this.get_session_credentials(stream);
-            new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query);
+            this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
+            new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
             // new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine);
             // new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine, this.query);
-
         }
         this.executeRSP();
     }

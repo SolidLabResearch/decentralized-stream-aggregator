@@ -38,9 +38,6 @@ export class QueryRegistry {
         this.query_count = 0;
         this.parser = new RSPQLParser();
         this.logger = new Logger();
-        QueryRegistry.connect_with_server('ws://localhost:8080').then(() => {
-            console.log(`Connection of the QueryRegistry with the websocket server is established.`);
-        });
     }
     /**
      *  Register a query in the QueryRegistry.
@@ -50,17 +47,12 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
 
-    register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number) {
-        let query_hash = hash_string_md5(rspql_query);
-        if (query_registry.add_query_in_registry(rspql_query)) {
+    register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger:any) {
+        if (query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
-            QueryRegistry.send_to_server(`{
-                "query_hash" : "${query_hash}",
-                "status": "unique_query_registered"
-            }`);
-            new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp);
+            new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp, logger);
             return true;
         }
         else {
@@ -69,18 +61,14 @@ export class QueryRegistry {
             TODO : make a result dispatcher module.
             */
             this.logger.debug(`The query you have registered is already executing.`);
-            QueryRegistry.send_to_server(`{
-                "query_hash" : "${query_hash}",
-                "status": "query_already_registered"
-            }`);
             return false;
         }
 
     }
 
-    add_query_in_registry(rspql_query: string) {
+    add_query_in_registry(rspql_query: string, logger:any) {
         this.registered_queries.addItem(rspql_query);
-        if (this.checkUniqueQuery(rspql_query)) {
+        if (this.checkUniqueQuery(rspql_query, logger)) {
             /*
             The query you have registered is already executing.
             */
@@ -112,19 +100,16 @@ export class QueryRegistry {
      * @return {*} 
      * @memberof QueryRegistry
      */
-    checkUniqueQuery(query: string) {
+    checkUniqueQuery(query: string, logger:any) {
+        let query_hashed = hash_string_md5(query);
         let registered_queries = this.get_registered_queries();
-        let query_hash = hash_string_md5(query);
         let array_length = registered_queries.get_length();
         if (array_length > 1) {
             for (let i = 0; i < array_length; i++) {
                 return is_equivalent(query, registered_queries.get_item(i));
             }
         }
-        QueryRegistry.send_to_server(`{
-            "query_hash" : "${query_hash}",
-            "status": "isomorphic_check_done"
-        }`)
+        logger.info({query_hashed}, 'isomorphic_check_done')
         return false;
     }
 
