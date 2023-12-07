@@ -50,14 +50,16 @@ export class WebSocketHandler {
                         let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
+                        this.logger.info({query_id: query },`starting_to_find_ldes`);
                         let type_index_locator = new TypeIndexLDESLocator(pod_url);
                         let focus = new AggregationFocusExtractor(query).extract_focus();
                         let ldes_stream = await type_index_locator.getLDESStreamURL(focus);
-                        let ldes_query = query.replace(pod_url, ldes_stream);                        
+                        this.logger.info({query_id: query },`ldes_found`);
+                        let ldes_query = query.replace(pod_url, ldes_stream);
+                        this.logger.info({query_id: query },`stream_name_replaced`);                       
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
-                        this.logger.info({ query_id: query_hashed }, `query_received_from_client`)
                         this.process_query(ldes_query, width);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
