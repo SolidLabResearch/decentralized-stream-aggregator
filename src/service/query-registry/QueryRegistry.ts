@@ -47,11 +47,12 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
 
-    register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger:any) {
-        if (query_registry.add_query_in_registry(rspql_query, logger)) {
+    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger:any) {
+        if (await query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
+           logger.info({}, 'query_is_unique');
             new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp, logger);
             return true;
         }
@@ -60,14 +61,15 @@ export class QueryRegistry {
             The query is already computed and stored in the Solid Stream Aggregator's Solid Pod. So, read from there and send via a websocket.
             TODO : make a result dispatcher module.
             */
+              logger.info({}, 'query_is_not_unique');
             this.logger.debug(`The query you have registered is already executing.`);
             return false;
         }
 
     }
 
-    add_query_in_registry(rspql_query: string, logger:any) {
-        this.registered_queries.addItem(rspql_query);
+    async add_query_in_registry(rspql_query: string, logger:any) {
+        await this.registered_queries.addItem(rspql_query);
         if (this.checkUniqueQuery(rspql_query, logger)) {
             /*
             The query you have registered is already executing.
@@ -108,6 +110,10 @@ export class QueryRegistry {
             for (let i = 0; i < array_length; i++) {
                 return is_equivalent(query, registered_queries.get_item(i));
             }
+        }
+        if (array_length === 0){
+            logger.info({query_hashed}, 'array_length_is_zero');
+            
         }
         logger.info({query_hashed}, 'isomorphic_check_done')
         return false;

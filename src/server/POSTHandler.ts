@@ -53,7 +53,7 @@ export class POSTHandler {
         let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
         let query_hashed = hash_string_md5(query);
         let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
-        if (is_query_unique) {
+        if (await is_query_unique) {
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);

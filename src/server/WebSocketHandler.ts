@@ -3,14 +3,12 @@ import * as WebSocket from 'websocket';
 import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
-import { Quad } from "rdflib/lib/tf-types";
-import { Quads } from "sparqljs";
-import { v4 as uuidv4 } from 'uuid';
-import { aggregation_object } from "../service/aggregator/AggregatorInstantiator";
 import { hash_string_md5 } from "../utils/Util";
 import { POSTHandler } from "./POSTHandler";
 import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
+import { TypeIndexLDESLocator } from "../utils/TypeIndexLDESLocator";
+import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
 export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
@@ -44,18 +42,23 @@ export class WebSocketHandler {
 
         this.websocket_server.on('request', async (request: any) => {
             let connection = request.accept('solid-stream-aggregator-protocol', request.origin);
-            connection.on('message', (message: WebSocket.Message) => {
+            connection.on('message', async (message: WebSocket.Message) => {
                 if (message.type === 'utf8') {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
                         let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
+                        let pod_url = parsed.s2r[0].stream_name;
+                        let type_index_locator = new TypeIndexLDESLocator(pod_url);
+                        let focus = new AggregationFocusExtractor(query).extract_focus();
+                        let ldes_stream = await type_index_locator.getLDESStreamURL(focus);
+                        let ldes_query = query.replace(pod_url, ldes_stream);                        
                         let width = parsed.s2r[0].width;
-                        let query_hashed = hash_string_md5(query);
+                        let query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
                         this.logger.info({ query_id: query_hashed }, `query_received_from_client`)
-                        this.process_query(query, width);
+                        this.process_query(ldes_query, width);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         let query_hash = ws_message.query_hash;

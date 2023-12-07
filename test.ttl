@@ -1,0 +1,11 @@
+@prefix dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/> .
+@prefix ldes: <https://w3id.org/ldes#> .
+@prefix saref: <https://w3id.org/saref#> .
+@prefix solid: <http://www.w3.org/ns/solid/terms#> .
+@prefix tree: <https://w3id.org/tree#> .
+@prefix type: <https://www.w3.org/ns/type-index#> .
+
+<#bvpDataset> a ldes:EventStream ;
+   ldes:timestampPath saref:hasTimestamp ;
+   tree:shape <http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/public/bvpEventTemplate.shacl> ;
+   tree:view <http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/> .
