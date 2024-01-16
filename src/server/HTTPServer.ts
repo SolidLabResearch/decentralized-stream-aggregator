@@ -8,8 +8,6 @@ import { WebSocketHandler } from "./WebSocketHandler";
 import * as websocket from 'websocket';
 const url = require('url');
 const EventEmitter = require('events');
-
-
 const event_emitter = new EventEmitter();
 
 export class HTTPServer {
@@ -50,6 +48,23 @@ export class HTTPServer {
                 res.end();
                 break;
             case "POST":
+                // TODO : bug that the notification is sent more than once from the solid server.
+                let body: string = '';
+                req.on('data', (chunk: Buffer) => {
+                    body = body + chunk.toString();
+                });
+
+                req.on('end', () => {
+                    const webhook_notification_data = JSON.parse(body);
+                    if (webhook_notification_data.type === 'Add') {
+                        let notification = {
+                            "type": "latest_event_notification",
+                            "data": webhook_notification_data
+                        }
+                        event_emitter.emit(notification);
+                    }
+                });
+
                 if (req.url = '/registerQuery') {
                     POSTHandler.handle(req, res, this.query_registry, this.solid_server_url, this.logger);
                 }

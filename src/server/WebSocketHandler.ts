@@ -9,6 +9,7 @@ import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { TypeIndexLDESLocator } from "../utils/TypeIndexLDESLocator";
 import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
+
 export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
@@ -50,13 +51,11 @@ export class WebSocketHandler {
                         let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
-                        this.logger.info({query_id: query },`starting_to_find_ldes`);
-                        let type_index_locator = new TypeIndexLDESLocator(pod_url);
-                        let focus = new AggregationFocusExtractor(query).extract_focus();
-                        let ldes_stream = await type_index_locator.getLDESStreamURL(focus);
-                        this.logger.info({query_id: query },`ldes_found`);
+                        this.logger.info({ query_id: query }, `starting_to_find_ldes`);;
+                        let ldes_stream = pod_url;
+                        this.logger.info({ query_id: query }, `ldes_found`);
                         let ldes_query = query.replace(pod_url, ldes_stream);
-                        this.logger.info({query_id: query },`stream_name_replaced`);                       
+                        this.logger.info({ query_id: query }, `stream_name_replaced`);
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
@@ -78,7 +77,10 @@ export class WebSocketHandler {
                                 value.send(JSON.stringify(ws_message));
                             }
                         }
+                    }
 
+                    else if (Object.keys(ws_message).includes('type')) {
+                        console.log(ws_message);
                     }
                     else {
                         throw new Error('Unknown message, not handled.');

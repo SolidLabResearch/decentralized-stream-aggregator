@@ -2,7 +2,6 @@
 import { HTTPServer } from "./server/HTTPServer";
 import * as bunyan from 'bunyan';
 import * as fs from 'fs';
-import stringify from 'csv-stringify/lib/sync';
 
 const log_file = fs.createWriteStream('./logs/aggregation.log', { flags: 'a' });
 
@@ -50,8 +49,6 @@ program
     });
 
 program.parse();
-
-
 
 // ```
 // 2023-09-05T13:24:30.888Z [ListeningActivityHandler] {Primary} error: Error trying to handle notification for http://localhost:3000/.notifications/WebSocketChannel2023/3a05c98d-4ab7-4be6-b2ad-e7bd24dc38e2: Lock expired after 6000ms on http://localhost:3000/aggregation_pod/aggregation_new/1692373487374

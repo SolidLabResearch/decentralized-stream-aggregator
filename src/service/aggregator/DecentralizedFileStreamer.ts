@@ -8,7 +8,6 @@ const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
-import fs from 'fs';
 import { Quad } from "n3";
 import WebSocket from 'ws';
 import { QuadWithID, WebSocketMessage } from "../../utils/Types";
@@ -228,42 +227,43 @@ export class DecentralizedFileStreamer {
 
     async subscribing_latest_events(stream_name: RDFStream) {
         let inbox = await this.get_inbox_container(this.ldes_stream);
-        let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
-        const stream_websocket = new WebSocket(stream_subscription_ws);
-        stream_websocket.onmessage = async (event: any) => {
-            this.websocket_listening_time = Date.now();
-            const parsed = JSON.parse(event.data);
-            inbox = parsed.object;
-            if (inbox !== undefined) {
-                let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
-                const websocket = new WebSocket(subscription_ws);
-                websocket.onmessage = async (event: any) => {
-                    const parsed = JSON.parse(event.data);
-                    let resource_url = parsed.object;
-                    let resource = await ldfetch.get(resource_url);
-                    let resource_store = new Store(resource.triples);
-                    const binding_stream = await this.comunica_engine.queryBindings(`
-                    PREFIX saref: <https://saref.etsi.org/core/>
-                    SELECT ?time WHERE {
-                        ?s saref:hasTimestamp ?time .
-                    }
-                    `, {
-                        sources: [resource_store]
-                    });
+        
+        // let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
+        // const stream_websocket = new WebSocket(stream_subscription_ws);
+        // stream_websocket.onmessage = async (event: any) => {
+        //     this.websocket_listening_time = Date.now();
+        //     const parsed = JSON.parse(event.data);
+        //     inbox = parsed.object;
+        //     if (inbox !== undefined) {
+        //         let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
+        //         const websocket = new WebSocket(subscription_ws);
+        //         websocket.onmessage = async (event: any) => {
+        //             const parsed = JSON.parse(event.data);
+        //             let resource_url = parsed.object;
+        //             let resource = await ldfetch.get(resource_url);
+        //             let resource_store = new Store(resource.triples);
+        //             const binding_stream = await this.comunica_engine.queryBindings(`
+        //             PREFIX saref: <https://saref.etsi.org/core/>
+        //             SELECT ?time WHERE {
+        //                 ?s saref:hasTimestamp ?time .
+        //             }
+        //             `, {
+        //                 sources: [resource_store]
+        //             });
 
-                    binding_stream.on('data', async (bindings: Bindings) => {
-                        let time = bindings.get('time');
-                        if (time !== undefined) {
-                            let timestamp = await this.epoch(time.value);
-                            this.missing_event_queue.enqueue(resource_store.getQuads(), timestamp);
-                        }
-                    });
+        //             binding_stream.on('data', async (bindings: Bindings) => {
+        //                 let time = bindings.get('time');
+        //                 if (time !== undefined) {
+        //                     let timestamp = await this.epoch(time.value);
+        //                     this.missing_event_queue.enqueue(resource_store.getQuads(), timestamp);
+        //                 }
+        //             });
 
-                    let sorted_queue = quick_sort_queue(this.missing_event_queue);
-                    this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
-                };
-            }
-        }
+        //             let sorted_queue = quick_sort_queue(this.missing_event_queue);
+        //             this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+        //         };
+        //     }
+        // }
 
     }
 
@@ -279,6 +279,29 @@ export class DecentralizedFileStreamer {
                 }
             }
         }
+    }
+
+    async subscribe_webhook_notification(ldes_stream: string): Promise<void> {
+        let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
+        let webhook_notification_server = solid_server + "/.notifications/WebhookChannel2023/";
+        let post_body = {
+            "@context": [],
+            "type": "http://www.w3.org/ns/solid/notifications#WebhookChannel2023",
+            "topic": `${ldes_stream}`,
+            "sendTo": "http://localhost:8080/"
+        };
+
+        const response = await fetch(webhook_notification_server, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/ld+json',
+                'Accept': 'application/ld+json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(post_body)
+        });
+        const response_json = await response.json();
+        console.log(response_json.sendTo);
     }
 
     async get_stream_subscription_websocket_url(ldes_stream: string): Promise<string> {
@@ -300,7 +323,6 @@ export class DecentralizedFileStreamer {
         });
         const response_json = await repsonse.json();
         return response_json.receiveFrom;
-
     }
 
     async add_sorted_queue_to_rsp_engine(sorted_queue: StreamEventQueue<Set<Quad>>) {

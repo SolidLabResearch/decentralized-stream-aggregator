@@ -82,6 +82,7 @@ export class AggregationDispatcher {
 
     public async if_aggregated_events_exist(): Promise<boolean> {
         // TODO : add the feature for query isomorphism here.
+        // by creating a mapping between the query and the query hash(es).
         let aggregated_events_exist: boolean = false;
         let parsed_query = parser.parse(this.query);
         let query_streams: string[] = [];
@@ -128,7 +129,6 @@ export async function extractLdesMetadata(ldes_in_ldp: LDESinLDP): Promise<ILDES
 
 export function extractDateFromMember(member: Member, path: string): Date {
     const store = new Store(member.quads);
-
     // member date
     const dateLiteral = store.getObjects(member.id, path, null)[0] as Literal;
     const memberDateTime = extractDateFromLiteral(dateLiteral);

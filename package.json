@@ -8,8 +8,8 @@
         "start-aggregation": "npx tsc && cp -r ./src/static ./dist && node --max-old-space-size=8192 dist/index.js aggregation",
         "test": "jest --coverage",
         "test:watch": "jest --watch",
-        "start-solid-server": "cd scripts && rm -rf data/.internal/accounts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json",
-        "restart-solid-server": "cd scripts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ ",
+        "start-solid-server": "cd scripts && rm -rf data/.internal/accounts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json -w 0",
+        "restart-solid-server": "cd scripts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ -w 0",
         "start-solid-server-extended-lock": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/extendedlock.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json",
         "test-run": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/auth.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json --workers 1"
     },

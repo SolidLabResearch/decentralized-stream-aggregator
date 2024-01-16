@@ -19,15 +19,18 @@ export class POSTHandler {
     constructor() {
         POSTHandler.sparql_to_rspql = new SPARQLToRSPQL();
         POSTHandler.connection = websocketConnection;
+        
         POSTHandler.client = new WebSocketClient();
     }
 
     public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string, logger: any) {
         let to_timestamp = new Date().getTime(); // current time
-        req.on('data', (data) => {
-            this.request_body = JSON.parse(data);
+        let post_body: string = '';
+        req.on('data', (chunk: Buffer) => {
+            post_body = post_body + chunk.toString();
         });
         req.on('end', () => {
+            this.request_body = JSON.parse(post_body);
             let body = this.request_body;
             let query = body.query;
             let latest_minutes = body.latest_minutes;
@@ -41,9 +44,20 @@ export class POSTHandler {
                 query_registry.register_query(rspql_query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else {
-                throw new Error('Query type not supported by the Solid Stream Aggregator.');
-            }
+                let notification = {
+                    "type" : "latest_event_notification",
+                    "data" : body
+                }
+                let notification_string = JSON.stringify(notification);
+                let notification_object = JSON.parse(notification_string);
+                let new_event_with_container_object = {
+                    "type": "new_event_with_container_notification",
+                    "event": notification_object.data.object,
+                    "container": notification_object.data.target
+                };
+                this.sendToServer(JSON.stringify(new_event_with_container_object));            }
         });
+        
     }
 
     public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any) {
@@ -56,6 +70,7 @@ export class POSTHandler {
         if (await is_query_unique) {
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
+            // TODO: thoroughly test this part of the code.
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
             let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
             if (aggregated_events_exist) {
