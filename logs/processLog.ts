@@ -52,9 +52,7 @@ function processLog(logFilePath: string, outputCsvPath: string): void {
             path: outputCsvPath,
             header: [
                 { id: 'msg1', title: 'Message 1' },
-                { id: 'time1', title: 'Time 1' },
                 { id: 'msg2', title: 'Message 2' },
-                { id: 'time2', title: 'Time 2' },
                 { id: 'time_difference_seconds', title: 'Time Difference (seconds)' },
             ],
         });
