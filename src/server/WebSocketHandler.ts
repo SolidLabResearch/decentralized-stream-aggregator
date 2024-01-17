@@ -39,16 +39,17 @@ export class WebSocketHandler {
         // TODO: find the type of the request object
         console.log(`Handling the websocket server.`);
         this.websocket_server.on('connect', (request: any) => {
+            console.log(`Connection received from ${request.remoteAddress}`);
         });
-
         this.websocket_server.on('request', async (request: any) => {
             let connection = request.accept('solid-stream-aggregator-protocol', request.origin);
             connection.on('message', async (message: WebSocket.Message) => {
+                console.log(`Message received from ${connection.remoteAddress}`);
                 if (message.type === 'utf8') {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
-                        let query: string = ws_message.query;
+                        let query: string = ws_message.query;                        
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
                         this.logger.info({ query_id: query }, `starting_to_find_ldes`);;
