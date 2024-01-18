@@ -49,7 +49,8 @@ export class WebSocketHandler {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
-                        let query: string = ws_message.query;                        
+                        this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
+                        let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
                         let ldes_stream = pod_url;
