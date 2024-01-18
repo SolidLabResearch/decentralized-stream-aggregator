@@ -37,7 +37,6 @@ export class AggregatorInstantiator {
         this.rsp_emitter = this.rsp_engine.register();
         this.intiateDecentralizedFileStreamer();
     }
-
     public async intiateDecentralizedFileStreamer() {
         let query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);

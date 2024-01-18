@@ -64,7 +64,7 @@ export class POSTHandler {
         let aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
         let to_timestamp = new Date("2023-11-15T08:58:12.2870Z").getTime(); // time setup for the testing (the BVP query)
-        let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
+        let from_timestamp = new Date(to_timestamp - (width * 1000)).getTime(); // latest seconds ago
         let query_hashed = hash_string_md5(query);
         let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
         if (await is_query_unique) {
