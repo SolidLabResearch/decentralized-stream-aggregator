@@ -63,7 +63,7 @@ function processLog(logFilePath: string, outputCsvPath: string): void {
     });
 }
 
-const logFilePath = '/home/kush/Code/solid-stream-aggregator/logs/aggregation.log';
-const outputCsvPath = '/home/kush/Code/solid-stream-aggregator/module_processing_time.csv';
+const logFilePath = './aggregation.log';
+const outputCsvPath = './module_processing_time.csv';
 
 processLog(logFilePath, outputCsvPath);
