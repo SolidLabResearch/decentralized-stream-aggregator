@@ -122,13 +122,15 @@ export class DecentralizedFileStreamer {
         }
         stream.on("data", async (data: QuadWithID) => {
             let member_store = new Store(data.quads);
-            let member_store_string = storeToString(member_store);
-            const timestamp_match = member_store_string.match(timestamp_regex);
-            if (timestamp_match && timestamp_match[1]) {
-                let timestamp = Date.parse(timestamp_match[1]);
-                if (this.stream_name) {
-                    this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
-                    await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp);
+            if (member_store.size === 6) {
+                let member_store_string = storeToString(member_store);
+                const timestamp_match = member_store_string.match(timestamp_regex);
+                if (timestamp_match && timestamp_match[1]) {
+                    let timestamp = Date.parse(timestamp_match[1]);
+                    if (this.stream_name) {
+                        this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
+                        await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp);
+                    }
                 }
             }
         });
