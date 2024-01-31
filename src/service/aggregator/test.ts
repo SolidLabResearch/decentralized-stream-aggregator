@@ -3,7 +3,7 @@ async function subscribe_webhook_notification(ldes_stream: string): Promise<void
     ldes_stream = ldes_stream.replace("http://", "");
     ldes_stream = ldes_stream.replace(/\//g, "-");
     ldes_stream = ldes_stream.slice(0, -1);
-    console.log(ldes_stream)
+    ldes_stream = ldes_stream.replace(":", "-")
     let webhook_notification_server = solid_server + "/.notifications/WebhookChannel2023/";
     let post_body = {
         "@context": ["https://www.w3.org/ns/solid/notification/v1"],
@@ -11,7 +11,7 @@ async function subscribe_webhook_notification(ldes_stream: string): Promise<void
         "topic": `${ldes_stream}`,
         "sendTo": `http://localhost:8080/${ldes_stream}/`
     };
-    
+
     const response = await fetch(webhook_notification_server, {
         method: 'POST',
         headers: {

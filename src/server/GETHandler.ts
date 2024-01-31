@@ -8,16 +8,7 @@ export class GETHandler {
         let from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
         if (req.url !== undefined) {
             let endpoint = req.url.split('?')[0];
-            if (endpoint === '/averageHRPatient1') {
-                query_registry.register_query(endpoint_queries.get_query('averageHRPatient1', new Date(from_timestamp), new Date(to_timestamp)), query_registry, from_timestamp, to_timestamp, logger);
-            }
-            else if (endpoint === '/averageHRPatient2') {
-                query_registry.register_query(endpoint_queries.get_query('averageHRPatient2', new Date(from_timestamp), new Date(to_timestamp)), query_registry, from_timestamp, to_timestamp, logger);
-            }
-            else if (endpoint === '/averageHRPatientMultiple') {
-                let query = endpoint_queries.get_query('averageHRPatientMultiple', new Date(from_timestamp), new Date(to_timestamp));
-                query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
-            }
+        }
             else {
                 const file = fs.readFileSync('dist/static/index.html');
                 res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -27,4 +18,3 @@ export class GETHandler {
         }
 
     }
-}

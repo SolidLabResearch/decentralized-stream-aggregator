@@ -14,6 +14,7 @@ export class HTTPServer {
     private readonly http_server: Server;
     public solid_server_url: string;
     public logger: any;
+    public dynamic_endpoints: { [key: string]: boolean };
     public query_registry: any;
     public websocket_server: any;
     public aggregation_publisher: any;
@@ -21,6 +22,7 @@ export class HTTPServer {
     public websocket_handler: any;
     constructor(http_port: number, solid_server_url: string, logger: any) {
         this.solid_server_url = solid_server_url;
+        this.dynamic_endpoints = {};
         this.http_server = createServer(this.request_handler.bind(this)).listen(http_port);
         this.logger = logger;
         this.websocket_server = new websocket.server({
@@ -39,6 +41,7 @@ export class HTTPServer {
 
     private request_handler(req: IncomingMessage, res: ServerResponse) {
         const parsed_url = url.parse(req.url, true);
+        const endpoint_name = parsed_url.pathname?.split(1); 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
         switch (req.method) {

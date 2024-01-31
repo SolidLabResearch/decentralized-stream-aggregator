@@ -9,7 +9,6 @@ import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { TypeIndexLDESLocator } from "../utils/TypeIndexLDESLocator";
 import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
-
 export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
@@ -58,7 +57,7 @@ export class WebSocketHandler {
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
-                        this.process_query(ldes_query, width);
+                        this.process_query(ldes_query, width, this.connections);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         let query_hash = ws_message.query_hash;
@@ -192,9 +191,8 @@ export class WebSocketHandler {
         }
     }
 
-    public process_query(query: string, width: number) {
-        let minutes = width / 60;
-        POSTHandler.handle_ws_query(query, minutes, this.query_registry, this.logger);
+    public process_query(query: string, width: number, connections: Map<string, WebSocket>) {
+        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections);
     }
 
     public send_test(query: string) {

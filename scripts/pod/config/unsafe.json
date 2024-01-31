@@ -42,7 +42,7 @@
       },
       "overrideParameters": {
         "@type": "WrappedExpiringReadWriteLocker",
-        "expiration": 20000
+        "expiration": 6000
       }
     }
   ]
