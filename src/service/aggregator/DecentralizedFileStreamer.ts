@@ -116,7 +116,8 @@ export class DecentralizedFileStreamer {
             from: this.from_date,
             until: this.to_date,
             chronological: true
-        })
+        });
+        this.logger.info({ query_id: this.query_hash }, `file_streamer_ended for ${this.ldes_stream}`)
         if (this.stream_name !== undefined) {
             await this.subscribing_latest_events(this.stream_name);
         }
@@ -136,8 +137,8 @@ export class DecentralizedFileStreamer {
         });
 
         stream.on("end", async () => {
-            console.log(`The stream has ended.`);
-            this.logger.info({ query_id: this.query_hash }, `file_streamer_ended for ${this.ldes_stream}`)
+            this.logger.info({ query_id: this.query_hash }, `stream events have been fully read and added to the RSP Engine.`);
+            console.log(`The stream has been fully read and added to the .`);
             DecentralizedFileStreamer.sendToServer(`{
                 "query_hash": "${this.query_hash}",
                 "stream_name": "${this.stream_name}",

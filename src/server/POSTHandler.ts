@@ -64,8 +64,9 @@ export class POSTHandler {
     public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any) {
         let aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
-        let to_timestamp = new Date("2023-11-15T09:47:09.8120Z").getTime(); // time setup for the testing (the BVP query)
-        let from_timestamp = new Date(to_timestamp - (width * 1000)).getTime(); // latest seconds ago
+        // let to_timestamp = new Date("2023-11-15T09:47:09.8120Z").getTime(); // time setup for the testing (the BVP query)
+        let to_timestamp = new Date("2024-02-01T18:14:02.8320Z").getTime(); // time setup for the testing (the SKT query)
+        let from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
         let query_hashed = hash_string_md5(query);
         let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
         if (await is_query_unique) {
