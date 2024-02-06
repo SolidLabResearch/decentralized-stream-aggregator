@@ -32,7 +32,7 @@
         "@comunica/query-sparql-link-traversal": "^0.0.2-alpha.8.0",
         "@comunica/types": "^2.8.2",
         "@treecg/ldes-snapshot": "^0.1.1",
-        "@treecg/versionawareldesinldp": "^0.2.2",
+        "@treecg/versionawareldesinldp": "^0.3.0",
         "@types/luxon": "^3.4.1",
         "bunyan": "^1.8.15",
         "cors": "^2.8.5",
