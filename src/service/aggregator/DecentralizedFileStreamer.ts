@@ -15,6 +15,7 @@ import { session_with_credentials } from "../../utils/authentication/css-auth";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { hash_string_md5, insertion_sort, quick_sort } from "../../utils/Util";
+import { TREE } from "@treecg/ldes-snapshot";
 
 export class DecentralizedFileStreamer {
     public ldes_stream: string;
@@ -109,8 +110,9 @@ export class DecentralizedFileStreamer {
     public async initiateDecentralizedFileStreamer(): Promise<void> {
         const communication = await this.communication;
         this.ldes = new LDESinLDP(this.ldes_stream, communication);
+        let metadata = await this.ldes.readMetadata();
+        let bucket_strategy = metadata.getQuads(this.ldes_stream + "#BucketizeStrategy", TREE.path, null, null)[0].object.value;
         this.file_streamer_start_time = Date.now();
-        const timestamp_regex = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{4}Z)"/;
         this.logger.info({ query_id: this.query_hash }, `file_streamer_started for ${this.ldes_stream}`)
         const stream = await this.ldes.readMembersSorted({
             from: this.from_date,
@@ -123,16 +125,11 @@ export class DecentralizedFileStreamer {
         }
         stream.on("data", async (data: QuadWithID) => {
             let member_store = new Store(data.quads);
-            if (member_store.size === 6) {
-                let member_store_string = storeToString(member_store);
-                const timestamp_match = member_store_string.match(timestamp_regex);
-                if (timestamp_match && timestamp_match[1]) {
-                    let timestamp = Date.parse(timestamp_match[1]);
-                    if (this.stream_name) {
-                        this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
-                        await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp);
-                    }
-                }
+            let timestamp = member_store.getQuads(null, bucket_strategy, null, null)[0].object.value;
+            let timestamp_epoch = Date.parse(timestamp);
+            if (this.stream_name){
+                this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
+                await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp_epoch);
             }
         });
 
