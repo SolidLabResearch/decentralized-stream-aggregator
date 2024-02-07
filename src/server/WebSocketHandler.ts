@@ -65,7 +65,7 @@ export class WebSocketHandler {
                         let query_hash = ws_message.query_hash;
                         for (let [key, value] of this.connections) {
                             if (key === query_hash) {
-                                // this.publish_aggregation_event(ws_message, this.aggregation_publisher); 
+                                this.publish_aggregation_event(ws_message, this.aggregation_publisher); 
                                 value.send(JSON.stringify(ws_message));
                                 this.logger.info({ query_id: query_hash }, `aggregation_event_sent_to_client`);
                             }
