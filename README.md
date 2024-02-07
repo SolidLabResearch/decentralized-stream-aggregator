@@ -37,9 +37,10 @@ let message = {
 }
 ```
 and send this message object to the aggregator using the WebSocket connection.
-## Usage
 
-The 
+## Tests
+
+The tests for the Solid Stream Aggregator are written using the Jest framework. The coverage isn't 100% yet, but will be done in the recent future.
 
 ## License
 
