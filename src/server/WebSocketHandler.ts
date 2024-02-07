@@ -3,7 +3,7 @@ import * as WebSocket from 'websocket';
 import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
-import { hash_string_md5 } from "../utils/Util";
+import { find_relevant_streams, hash_string_md5 } from "../utils/Util";
 import { POSTHandler } from "./POSTHandler";
 import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
@@ -52,7 +52,9 @@ export class WebSocketHandler {
                         let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
-                        let ldes_stream = pod_url;
+                        let interest_metric = new AggregationFocusExtractor(query).extract_focus();
+                        let streams = await find_relevant_streams(pod_url, [interest_metric])
+                        let ldes_stream = streams[0];
                         let ldes_query = query.replace(pod_url, ldes_stream);
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ldes_query);
