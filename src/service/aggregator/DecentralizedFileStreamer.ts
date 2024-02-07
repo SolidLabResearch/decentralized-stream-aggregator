@@ -1,5 +1,5 @@
 import { QueryEngine } from "@comunica/query-sparql";
-import { LDESinLDP, LDPCommunication, SolidCommunication } from "@treecg/versionawareldesinldp";
+import { LDESinLDP, LDPCommunication, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Bindings } from '@comunica/types';
 import { quick_sort_queue, StreamEventQueue } from "../../utils/StreamEventQueue";
@@ -8,7 +8,6 @@ const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
-import fs from 'fs';
 import { Quad } from "n3";
 import WebSocket from 'ws';
 import { QuadWithID, WebSocketMessage } from "../../utils/Types";
@@ -16,6 +15,7 @@ import { session_with_credentials } from "../../utils/authentication/css-auth";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { hash_string_md5, insertion_sort, quick_sort } from "../../utils/Util";
+import { TREE } from "@treecg/ldes-snapshot";
 
 export class DecentralizedFileStreamer {
     public ldes_stream: string;
@@ -33,7 +33,7 @@ export class DecentralizedFileStreamer {
     public query_hash: string;
     public file_streamer_start_time: number = 0;
     public logger: any
-    public websocket_listening_time: number = 0;
+    public notification_listening_time: number = 0;
     public missing_event_queue: StreamEventQueue<Set<Quad>>;
 
     constructor(ldes_stream: string, session_credentials: session_credentials, from_date: Date, to_date: Date, rsp_engine: RSPEngine, query: string, logger: any) {
@@ -59,7 +59,6 @@ export class DecentralizedFileStreamer {
     public async get_communication(credentials: session_credentials) {
         let session = await this.get_session(credentials);
         if (session) {
-
             return new SolidCommunication(session);
         }
         else {
@@ -111,66 +110,32 @@ export class DecentralizedFileStreamer {
     public async initiateDecentralizedFileStreamer(): Promise<void> {
         const communication = await this.communication;
         this.ldes = new LDESinLDP(this.ldes_stream, communication);
+        let metadata = await this.ldes.readMetadata();
+        let bucket_strategy = metadata.getQuads(this.ldes_stream + "#BucketizeStrategy", TREE.path, null, null)[0].object.value;
         this.file_streamer_start_time = Date.now();
         this.logger.info({ query_id: this.query_hash }, `file_streamer_started for ${this.ldes_stream}`)
         const stream = await this.ldes.readMembersSorted({
             from: this.from_date,
             until: this.to_date,
             chronological: true
-        })
+        });
+        this.logger.info({ query_id: this.query_hash }, `file_streamer_ended for ${this.ldes_stream}`)
         if (this.stream_name !== undefined) {
             await this.subscribing_latest_events(this.stream_name);
         }
         stream.on("data", async (data: QuadWithID) => {
-
-            let stream_store = new Store(data.quads);
-            const binding_stream = await this.comunica_engine.queryBindings(`
-            select ?s where {
-                ?s ?p ?o .
-            }`, {
-                sources: [stream_store]
-            });
-
-            binding_stream.on('data', async (binding: any) => {
-                for (let subject of binding.values()) {
-                    this.observation_array.push(subject.id);
-                    this.observation_array = insertion_sort(this.observation_array);
-                }
-            });
-
-            binding_stream.on('end', async () => {
-                let unique_observation_array = [...new Set(this.observation_array)];
-                for (let observation of unique_observation_array) {
-                    let observation_store = new Store(stream_store.getQuads(observation, null, null, null));
-                    if (observation_store.size > 0) {
-                        const timestamp_stream = await this.comunica_engine.queryBindings(`
-                        PREFIX saref: <https://saref.etsi.org/core/>
-                        SELECT ?time WHERE {
-                            <${observation}> saref:hasTimestamp ?time .
-                        }
-                        `, {
-                            sources: [observation_store]
-                        });
-
-                        timestamp_stream.on('data', async (bindings: Bindings) => {
-                            let time = bindings.get('time');
-                            if (time !== undefined) {
-                                let timestamp = await this.epoch(time.value);                                
-                                if (this.stream_name) {
-                                    this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
-                                    await this.add_event_to_rsp_engine(observation_store, [this.stream_name], timestamp);
-                                }
-                            }
-                        });
-                    }
-                }
-                
-            });
+            let member_store = new Store(data.quads);
+            let timestamp = member_store.getQuads(null, bucket_strategy, null, null)[0].object.value;
+            let timestamp_epoch = Date.parse(timestamp);
+            if (this.stream_name){
+                this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
+                await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp_epoch);
+            }
         });
 
         stream.on("end", async () => {
-            console.log(`The stream has ended.`);
-            this.logger.info({ query_id: this.query_hash }, `file_streamer_ended for ${this.ldes_stream}`)
+            this.logger.info({ query_id: this.query_hash }, `stream events have been fully read and added to the RSP Engine.`);
+            console.log(`The stream has been fully read and added to the .`);
             DecentralizedFileStreamer.sendToServer(`{
                 "query_hash": "${this.query_hash}",
                 "stream_name": "${this.stream_name}",
@@ -228,42 +193,43 @@ export class DecentralizedFileStreamer {
 
     async subscribing_latest_events(stream_name: RDFStream) {
         let inbox = await this.get_inbox_container(this.ldes_stream);
-        let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
-        const stream_websocket = new WebSocket(stream_subscription_ws);
-        stream_websocket.onmessage = async (event: any) => {
-            this.websocket_listening_time = Date.now();
-            const parsed = JSON.parse(event.data);
-            inbox = parsed.object;
-            if (inbox !== undefined) {
-                let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
-                const websocket = new WebSocket(subscription_ws);
-                websocket.onmessage = async (event: any) => {
-                    const parsed = JSON.parse(event.data);
-                    let resource_url = parsed.object;
-                    let resource = await ldfetch.get(resource_url);
-                    let resource_store = new Store(resource.triples);
-                    const binding_stream = await this.comunica_engine.queryBindings(`
-                    PREFIX saref: <https://saref.etsi.org/core/>
-                    SELECT ?time WHERE {
-                        ?s saref:hasTimestamp ?time .
-                    }
-                    `, {
-                        sources: [resource_store]
-                    });
 
-                    binding_stream.on('data', async (bindings: Bindings) => {
-                        let time = bindings.get('time');
-                        if (time !== undefined) {
-                            let timestamp = await this.epoch(time.value);
-                            this.missing_event_queue.enqueue(resource_store.getQuads(), timestamp);
-                        }
-                    });
+        // let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
+        // const stream_websocket = new WebSocket(stream_subscription_ws);
+        // stream_websocket.onmessage = async (event: any) => {
+        //     this.notification_listening_time = Date.now();
+        //     const parsed = JSON.parse(event.data);
+        //     inbox = parsed.object;
+        //     if (inbox !== undefined) {
+        //         let subscription_ws = await this.get_inbox_subscription_websocket_url(this.ldes_stream, inbox);
+        //         const websocket = new WebSocket(subscription_ws);
+        //         websocket.onmessage = async (event: any) => {
+        //             const parsed = JSON.parse(event.data);
+        //             let resource_url = parsed.object;
+        //             let resource = await ldfetch.get(resource_url);
+        //             let resource_store = new Store(resource.triples);
+        //             const binding_stream = await this.comunica_engine.queryBindings(`
+        //             PREFIX saref: <https://saref.etsi.org/core/>
+        //             SELECT ?time WHERE {
+        //                 ?s saref:hasTimestamp ?time .
+        //             }
+        //             `, {
+        //                 sources: [resource_store]
+        //             });
 
-                    let sorted_queue = quick_sort_queue(this.missing_event_queue);
-                    this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
-                };
-            }
-        }
+        //             binding_stream.on('data', async (bindings: Bindings) => {
+        //                 let time = bindings.get('time');
+        //                 if (time !== undefined) {
+        //                     let timestamp = await this.epoch(time.value);
+        //                     this.missing_event_queue.enqueue(resource_store.getQuads(), timestamp);
+        //                 }
+        //             });
+
+        //             let sorted_queue = quick_sort_queue(this.missing_event_queue);
+        //             this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
+        //         };
+        //     }
+        // }
 
     }
 
@@ -279,6 +245,29 @@ export class DecentralizedFileStreamer {
                 }
             }
         }
+    }
+
+    async subscribe_webhook_notification(ldes_stream: string): Promise<void> {
+        let solid_server = ldes_stream.split("/").slice(0, 3).join("/");
+        let webhook_notification_server = solid_server + "/.notifications/WebhookChannel2023/";
+        let post_body = {
+            "@context": [],
+            "type": "http://www.w3.org/ns/solid/notifications#WebhookChannel2023",
+            "topic": `${ldes_stream}`,
+            "sendTo": "http://localhost:8080/"
+        };
+
+        const response = await fetch(webhook_notification_server, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/ld+json',
+                'Accept': 'application/ld+json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(post_body)
+        });
+        const response_json = await response.json();
+        console.log(response_json.sendTo);
     }
 
     async get_stream_subscription_websocket_url(ldes_stream: string): Promise<string> {
@@ -300,7 +289,6 @@ export class DecentralizedFileStreamer {
         });
         const response_json = await repsonse.json();
         return response_json.receiveFrom;
-
     }
 
     async add_sorted_queue_to_rsp_engine(sorted_queue: StreamEventQueue<Set<Quad>>) {
@@ -333,7 +321,7 @@ export class DecentralizedFileStreamer {
     }
 
     get_websocket_listening_time() {
-        return this.websocket_listening_time;
+        return this.notification_listening_time;
     }
 
     get_file_streamer_start_time() {

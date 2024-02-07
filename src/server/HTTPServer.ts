@@ -8,14 +8,13 @@ import { WebSocketHandler } from "./WebSocketHandler";
 import * as websocket from 'websocket';
 const url = require('url');
 const EventEmitter = require('events');
-
-
 const event_emitter = new EventEmitter();
 
 export class HTTPServer {
     private readonly http_server: Server;
     public solid_server_url: string;
     public logger: any;
+    public dynamic_endpoints: { [key: string]: boolean };
     public query_registry: any;
     public websocket_server: any;
     public aggregation_publisher: any;
@@ -23,6 +22,7 @@ export class HTTPServer {
     public websocket_handler: any;
     constructor(http_port: number, solid_server_url: string, logger: any) {
         this.solid_server_url = solid_server_url;
+        this.dynamic_endpoints = {};
         this.http_server = createServer(this.request_handler.bind(this)).listen(http_port);
         this.logger = logger;
         this.websocket_server = new websocket.server({
@@ -41,6 +41,7 @@ export class HTTPServer {
 
     private request_handler(req: IncomingMessage, res: ServerResponse) {
         const parsed_url = url.parse(req.url, true);
+        const endpoint_name = parsed_url.pathname?.split(1); 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
         switch (req.method) {
@@ -50,6 +51,23 @@ export class HTTPServer {
                 res.end();
                 break;
             case "POST":
+                // TODO : bug that the notification is sent more than once from the solid server.
+                let body: string = '';
+                req.on('data', (chunk: Buffer) => {
+                    body = body + chunk.toString();
+                });
+
+                req.on('end', () => {
+                    const webhook_notification_data = JSON.parse(body);
+                    if (webhook_notification_data.type === 'Add') {
+                        let notification = {
+                            "type": "latest_event_notification",
+                            "data": webhook_notification_data
+                        }
+                        event_emitter.emit(notification);
+                    }
+                });
+
                 if (req.url = '/registerQuery') {
                     POSTHandler.handle(req, res, this.query_registry, this.solid_server_url, this.logger);
                 }

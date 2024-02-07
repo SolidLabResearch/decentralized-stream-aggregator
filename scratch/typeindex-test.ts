@@ -24,9 +24,9 @@ const pod_location = "http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/";
 //     console.log(await stream);
 // });
 
-// let body = `INSERT DATA {<http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> <http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/settings/publicTypeIndex> . }`;
+let body = `INSERT DATA {<http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> <http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/settings/publicTypeIndex> . }`;
 
-let body = `INSERT DATA {<#bvpDataset> <https://saref.etsi.org/core/relatesToProperty> <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/wearable.bvp>}`
+// let body = `INSERT DATA {<#bvpDataset> <https://saref.etsi.org/core/relatesToProperty> <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/wearable.bvp>}`
 
 communication.patch(pod_location + "settings/publicTypeIndex", body).then(async(response) => {
     const stream = response.text();

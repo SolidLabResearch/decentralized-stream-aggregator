@@ -47,12 +47,12 @@ export class QueryRegistry {
      * @memberof QueryRegistry
      */
 
-    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger:any) {
+    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any) {
         if (await query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
-           logger.info({}, 'query_is_unique');
+            logger.info({}, 'query_is_unique');
             new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp, logger);
             return true;
         }
@@ -61,14 +61,14 @@ export class QueryRegistry {
             The query is already computed and stored in the Solid Stream Aggregator's Solid Pod. So, read from there and send via a websocket.
             TODO : make a result dispatcher module.
             */
-              logger.info({}, 'query_is_not_unique');
+            logger.info({}, 'query_is_not_unique');
             this.logger.debug(`The query you have registered is already executing.`);
             return false;
         }
 
     }
 
-    async add_query_in_registry(rspql_query: string, logger:any) {
+    async add_query_in_registry(rspql_query: string, logger: any) {
         await this.registered_queries.addItem(rspql_query);
         if (this.checkUniqueQuery(rspql_query, logger)) {
             /*
@@ -102,7 +102,7 @@ export class QueryRegistry {
      * @return {*} 
      * @memberof QueryRegistry
      */
-    checkUniqueQuery(query: string, logger:any) {
+    checkUniqueQuery(query: string, logger: any) {
         let query_hashed = hash_string_md5(query);
         let registered_queries = this.get_registered_queries();
         let array_length = registered_queries.get_length();
@@ -111,11 +111,11 @@ export class QueryRegistry {
                 return is_equivalent(query, registered_queries.get_item(i));
             }
         }
-        if (array_length === 0){
-            logger.info({query_hashed}, 'array_length_is_zero');
-            
+        if (array_length === 0) {
+            logger.info({ query_hashed }, 'array_length_is_zero');
+
         }
-        logger.info({query_hashed}, 'isomorphic_check_done')
+        logger.info({ query_hashed }, 'isomorphic_check_done')
         return false;
     }
 

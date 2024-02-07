@@ -2,7 +2,6 @@ import { RSPEngine } from "rsp-js";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { DecentralizedFileStreamer } from "./DecentralizedFileStreamer";
 import { v4 as uuidv4 } from 'uuid';
-import * as websocket from 'websocket';
 import { EventEmitter } from "events";
 import * as CREDENTIALS from '../../config/PodToken.json';
 import { BindingsWithTimestamp } from "../../utils/Types";
@@ -37,17 +36,13 @@ export class AggregatorInstantiator {
         this.rsp_emitter = this.rsp_engine.register();
         this.intiateDecentralizedFileStreamer();
     }
-
     public async intiateDecentralizedFileStreamer() {
         let query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
         for (const stream of this.stream_array) {
-            // uncomment the line below            
             let session_credentials = this.get_session_credentials(stream);
             this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
             new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
-            // new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine);
-            // new DecentralizedFileStreamer(stream, session_credentials, new Date("2022-11-07T09:27:17.5890"), new Date("2024-11-07T09:27:17.5890"), this.rsp_engine, this.query);
         }
         this.executeRSP();
     }

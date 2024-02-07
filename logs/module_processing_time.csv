@@ -1,0 +1,46 @@
+Message 1,Message 2,Time Difference (seconds)
+http_server_started,new_query_received_from_client_ws,161.075
+new_query_received_from_client_ws,isomorphic_check_done,0.025
+isomorphic_check_done,query_is_unique,0
+query_is_unique,stream_credentials_retrieved,0.006
+stream_credentials_retrieved,unique_query_registered,0.009
+unique_query_registered,file_streamer_started for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0
+file_streamer_started for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,file_streamer_ended for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.467
+file_streamer_ended for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.19
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.034
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.043
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.037
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.035
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.03
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.033
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.028
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.029
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.029
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.028
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.031
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.029
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.083
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.028
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.028
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.027
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.03
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.024
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,0.024
+event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/,aggregation_event_sent_to_client,0.224
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.026
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.02
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.263
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.024
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.041
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.037
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.011
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.035
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.011
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.029
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.013
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.026
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.007
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.026
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.004
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.003
+aggregation_event_sent_to_client,aggregation_event_sent_to_client,0.002

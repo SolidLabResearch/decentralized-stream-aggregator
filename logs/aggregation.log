@@ -1,2 +1,3 @@
-{"name":"solid-stream-aggregator","hostname":"pop-os","pid":19087,"level":30,"query_id":"1d953da4a61cbc2a8b14a14355dba1ca","msg":"event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/","time":"2023-12-07T14:13:59.539Z","v":0}
-{"name":"solid-stream-aggregator","hostname":"pop-os","pid":19087,"level":30,"query_id":"1d953da4a61cbc2a8b14a14355dba1ca","msg":"event_added_to_rsp_engine for http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/","time":"2023-12-07T14:13:59.637Z","v":0}
+{"name":"solid-stream-aggregator","hostname":"pop-os","pid":54529,"level":30,"msg":"http_server_started","time":"2024-02-05T14:14:16.179Z","v":0}
+{"name":"solid-stream-aggregator","hostname":"pop-os","pid":57046,"level":30,"msg":"http_server_started","time":"2024-02-05T14:29:17.584Z","v":0}
+{"name":"solid-stream-aggregator","hostname":"pop-os","pid":31659,"level":30,"msg":"http_server_started","time":"2024-02-07T10:38:01.323Z","v":0}

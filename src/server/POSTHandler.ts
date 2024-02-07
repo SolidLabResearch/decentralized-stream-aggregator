@@ -19,15 +19,18 @@ export class POSTHandler {
     constructor() {
         POSTHandler.sparql_to_rspql = new SPARQLToRSPQL();
         POSTHandler.connection = websocketConnection;
+
         POSTHandler.client = new WebSocketClient();
     }
 
     public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string, logger: any) {
         let to_timestamp = new Date().getTime(); // current time
-        req.on('data', (data) => {
-            this.request_body = JSON.parse(data);
+        let post_body: string = '';
+        req.on('data', (chunk: Buffer) => {
+            post_body = post_body + chunk.toString();
         });
         req.on('end', () => {
+            this.request_body = JSON.parse(post_body);
             let body = this.request_body;
             let query = body.query;
             let latest_minutes = body.latest_minutes;
@@ -41,39 +44,64 @@ export class POSTHandler {
                 query_registry.register_query(rspql_query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else {
-                throw new Error('Query type not supported by the Solid Stream Aggregator.');
+                let notification = {
+                    "type": "latest_event_notification",
+                    "data": body
+                }
+                let notification_string = JSON.stringify(notification);
+                let notification_object = JSON.parse(notification_string);
+                let new_event_with_container_object = {
+                    "type": "new_event_with_container_notification",
+                    "event": notification_object.data.object,
+                    "container": notification_object.data.target
+                };
+                this.sendToServer(JSON.stringify(new_event_with_container_object));
             }
         });
+
     }
 
-    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any) {
+    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any) {
         let aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
-        let to_timestamp = new Date("2023-11-15T08:58:12.2870Z").getTime(); // time setup for the testing (the BVP query)
-        let from_timestamp = new Date(to_timestamp - (width * 60)).getTime(); // latest minutes ago
+        // let to_timestamp = new Date("2023-11-15T09:47:09.8120Z").getTime(); // time setup for the testing (the BVP query)
+        let to_timestamp = new Date("2024-02-01T18:14:02.8320Z").getTime(); // time setup for the testing (the SKT query)
+        let from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
         let query_hashed = hash_string_md5(query);
         let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
         if (await is_query_unique) {
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
-            let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
-            if (aggregated_events_exist) {
-                let aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({
-                });
-                aggregation_stream.on('data', async (data) => {
-                    let store = new N3.Store(data.quads);
-                    let aggregation_event = storeToString(store)
-                    let object = {
-                        query_hash: hash_string_md5(query),
-                        aggregation_event: aggregation_event,
+            for (let [query, websocket_connection] of websocket_connections) {
+                // make it work such that you get the messages directly rather than the location of the websocket connection.
+                if (query === query_hashed) {
+                    websocket_connection.send(JSON.stringify(`{
+                        "type": "status",
+                        "status": "duplicate_query",
+                        "connection_id": ${websocket_connection}
+                    }`));
+                    logger.info({ query_id: query_hashed }, `duplicate_query`);
+                }
+                else {
+                    let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
+                    if (aggregated_events_exist) {
+                        let aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({});
+                        aggregation_stream.on('data', async (data) => {
+                            let store = new N3.Store(data.quads);
+                            let aggregation_event = storeToString(store)
+                            let object = {
+                                query_hash: hash_string_md5(query),
+                                aggregation_event: aggregation_event,
+                            }
+                            let object_string = JSON.stringify(object);
+                            this.sendToServer(object_string);
+                        });
                     }
-                    let object_string = JSON.stringify(object);
-                    this.sendToServer(object_string);
-                });
-            }
-            else {
-                console.log(`The aggregated events do not exist.`);
+                    else {
+                        console.log(`The aggregated events do not exist.`);
+                    }
+                }
             }
         }
 

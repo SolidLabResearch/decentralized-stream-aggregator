@@ -3,7 +3,7 @@ import * as WebSocket from 'websocket';
 import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
-import { hash_string_md5 } from "../utils/Util";
+import { find_relevant_streams, hash_string_md5 } from "../utils/Util";
 import { POSTHandler } from "./POSTHandler";
 import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
@@ -38,36 +38,36 @@ export class WebSocketHandler {
         // TODO: find the type of the request object
         console.log(`Handling the websocket server.`);
         this.websocket_server.on('connect', (request: any) => {
+            console.log(`Connection received from ${request.remoteAddress}`);
         });
-
         this.websocket_server.on('request', async (request: any) => {
             let connection = request.accept('solid-stream-aggregator-protocol', request.origin);
             connection.on('message', async (message: WebSocket.Message) => {
+                console.log(`Message received from ${connection.remoteAddress}`);
                 if (message.type === 'utf8') {
                     let message_utf8 = message.utf8Data;
                     let ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
+                        this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
                         let query: string = ws_message.query;
                         let parsed = this.parser.parse(query);
                         let pod_url = parsed.s2r[0].stream_name;
-                        this.logger.info({query_id: query },`starting_to_find_ldes`);
-                        let type_index_locator = new TypeIndexLDESLocator(pod_url);
-                        let focus = new AggregationFocusExtractor(query).extract_focus();
-                        let ldes_stream = await type_index_locator.getLDESStreamURL(focus);
-                        this.logger.info({query_id: query },`ldes_found`);
+                        let interest_metric = new AggregationFocusExtractor(query).extract_focus();
+                        let streams = await find_relevant_streams(pod_url, [interest_metric])
+                        let ldes_stream = streams[0];
                         let ldes_query = query.replace(pod_url, ldes_stream);
-                        this.logger.info({query_id: query },`stream_name_replaced`);                       
                         let width = parsed.s2r[0].width;
                         let query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
-                        this.process_query(ldes_query, width);
+                        this.process_query(ldes_query, width, this.connections);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         let query_hash = ws_message.query_hash;
                         for (let [key, value] of this.connections) {
                             if (key === query_hash) {
-                                this.publish_aggregation_event(ws_message, this.aggregation_publisher);
+                                // this.publish_aggregation_event(ws_message, this.aggregation_publisher); 
                                 value.send(JSON.stringify(ws_message));
+                                this.logger.info({ query_id: query_hash }, `aggregation_event_sent_to_client`);
                             }
                         }
                     }
@@ -78,7 +78,10 @@ export class WebSocketHandler {
                                 value.send(JSON.stringify(ws_message));
                             }
                         }
+                    }
 
+                    else if (Object.keys(ws_message).includes('type')) {
+                        console.log(ws_message);
                     }
                     else {
                         throw new Error('Unknown message, not handled.');
@@ -190,9 +193,8 @@ export class WebSocketHandler {
         }
     }
 
-    public process_query(query: string, width: number) {
-        let minutes = width / 60;
-        POSTHandler.handle_ws_query(query, minutes, this.query_registry, this.logger);
+    public process_query(query: string, width: number, connections: Map<string, WebSocket>) {
+        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections);
     }
 
     public send_test(query: string) {
