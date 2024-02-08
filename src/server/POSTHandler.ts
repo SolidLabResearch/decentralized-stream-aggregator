@@ -24,33 +24,33 @@ export class POSTHandler {
     }
 
     public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string, logger: any) {
-        let to_timestamp = new Date().getTime(); // current time
+        const to_timestamp = new Date().getTime(); // current time
         let post_body: string = '';
         req.on('data', (chunk: Buffer) => {
             post_body = post_body + chunk.toString();
         });
         req.on('end', () => {
             this.request_body = JSON.parse(post_body);
-            let body = this.request_body;
-            let query = body.query;
-            let latest_minutes = body.latest_minutes;
-            let query_type = body.query_type;
-            let from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
+            const body = this.request_body;
+            const query = body.query;
+            const latest_minutes = body.latest_minutes;
+            const query_type = body.query_type;
+            const from_timestamp = new Date(to_timestamp - (latest_minutes * 60)).getTime(); // latest minutes ago
             if (query_type === 'rspql') {
                 query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else if (query_type === 'sparql') {
-                let rspql_query = this.sparql_to_rspql.getRSPQLQuery(query);
+                const rspql_query = this.sparql_to_rspql.getRSPQLQuery(query);
                 query_registry.register_query(rspql_query, query_registry, from_timestamp, to_timestamp, logger);
             }
             else {
-                let notification = {
+                const notification = {
                     "type": "latest_event_notification",
                     "data": body
                 }
-                let notification_string = JSON.stringify(notification);
-                let notification_object = JSON.parse(notification_string);
-                let new_event_with_container_object = {
+                const notification_string = JSON.stringify(notification);
+                const notification_object = JSON.parse(notification_string);
+                const new_event_with_container_object = {
                     "type": "new_event_with_container_notification",
                     "event": notification_object.data.object,
                     "container": notification_object.data.target
@@ -62,18 +62,18 @@ export class POSTHandler {
     }
 
     public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any) {
-        let aggregation_dispatcher = new AggregationDispatcher(query);
+        const aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
         // let to_timestamp = new Date("2023-11-15T09:47:09.8120Z").getTime(); // time setup for the testing (the BVP query)
-        let to_timestamp = new Date("2024-02-01T18:14:02.8320Z").getTime(); // time setup for the testing (the SKT query)
-        let from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
-        let query_hashed = hash_string_md5(query);
-        let is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
+        const to_timestamp = new Date("2024-02-01T18:14:02.8320Z").getTime(); // time setup for the testing (the SKT query)
+        const from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
+        const query_hashed = hash_string_md5(query);
+        const is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger);
         if (await is_query_unique) {
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
-            for (let [query, websocket_connection] of websocket_connections) {
+            for (const [query, websocket_connection] of websocket_connections) {
                 // make it work such that you get the messages directly rather than the location of the websocket connection.
                 if (query === query_hashed) {
                     websocket_connection.send(JSON.stringify(`{
@@ -84,17 +84,17 @@ export class POSTHandler {
                     logger.info({ query_id: query_hashed }, `duplicate_query`);
                 }
                 else {
-                    let aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
+                    const aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
                     if (aggregated_events_exist) {
-                        let aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({});
+                        const aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({});
                         aggregation_stream.on('data', async (data) => {
-                            let store = new N3.Store(data.quads);
-                            let aggregation_event = storeToString(store)
-                            let object = {
+                            const store = new N3.Store(data.quads);
+                            const aggregation_event = storeToString(store)
+                            const object = {
                                 query_hash: hash_string_md5(query),
                                 aggregation_event: aggregation_event,
                             }
-                            let object_string = JSON.stringify(object);
+                            const object_string = JSON.stringify(object);
                             this.sendToServer(object_string);
                         });
                     }

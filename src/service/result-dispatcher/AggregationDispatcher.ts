@@ -3,7 +3,7 @@ const parser: RSPQLParser = new RSPQLParser();
 import * as AGG_CONFIG from '../../config/aggregator_config.json';
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { filterRelation, ILDESinLDPMetadata, LDESinLDP, MetadataParser } from "@treecg/versionawareldesinldp";
-let ld_fetch = require('ldfetch');
+const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
 import { extractDateFromLiteral, LDPCommunication} from "@treecg/versionawareldesinldp";
 import { Member } from "@treecg/types";
@@ -49,7 +49,7 @@ export class AggregationDispatcher {
             const members: Member[] = [];
 
             for await (const resource of resources){
-                let member_identifier = resource.getSubjects(relation.path, null, null)[0].value;
+                const member_identifier = resource.getSubjects(relation.path, null, null)[0].value;
                 resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
                 const member: Member = {
                     id: namedNode(member_identifier),
@@ -84,30 +84,30 @@ export class AggregationDispatcher {
         // TODO : add the feature for query isomorphism here.
         // by creating a mapping between the query and the query hash(es).
         let aggregated_events_exist: boolean = false;
-        let parsed_query = parser.parse(this.query);
-        let query_streams: string[] = [];
-        for (let stream of parsed_query.s2r) {
+        const parsed_query = parser.parse(this.query);
+        const query_streams: string[] = [];
+        for (const stream of parsed_query.s2r) {
             query_streams.push(stream.stream_name);
         }
-        let fragment_containers: string[] = [];
-        let aggregation_pod_ldes_identifier = AGG_CONFIG.aggregation_pod_ldes_location;
+        const fragment_containers: string[] = [];
+        const aggregation_pod_ldes_identifier = AGG_CONFIG.aggregation_pod_ldes_location;
         const metadata = await this.aggregation_ldes.readMetadata();
-        for (let quad of metadata) {
+        for (const quad of metadata) {
             if (quad.predicate.value === "http://www.w3.org/ns/ldp#contains") {
                 fragment_containers.push(quad.object.value);
             }
         }
 
-        let fno_description = new Map<string, Quad[]>()
-        for (let fragment of fragment_containers) {
-            let fno_metadata = fragment + '.meta'
-            let response = await ldfetch.get(fno_metadata);
+        const fno_description = new Map<string, Quad[]>()
+        for (const fragment of fragment_containers) {
+            const fno_metadata = fragment + '.meta'
+            const response = await ldfetch.get(fno_metadata);
             fno_description.set(fragment, response.triples);
         }
 
         fno_description.forEach((value, key) => {
-            let quads = value;
-            for (let quad of quads) {
+            const quads = value;
+            for (const quad of quads) {
                 if (quad.predicate.value === "http://www.example.org/has_query_hash") {
                     if (hash_string_md5(this.query) === quad.object.value) {
                         aggregated_events_exist = true;
@@ -122,11 +122,20 @@ export class AggregationDispatcher {
     }
 }
 
+/**
+ *
+ * @param ldes_in_ldp
+ */
 export async function extractLdesMetadata(ldes_in_ldp: LDESinLDP): Promise<ILDESinLDPMetadata> {
     const metadata_store = await ldes_in_ldp.readMetadata();
     return MetadataParser.extractLDESinLDPMetadata(metadata_store, ldes_in_ldp.eventStreamIdentifier);
 }
 
+/**
+ *
+ * @param member
+ * @param path
+ */
 export function extractDateFromMember(member: Member, path: string): Date {
     const store = new Store(member.quads);
     // member date

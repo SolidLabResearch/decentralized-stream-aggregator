@@ -5,7 +5,7 @@ import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 const {quad, namedNode, literal} = DataFactory
 
 /**
- * Convert the ldes metadata object back to an N3 Store
+ * Convert the ldes metadata object back to an N3 Store.
  * @param metadata
  * @returns {Store}
  */
@@ -37,6 +37,12 @@ export function convertLdesMetadata(metadata: LDESMetadata): Store {
     return metadataStore
 }
 
+/**
+ *
+ * @param resourceIdentifier
+ * @param communication
+ * @param body
+ */
 export async function editMetadata(resourceIdentifier: string, communication: Communication, body: string): Promise<void> {
     const logger = new Logger(editMetadata.name)
     const response = await communication.patch(resourceIdentifier + '.meta', body)

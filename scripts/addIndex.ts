@@ -2,13 +2,23 @@ import { LDPCommunication } from "@treecg/versionawareldesinldp";
 
 const communication = new LDPCommunication();
 
+/**
+ *
+ * @param pod_location
+ */
 export async function createPublicTypeIndex(pod_location: string) {
-    let body = `INSERT DATA {${pod_location}profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> ${pod_location}settings/publicTypeIndex> . }`;
+    const body = `INSERT DATA {${pod_location}profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> ${pod_location}settings/publicTypeIndex> . }`;
     communication.patch(pod_location + 'settings/publicTypeIndex', body).then(async (response) => {
         console.log(`Public type index created at ${pod_location}settings/publicTypeIndex`);
     })
 }
 
+/**
+ *
+ * @param pod_location
+ * @param ldes_location
+ * @param sensor_metric
+ */
 export async function addStreamToPublicTypeIndex(pod_location: string, ldes_location: string, sensor_metric: string) {
     communication.put(pod_location + "settings/publicTypeIndex", `
     @prefix dahccsensors: <https://dahcc.idlab.ugent.be/Homelab/SensorsAndActuators/> .
@@ -28,6 +38,12 @@ export async function addStreamToPublicTypeIndex(pod_location: string, ldes_loca
     });
 }
 
+/**
+ *
+ * @param pod_location
+ * @param tree_path
+ * @param type
+ */
 export async function addPropertyToPublicTypeIndex(pod_location: string, tree_path: string, type: string) {
     communication.patch(pod_location + "settings/publicTypeIndex", `INSERT DATA {<#bvpDataset> <${tree_path}> <${type}>}`).then(async (response) => {
         console.log(`Type ${type} with Property ${tree_path} added to ${pod_location}settings/publicTypeIndex`);

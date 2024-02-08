@@ -19,14 +19,14 @@ export class AggregationFocusExtractor {
 
 
     public extract_focus(): any {
-        let parsed_query: ParsedQuery = this.parser.parse(this.query);
-        let sparql_query = parsed_query.sparql;
-        let sparql_query_parsed = sparql_parser.parse(sparql_query);
+        const parsed_query: ParsedQuery = this.parser.parse(this.query);
+        const sparql_query = parsed_query.sparql;
+        const sparql_query_parsed = sparql_parser.parse(sparql_query);
         for (let bgp_counter = 0; bgp_counter < sparql_query_parsed.where.length; bgp_counter++) {
             for (let graph_counter = 0; graph_counter < sparql_query_parsed.where[bgp_counter].patterns.length; graph_counter++) {
                 sparql_query_parsed.where[bgp_counter].patterns[graph_counter].triples.forEach((triple: any) => {
                     if (triple.predicate.termType == 'NamedNode' && this.focus_predicates.includes(triple.predicate.value)) {
-                        let focus_name = 'focus_' + (Object.keys(this.focus_of_query).length + 1);
+                        const focus_name = 'focus_' + (Object.keys(this.focus_of_query).length + 1);
                         this.focus_of_query[focus_name] = triple.object.value;
                     }
                 });

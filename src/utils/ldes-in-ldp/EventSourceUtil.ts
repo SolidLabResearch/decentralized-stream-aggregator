@@ -17,7 +17,7 @@ export type Resource = Quad[]
 export type BucketResources = { [p: string]: Resource[] }
 
 /**
- * Calculates to which bucket (i.e. the ldp:Container) the resource should be added.
+ * Calculates to which bucket (i.e. The ldp:Container) the resource should be added.
  * When the returned url is none, this means the resource its timestamp is less than all current bucket timestamps.
  * @param resource
  * @param metadata
@@ -40,7 +40,7 @@ export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata
 }
 
 /**
- * The new container URL is calculated based on the container URL where too many resources reside and a timestamp
+ * The new container URL is calculated based on the container URL where too many resources reside and a timestamp.
  * @param containerURL
  * @param timestamp
  */
@@ -55,7 +55,7 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
 }
 
 /**
- * Retrieve timestamp of a resource (ms)
+ * Retrieve timestamp of a resource (ms).
  * @param resource
  * @param timestampPath
  * @returns {number}
@@ -69,21 +69,26 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
 /**
  * Adds all the resources from each bucket entry of the BucketResources object to the specified container
  * Note: currently does not do any error handling
- *  handling should be something in the line of collecting all the resources that were added OR trying to add them again?
- *
+ * handling should be something in the line of collecting all the resources that were added OR trying to add them again?
  * @param bucketResources
  * @param metadata
  * @param ldpComm
  * @returns {Promise<void>}
  */
 
+/**
+ *
+ * @param bucket_resources
+ * @param metadata
+ * @param ldp_communication
+ */
 export async function add_resources_with_metadata_to_buckets(bucket_resources: BucketResources, metadata: ILDESinLDPMetadata, ldp_communication: LDPCommunication) {
     for (const containerURL of Object.keys(bucket_resources)) {
             for (const resource of bucket_resources[containerURL]) {
             const resourceStore = new Store(resource);
             if (containerURL.includes('http')) {
                 const response = await ldp_communication.post(containerURL, storeToString(resourceStore));
-                let uuid: string | null = response.headers.get('location');
+                const uuid: string | null = response.headers.get('location');
                 if (uuid !== null) {
                     const resource_subject = resourceStore.getSubjects(null, null, null)[0];
                     const relation_to_resource_store = new Store();
@@ -111,6 +116,11 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
     }
 }
 
+/**
+ *
+ * @param url
+ * @param communication
+ */
 export async function create_ldp_container(url: string, communication: Communication) {
     if (url.endsWith('/')) {
         const response = await communication.put(url);
@@ -124,6 +134,11 @@ export async function create_ldp_container(url: string, communication: Communica
 }
 
 
+/**
+ *
+ * @param ldes_in_ldp
+ * @param bucket_url
+ */
 export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_url: string) {
     const metadata = await ldes_in_ldp.readMetadata();
     for (const quad of metadata) {
@@ -138,6 +153,12 @@ export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_u
     }
 }
 
+/**
+ *
+ * @param bucketResources
+ * @param metadata
+ * @param ldpComm
+ */
 export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication) {
     for (const containerURL of Object.keys(bucketResources)) {
         for (const resource of bucketResources[containerURL]) {

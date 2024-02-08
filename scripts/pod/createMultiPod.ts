@@ -3,7 +3,7 @@ const generator = require('generate-password')
 const jsonFile = require('jsonfile')
 const directory: string = '/home/kush/Code/stream-aggregator-solid/data'
 import { Logger, ILogObj } from "tslog";
-let logger: Logger<ILogObj> = new Logger();
+const logger: Logger<ILogObj> = new Logger();
 const mailDomain: string = '@protego.com'
 
 type multipod = {
@@ -25,8 +25,8 @@ export class prepareSolidPod {
     async listFile(path: string) {
         const dir = await fs.promises.opendir(path)
         for await (const value of dir) {
-            let fileName: string = value.name.slice(0, -3)
-            let solidObject = {
+            const fileName: string = value.name.slice(0, -3)
+            const solidObject = {
                 pod_name: fileName,
                 email: fileName + mailDomain,
                 password: generator.generate({

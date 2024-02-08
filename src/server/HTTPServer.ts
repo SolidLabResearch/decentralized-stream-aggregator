@@ -46,7 +46,7 @@ export class HTTPServer {
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
         switch (req.method) {
             case "GET":
-                let latest_minutes = parsed_url.query.latest_minutes;
+                const latest_minutes = parsed_url.query.latest_minutes;
                 GETHandler.handle(req, res, this.solid_server_url, this.query_registry, this.endpoint_queries, latest_minutes, this.logger);
                 res.end();
                 break;
@@ -60,7 +60,7 @@ export class HTTPServer {
                 req.on('end', () => {
                     const webhook_notification_data = JSON.parse(body);
                     if (webhook_notification_data.type === 'Add') {
-                        let notification = {
+                        const notification = {
                             "type": "latest_event_notification",
                             "data": webhook_notification_data
                         }

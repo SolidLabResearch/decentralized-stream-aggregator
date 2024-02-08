@@ -15,6 +15,11 @@ interface TimeDiffData {
     time_difference_seconds: number;
 }
 
+/**
+ *
+ * @param logFilePath
+ * @param outputCsvPath
+ */
 function processLog(logFilePath: string, outputCsvPath: string): void {
     const logs: LogEntry[] = [];
     const lineReader = readline.createInterface({

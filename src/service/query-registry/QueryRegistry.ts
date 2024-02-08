@@ -26,7 +26,7 @@ export class QueryRegistry {
     constructor() {
         /**
          * Map of registered queries which are the queries without any analysis by the QueryRegistry but only registered.  
-        */
+         */
         this.registered_queries = new WriteLockArray<string>();
         /**
          * Array of executing queries which were unique as compared to all the existing queries in the QueryRegistry. 
@@ -41,9 +41,8 @@ export class QueryRegistry {
     }
     /**
      *  Register a query in the QueryRegistry.
-     *
      * @param {string} rspql_query
-     * @return {*} 
+     * @returns {*} 
      * @memberof QueryRegistry
      */
 
@@ -87,7 +86,6 @@ export class QueryRegistry {
 
     /**
      * Add a query to the executing queries.
-     *
      * @param {string} query
      * @memberof QueryRegistry
      */
@@ -97,15 +95,15 @@ export class QueryRegistry {
 
     /**
      * Checking if the query is unique or if it is isomorphic with an already executing query.
-     *
      * @param {string} query
-     * @return {*} 
+     * @param logger
+     * @returns {*} 
      * @memberof QueryRegistry
      */
     checkUniqueQuery(query: string, logger: any) {
-        let query_hashed = hash_string_md5(query);
-        let registered_queries = this.get_registered_queries();
-        let array_length = registered_queries.get_length();
+        const query_hashed = hash_string_md5(query);
+        const registered_queries = this.get_registered_queries();
+        const array_length = registered_queries.get_length();
         if (array_length > 1) {
             for (let i = 0; i < array_length; i++) {
                 return is_equivalent(query, registered_queries.get_item(i));

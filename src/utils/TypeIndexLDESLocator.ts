@@ -19,9 +19,9 @@ export class TypeIndexLDESLocator {
     public async getLDESStreamURL(metric: string) {
         try {
             const response = await ldfetch.get(this.public_type_index);
-            let store = new N3.Store(response.triples);
-            let quads = store.getQuads();
-            for (let quad of quads) {
+            const store = new N3.Store(response.triples);
+            const quads = store.getQuads();
+            for (const quad of quads) {
                 if (quad.predicate.value === 'https://saref.etsi.org/core/relatesToProperty') {
                     continue;
                 }

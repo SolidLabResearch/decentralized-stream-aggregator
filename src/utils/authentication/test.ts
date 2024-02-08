@@ -5,6 +5,9 @@ const n3 = require('n3');
 import { storeToString } from "@treecg/versionawareldesinldp";
 import { readMembersRateLimited } from "../ldes-in-ldp/EventSource";
 
+/**
+ *
+ */
 async function main() {
     let counter = 0;
     // const token = await generateToken({
@@ -41,7 +44,7 @@ async function main() {
         })
 
         performance.mark("start_reading");
-        let time_start = performance.now();
+        const time_start = performance.now();
         let time_end;
         ldes.on("data", (data) => {
             // const store = new n3.Store(data.quads);
@@ -53,7 +56,7 @@ async function main() {
         ldes.on("end", () => {
             console.log(counter);
             console.log("Stream ended");
-            let time_end = performance.now();
+            const time_end = performance.now();
         });        
 
     }
