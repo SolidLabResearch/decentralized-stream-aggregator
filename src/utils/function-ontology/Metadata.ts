@@ -10,11 +10,15 @@ const QueryEngine = require('@comunica/query-sparql').QueryEngine;
 const myEngine = new QueryEngine();
 
 
+/**
+ *
+ * @param resource
+ */
 export async function get_metadata_container(resource: string) {
-    let ldp_container_meta = resource.split("/").slice(0, -1).join("/") + "/.meta";
-    let metadata = await fetch.get(ldp_container_meta);
+    const ldp_container_meta = resource.split("/").slice(0, -1).join("/") + "/.meta";
+    const metadata = await fetch.get(ldp_container_meta);
     const store = new N3.Store();
-    for (let quad of metadata.triples) {
+    for (const quad of metadata.triples) {
         if (quad.predicate.value !== "http://www.w3.org/ns/ldp#contains") {
             store.addQuad(quad);
         }
@@ -23,9 +27,13 @@ export async function get_metadata_container(resource: string) {
     console.log(writer.quadsToString(quads))
 }
 
+/**
+ *
+ * @param resource
+ */
 export async function trace_original_events(resource: string) {
-    let stream = await get_container_stream_metadata(resource).then((stream: string) => {
-        let resource_metadata = fetch.get(resource).catch((error: Error) => {
+    const stream = await get_container_stream_metadata(resource).then((stream: string) => {
+        const resource_metadata = fetch.get(resource).catch((error: Error) => {
             console.log(error);
             // TODO: add the type for the resource metadata
         }).then(async (resource_metadata: any) => {
@@ -39,8 +47,8 @@ export async function trace_original_events(resource: string) {
                 sources: [store]
             });
             binding_stream.on('data', async (binding: Bindings) => {
-                let timestamp_from = binding.get('timestamp_from');
-                let timestamp_to = binding.get('timestamp_to');
+                const timestamp_from = binding.get('timestamp_from');
+                const timestamp_to = binding.get('timestamp_to');
                 if (timestamp_from !== undefined && timestamp_to !== undefined) {
                     await get_original_events(stream, timestamp_from.value, timestamp_to.value);
                 }
@@ -49,20 +57,30 @@ export async function trace_original_events(resource: string) {
     });
 }
 
+/**
+ *
+ * @param registered_stream
+ * @param aggregation_event_window_start
+ * @param aggregation_event_window_end
+ */
 async function get_original_events(registered_stream: string, aggregation_event_window_start: string, aggregation_event_window_end: string) {
     const communication = new LDPCommunication();
     const ldes_in_ldp = new LDESinLDP(registered_stream, communication);
-    let aggregation_event_window_start_date = new Date(aggregation_event_window_start);
-    let aggregation_event_window_end_date = new Date(aggregation_event_window_end);
+    const aggregation_event_window_start_date = new Date(aggregation_event_window_start);
+    const aggregation_event_window_end_date = new Date(aggregation_event_window_end);
     const lil_stream = ldes_in_ldp.readAllMembers(aggregation_event_window_start_date, aggregation_event_window_end_date);
     (await lil_stream).on('data', (member: QuadWithID) => {
         console.log(member.quads[0].subject.value);
     });
 }
 
+/**
+ *
+ * @param ldp_resource
+ */
 async function get_container_stream_metadata(ldp_resource: string) {
-    let ldp_container_meta: string = ldp_resource.split("/").slice(0, -1).join("/") + "/.meta";
-    let metadata = await fetch.get(ldp_container_meta).catch((error: Error) => {
+    const ldp_container_meta: string = ldp_resource.split("/").slice(0, -1).join("/") + "/.meta";
+    const metadata = await fetch.get(ldp_container_meta).catch((error: Error) => {
         console.log(error);
     });
     if (metadata !== undefined) {

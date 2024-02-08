@@ -1,5 +1,5 @@
-let {Parser: SparqlParser} = require('sparqljs');
-let parser = new SparqlParser();
+const {Parser: SparqlParser} = require('sparqljs');
+const parser = new SparqlParser();
 const Store = require('n3').Store;
 import { Quad } from 'rdflib/lib/tf-types';
 import * as RSPQLConfig from '../../config/rspql_query.json';
@@ -17,16 +17,16 @@ export class SPARQLToRSPQL {
     }
 
     public getRSPQLQuery(sparqlQuery: string): string {
-        let parsedQuery = parser.parse(sparqlQuery);
+        const parsedQuery = parser.parse(sparqlQuery);
         if (parsedQuery.type === 'query') {
             if (parsedQuery.queryType === 'SELECT' || 'select') {
-                let queryVariables = parsedQuery.variables;
+                const queryVariables = parsedQuery.variables;
                 for (let i = 0; i < queryVariables.length; i++) {
                     if (queryVariables[i].termType === 'Variable') {
                         this.extractedVariables.push(queryVariables[i].value);
                     }
                 }
-                let queryBasicGraphPatterns = parsedQuery.where;
+                const queryBasicGraphPatterns = parsedQuery.where;
                 for (let g = 0; g < queryBasicGraphPatterns.length; g++) {
                     if (queryBasicGraphPatterns[g].type === 'bgp') {
                         this.extractedGraphPatterns.addQuads(queryBasicGraphPatterns[g].triples);
@@ -58,7 +58,7 @@ export class SPARQLToRSPQL {
         else {
             throw new Error('The query is not a SPARQL query, please check your query.');
         }
-        let rspqlQuery = `
+        const rspqlQuery = `
         PREFIX : <https://rsp.js/> 
         PREFIX saref: <https://saref.etsi.org/>
         PREFIX asdo: <https://argahsuknesib.github.io/asdo/>

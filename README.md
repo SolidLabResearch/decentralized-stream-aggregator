@@ -42,6 +42,18 @@ and send this message object to the aggregator using the WebSocket connection.
 
 The tests for the Solid Stream Aggregator are written using the Jest framework. The coverage isn't 100% yet, but will be done in the recent future.
 
+## Linting
+
+You run the linter via 
+```shell
+npm run lint:ts
+```
+
+You can automatically fix some issues via
+```shell
+npm run lint:ts:fix
+```
+
 ## License
 
 This code is copyrighted by [Ghent University - imec](https://www.ugent.be/ea/idlab/en) and released under the [MIT Licence](./LICENCE) 

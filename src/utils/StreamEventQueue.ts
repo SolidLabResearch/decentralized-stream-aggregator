@@ -65,19 +65,23 @@ export class StreamEventQueue<T> {
 }
 
 
+/**
+ *
+ * @param stream_event_queue
+ */
 export function quick_sort_queue<T>(stream_event_queue: StreamEventQueue<T>): StreamEventQueue<T> {
     if (stream_event_queue.items.length <= 1) {
         return stream_event_queue;
     }
 
-    let middle = Math.floor(stream_event_queue.items.length / 2);
-    let pivot = stream_event_queue.items[middle];
+    const middle = Math.floor(stream_event_queue.items.length / 2);
+    const pivot = stream_event_queue.items[middle];
 
-    let left = new StreamEventQueue<T>([]);
-    let right = new StreamEventQueue<T>([]);
-    let equal = new StreamEventQueue<T>([]);
+    const left = new StreamEventQueue<T>([]);
+    const right = new StreamEventQueue<T>([]);
+    const equal = new StreamEventQueue<T>([]);
 
-    for (let item of stream_event_queue.items) {
+    for (const item of stream_event_queue.items) {
         if (item.timestamp < pivot.timestamp) {
             left.items.push(item);
         } else if (item.timestamp > pivot.timestamp) {
@@ -88,8 +92,8 @@ export function quick_sort_queue<T>(stream_event_queue: StreamEventQueue<T>): St
         }
     }
 
-    let sorted_left = quick_sort_queue(left);
-    let sorted_right = quick_sort_queue(right);
+    const sorted_left = quick_sort_queue(left);
+    const sorted_right = quick_sort_queue(right);
 
     const sorted_queue = new StreamEventQueue<T>([]);
     sorted_queue.items.push(...sorted_left.items);

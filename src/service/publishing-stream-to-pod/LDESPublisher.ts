@@ -93,7 +93,7 @@ export class LDESPublisher {
             const config: LDESConfig = {
                 LDESinLDPIdentifier: this.lilURL, treePath: this.treePath, versionOfPath: "1.0",
             }
-            let query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
+            const query = this.endpoint_queries.get_query("averageHRPatient1", start_time, end_time)
             if (query != undefined) {
                 await this.query_annotation_publisher.publish(query, this.lilURL, resourceList, this.treePath, config, start_time, end_time, this.session).then(() => {
                     console.log("Published query annotation");
@@ -110,14 +110,14 @@ export class LDESPublisher {
     }
 
     public async update_latest_inbox(aggregation_pod_ldes_location: string) {
-        let inbox_location:string[] = [];
+        const inbox_location:string[] = [];
         ldfetch.get(aggregation_pod_ldes_location).then((response: any) => {
-            for (let quad of response.triples) {
+            for (const quad of response.triples) {
                 if (quad.predicate.value == "http://www.w3.org/ns/ldp#inbox") {
                     inbox_location.push(quad.object.value);
                 }
             }
-            let latest_inbox = inbox_location.sort()[inbox_location.length - 1];
+            const latest_inbox = inbox_location.sort()[inbox_location.length - 1];
             fetch(aggregation_pod_ldes_location, {
                 method: 'PATCH',
                 headers: {

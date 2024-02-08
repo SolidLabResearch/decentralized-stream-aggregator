@@ -15,6 +15,12 @@ export type css_credentials = {
 }
 
 
+/**
+ *
+ * @param json_file
+ * @param service_name
+ * @param identity_provider
+ */
 export async function create_authentication_token_css(json_file: string, service_name: string, identity_provider: string) {
     const auth_token_map = new Map<string, css_credentials>();
     const json_string = fs.readFileSync(json_file, 'utf8');

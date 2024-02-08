@@ -29,17 +29,26 @@ import { Prefixes } from "../Types";
 const {quad, namedNode} = DataFactory
 
 
-/** Algorithm A
+/**
+ * Algorithm A.
  *
- *  * step 1: check whether ldes is initialised
- *    * init ldes when not
- *  * step 2: add all resources to correct bucket
- *  * step 3: rebalance
+ *  Step 1: check whether ldes is initialised
+ *    init ldes when not
+ *  step 2: add all resources to correct bucket
+ *  step 3: rebalance.
  *
- *  * Params:
+ *  Params:
  *    * LDESinLDPURL (string)
  *    * 1000 resources (Resource[])
- *    * version ID
+ *    * version ID.
+ * @param lilURL
+ * @param resources
+ * @param versionID
+ * @param bucketSize
+ * @param config
+ * @param prefixes
+ * @param session
+ * @param loglevel
  */
 export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: Prefixes, session?: Session, loglevel: string = 'info'): Promise<void> {
 

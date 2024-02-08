@@ -1,10 +1,10 @@
 
 export class EndpointQueries {
     get_query(name: string, from_timestamp: Date, to_timestamp: Date) {
-        let from = Date.parse(from_timestamp.toString())
-        let to = Date.parse(to_timestamp.toString());
+        const from = Date.parse(from_timestamp.toString())
+        const to = Date.parse(to_timestamp.toString());
         let query:string = '';
-        let difference_seconds = (to - from);
+        const difference_seconds = (to - from);
         console.log(`The name of the query is ${name}.`);
         switch (name) {
             case 'averageHRPatient1':

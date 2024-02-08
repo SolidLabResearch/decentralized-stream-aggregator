@@ -43,7 +43,7 @@ export class QueryAnnotationPublishing {
         const bucket_url = createBucketUrl(ldes_in_ldp_url, resource_timestamp);
         if ((await check_if_container_exists(ldes_in_ldp, bucket_url)) === false) {
             ldes_in_ldp.newFragment(new Date(resource_timestamp)).then(() => {
-                let query_metadata = this.get_query_metadata(query, start_time, end_time);
+                const query_metadata = this.get_query_metadata(query, start_time, end_time);
                 this.patch_metadata(query_metadata, bucket_url, communication);
             });
             bucket_resources[bucket_url] = [];
@@ -87,7 +87,7 @@ export class QueryAnnotationPublishing {
                     inbox_timestamp_array.push(timestamp[0]);
                 }
             }
-            let latest_timestamp = Math.max.apply(null, inbox_timestamp_array);
+            const latest_timestamp = Math.max.apply(null, inbox_timestamp_array);
             const latest_inbox_store = new Store(
                 [
                     quad(
@@ -109,7 +109,7 @@ export class QueryAnnotationPublishing {
     }
 
     public get_query_metadata(query: string, start_time: Date, end_time: Date): Store {
-        let query_identifier_uuid = uuidv4();
+        const query_identifier_uuid = uuidv4();
         const aggregation_query_identifier: string = `http://example.org/aggregation_query/${query_identifier_uuid}`;
         const aggregation_focus_extractor = new AggregationFocusExtractor(query);
         const focus_of_aggregation = aggregation_focus_extractor.extract_focus();
@@ -159,7 +159,7 @@ export class QueryAnnotationPublishing {
         return store;
     }
     public patch_metadata(store: Store, location: string, ldp_communication: LDPCommunication): void {
-        let location_metadata = location + '.meta';
+        const location_metadata = location + '.meta';
         ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
             if (response.status == 200 || 201 || 205) {
                 this.logger.debug("The metadata of the LDP container is patched successfully")
@@ -169,6 +169,10 @@ export class QueryAnnotationPublishing {
         });
     }
 }
+/**
+ *
+ * @param store
+ */
 export function patchSparqlUpdateDelete(store: Store): string {
     return `DELETE DATA {${storeToString(store)}};`
 }

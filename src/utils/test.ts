@@ -3,12 +3,15 @@ import {RateLimitedLDPCommunication} from "rate-limited-ldp-communication";
 import { readMembersRateLimited } from "./ldes-in-ldp/EventSource";
 const N3 = require('n3');
 
+/**
+ *
+ */
 async function main() {
-    let ldes_location = 'http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/';
+    const ldes_location = 'http://n061-14a.wall2.ilabt.iminds.be:3000/participant6/bvp/';
     let counter = 0;
-    let ldes = new LDESinLDP(ldes_location, new LDPCommunication());
-    let until = new Date(1700038653238);
-    let from = new Date(until.getTime());    
+    const ldes = new LDESinLDP(ldes_location, new LDPCommunication());
+    const until = new Date(1700038653238);
+    const from = new Date(until.getTime());    
     const start = performance.now();
     const stream = await readMembersRateLimited({
         from: from,
@@ -21,7 +24,7 @@ async function main() {
     stream.on("data", (data: any) => {
         const stream_store = new N3.Store(data.quads);
         const store = stream_store.getQuads(null, null, null, null);
-        for (let quad of store) {
+        for (const quad of store) {
             counter++;
         }
     });

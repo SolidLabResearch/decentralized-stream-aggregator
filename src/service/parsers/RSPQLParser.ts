@@ -9,18 +9,17 @@ export class RSPQLParser {
     }
     /**
      * Parse a RSPQL query to a parsedQuery Object containing the R2S and S2R mappings along with the SPARQL query.
-     *
      * @param {string} rspql_query
-     * @return {*}  {ParsedQuery}
+     * @returns {*}  {ParsedQuery}.
      * @memberof RSPQLParser
      */
     parse(rspql_query: string): ParsedQuery {
-        let parsed = new ParsedQuery();
-        let split = rspql_query.split(/\r?\n/);
-        let sparqlLines = new Array<string>();
-        let prefixMapper = new Map<string, string>();
+        const parsed = new ParsedQuery();
+        const split = rspql_query.split(/\r?\n/);
+        const sparqlLines = new Array<string>();
+        const prefixMapper = new Map<string, string>();
         split.forEach((line) => {
-            let trimmed_line = line.trim();
+            const trimmed_line = line.trim();
             if (trimmed_line.startsWith("REGISTER")) {
                 const regexp = /REGISTER +([^ ]+) +<([^>]+)> AS/g;
                 const matches = trimmed_line.matchAll(regexp);
@@ -57,24 +56,23 @@ export class RSPQLParser {
             }
         });
         parsed.sparql = sparqlLines.join("\n");
-        let sparql_parsed = this.parse_sparql_query(parsed.sparql, parsed);
+        const sparql_parsed = this.parse_sparql_query(parsed.sparql, parsed);
         return parsed;
     }
 
     /**
      * Unwraps a prefixed IRI to a full IRI.
-     *
      * @param {string} prefixedIRI
      * @param {Map<string, string>} prefixMapper
-     * @return {*} 
+     * @returns {*} 
      * @memberof RSPQLParser
      */
     unwrap(prefixedIRI: string, prefixMapper: Map<string, string>) {
         if (prefixedIRI.trim().startsWith("<")) {
             return prefixedIRI.trim().slice(1, -1);
         }
-        let split = prefixedIRI.trim().split(":");
-        let iri = split[0];
+        const split = prefixedIRI.trim().split(":");
+        const iri = split[0];
         if (prefixMapper.has(iri)) {
             return prefixMapper.get(iri) + split[1];
         }
@@ -85,15 +83,15 @@ export class RSPQLParser {
 
     /**
      * Returns the name of the sensor from the SPARQL query.
-    **/
+     */
 
     get_sensor_name(parsed_query: ParsedQuery) {
         console.log(parsed_query.sparql)
     }
 
     parse_sparql_query(sparqlQuery: string, parsed: ParsedQuery) {
-        let parsed_sparql_query = this.sparql_parser.parse(sparqlQuery);
-        let prefixes = parsed_sparql_query.prefixes;
+        const parsed_sparql_query = this.sparql_parser.parse(sparqlQuery);
+        const prefixes = parsed_sparql_query.prefixes;
         Object.keys(prefixes).forEach((key) => {
             parsed.prefixes.set(key, prefixes[key]);
         });

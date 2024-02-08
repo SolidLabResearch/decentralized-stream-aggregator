@@ -41,29 +41,29 @@ export class WebSocketHandler {
             console.log(`Connection received from ${request.remoteAddress}`);
         });
         this.websocket_server.on('request', async (request: any) => {
-            let connection = request.accept('solid-stream-aggregator-protocol', request.origin);
+            const connection = request.accept('solid-stream-aggregator-protocol', request.origin);
             connection.on('message', async (message: WebSocket.Message) => {
                 console.log(`Message received from ${connection.remoteAddress}`);
                 if (message.type === 'utf8') {
-                    let message_utf8 = message.utf8Data;
-                    let ws_message = JSON.parse(message_utf8);
+                    const message_utf8 = message.utf8Data;
+                    const ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
                         this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
-                        let query: string = ws_message.query;
-                        let parsed = this.parser.parse(query);
-                        let pod_url = parsed.s2r[0].stream_name;
-                        let interest_metric = new AggregationFocusExtractor(query).extract_focus();
-                        let streams = await find_relevant_streams(pod_url, [interest_metric])
-                        let ldes_stream = streams[0];
-                        let ldes_query = query.replace(pod_url, ldes_stream);
-                        let width = parsed.s2r[0].width;
-                        let query_hashed = hash_string_md5(ldes_query);
+                        const query: string = ws_message.query;
+                        const parsed = this.parser.parse(query);
+                        const pod_url = parsed.s2r[0].stream_name;
+                        const interest_metric = new AggregationFocusExtractor(query).extract_focus();
+                        const streams = await find_relevant_streams(pod_url, [interest_metric])
+                        const ldes_stream = streams[0];
+                        const ldes_query = query.replace(pod_url, ldes_stream);
+                        const width = parsed.s2r[0].width;
+                        const query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
                         this.process_query(ldes_query, width, this.connections);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
-                        let query_hash = ws_message.query_hash;
-                        for (let [key, value] of this.connections) {
+                        const query_hash = ws_message.query_hash;
+                        for (const [key, value] of this.connections) {
                             if (key === query_hash) {
                                 this.publish_aggregation_event(ws_message, this.aggregation_publisher); 
                                 value.send(JSON.stringify(ws_message));
@@ -72,8 +72,8 @@ export class WebSocketHandler {
                         }
                     }
                     else if (Object.keys(ws_message).includes('status')) {
-                        let query_hash = ws_message.query_hash;
-                        for (let [key, value] of this.connections) {
+                        const query_hash = ws_message.query_hash;
+                        for (const [key, value] of this.connections) {
                             if (key === query_hash) {
                                 value.send(JSON.stringify(ws_message));
                             }
@@ -101,9 +101,9 @@ export class WebSocketHandler {
 
     public async client_response_publisher() {
         this.event_emitter.on('aggregation_event', (object: string) => {
-            let event = JSON.parse(object)
-            let query_id = event.query_hash;
-            let connection = this.connections.get(query_id);
+            const event = JSON.parse(object)
+            const query_id = event.query_hash;
+            const connection = this.connections.get(query_id);
             if (connection) {
                 connection.send(event.aggregation_event);
             }
@@ -113,7 +113,7 @@ export class WebSocketHandler {
         let zeroLengthDuration: number = 0;
         let intervalId: NodeJS.Timeout | null = null;
 
-        let event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
+        const event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
         this.aggregation_resource_list.push(event_quad);
 
         if (this.aggregation_resource_list.length === this.aggregation_resource_list_batch_size) {
@@ -149,7 +149,7 @@ export class WebSocketHandler {
     public aggregation_event_publisher() {
         this.event_emitter.on('aggregation_event', async (object: string) => {
             const parser = new Parser({ format: 'N-Triples' });
-            let aggregation_event = JSON.parse(object)
+            const aggregation_event = JSON.parse(object)
             const event_quad: any = parser.parse(aggregation_event.aggregation_event);
             this.aggregation_resource_list.push(event_quad);
             if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
@@ -198,7 +198,7 @@ export class WebSocketHandler {
     }
 
     public send_test(query: string) {
-        let ws = this.connections.get(query);
+        const ws = this.connections.get(query);
         if (ws) {
             ws.send(JSON.stringify({ "test": "test", "query": query }));
         }

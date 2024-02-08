@@ -24,11 +24,12 @@ import { Prefixes } from "../Types";
 
 /**
  * In order to correctly rebalance the container,
- * this algorithm assumes that all resources in the container are in fact part of the LDES in LDP
+ * this algorithm assumes that all resources in the container are in fact part of the LDES in LDP.
  * @param ldpCommunication
  * @param metadata
  * @param containerURL
  * @param bucketSize
+ * @param prefixes
  * @param loglevel
  * @returns {Promise<void>}
  */

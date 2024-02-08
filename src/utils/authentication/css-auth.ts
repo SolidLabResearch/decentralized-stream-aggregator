@@ -2,19 +2,19 @@ const N3 = require('n3');
 const authn = require('@inrupt/solid-client-authn-core')
 import { Session } from "@rubensworks/solid-client-authn-isomorphic";
 /**
- * @typedef {Object} CredentialsToken
+ * @typedef {object} CredentialsToken
  * @property {string} id - The token id.
  * @property {string} secret - The token secret.
  * @property {string} idp - The Identity Provider that granted the token.
  */
 /**
  * Create a client credentials token for CSS v4.0.0 and higher.
- * @param {Object} options - Token creation options.
+ * @param {object} options - Token creation options.
  * @param {string} options.name - The name for the token.
  * @param {string} options.webid - The user WebID.
  * @param {string} options.email - The user email.
  * @param {string} options.password - The user password.
- * @returns {CredentialsToken} - The resulting Client Credentials Token
+ * @returns {CredentialsToken} - The resulting Client Credentials Token.
  */
 async function createAuthenticationTokenCSS(options: any) {
     options.idp = await getIdpFromWebID(options);
@@ -22,15 +22,19 @@ async function createAuthenticationTokenCSS(options: any) {
     return { id, secret, idp: options.idp }
 }
 
+/**
+ *
+ * @param options
+ */
 async function getIdpFromWebID(options: any) {
     const parser = new N3.Parser({ baseIRI: options.webid });
-    let idps = []
+    const idps = []
 
     const res = await fetch(options.webid, { headers: { 'Accept': 'text/turtle' } });
     const resText = await res.text();
     const quads = await parser.parse(resText)
 
-    for (let quad of quads) {
+    for (const quad of quads) {
         if (quad.predicate.value === "http://www.w3.org/ns/solid/terms#oidcIssuer" && quad.subject.value === options.webid) {
             idps.push(quad.object.value);
         }
@@ -43,6 +47,10 @@ async function getIdpFromWebID(options: any) {
     return idps[0]
 }
 
+/**
+ *
+ * @param options
+ */
 export async function generateToken(options: any) {
     // This assumes your server is started under http://localhost:3000/.
     // This URL can also be found by checking the controls in JSON responses when interacting with the IDP API,
@@ -78,6 +86,11 @@ async function makeAuthenticatedFetch(credentials: any, fetch: any) {
     return authFetch
 }
 
+/**
+ *
+ * @param credentials
+ * @param passedFetch
+ */
 async function createAuthenticatedFetchFunction(credentials: any, passedFetch: any) {
     const { id, secret, idp } = credentials;
     const fetchFunction = passedFetch || fetch
@@ -116,6 +129,10 @@ async function createAuthenticatedFetchFunction(credentials: any, passedFetch: a
     // This request will do a simple GET for example.
     return authFetch
 }
+/**
+ *
+ * @param credentials
+ */
 export async function session_with_credentials(credentials: any): Promise<Session> {
     const session = new Session();
     try {

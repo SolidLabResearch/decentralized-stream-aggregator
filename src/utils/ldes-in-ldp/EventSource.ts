@@ -28,8 +28,9 @@ export type Resource = Quad[]
 export type BucketResources = { [p: string]: Resource[] }
 
 /**
- * @param credentialsFile Filepath to a JSON containing credentials to setup a
- * Solid communication session
+ * @param credentialsFile - Filepath to a JSON containing credentials to setup a
+ * Solid communication session.
+ * @param credentialsFilepath
  * @returns {Promise<Session | undefined>}
  */
 export async function initSession(credentialsFilepath: string): Promise<Session | undefined> {
@@ -48,7 +49,7 @@ export async function initSession(credentialsFilepath: string): Promise<Session 
 }
 
 /**
- * Calculates to which bucket (i.e. the ldp:Container) the resource should be added.
+ * Calculates to which bucket (i.e. The ldp:Container) the resource should be added.
  * When the returned url is none, this means the resource its timestamp is less than all current bucket timestamps.
  * @param resource
  * @param metadata
@@ -71,7 +72,7 @@ export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata
 }
 
 /**
- * The new container URL is calculated based on the container URL where too many resources reside and a timestamp
+ * The new container URL is calculated based on the container URL where too many resources reside and a timestamp.
  * @param containerURL
  * @param timestamp
  */
@@ -81,7 +82,7 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
 }
 
 /**
- * Retrieve timestamp of a resource (ms)
+ * Retrieve timestamp of a resource (ms).
  * @param resource
  * @param timestampPath
  * @returns {number}
@@ -91,8 +92,13 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
     return extractTimestampFromLiteral(resourceStore.getObjects(null, timestampPath, null)[0] as Literal)// Note: expecting real xsd:dateTime
 }
 
+/**
+ *
+ * @param path
+ * @param url
+ */
 export async function prefixesFromFilepath(path: string, url?: string): Promise<any> {
-    let prefixes: { [key: string]: string } = {};
+    const prefixes: { [key: string]: string } = {};
     if (url) {
         prefixes[""] = url + "#";
     }
@@ -116,13 +122,12 @@ export async function prefixesFromFilepath(path: string, url?: string): Promise<
  * Converts a resource (quad array) to an optimised turtle string representation by grouping subjects
  * together, using prefixes wherever possible and replacing blank nodes with their properties.
  * Note: blank nodes referenced to as objects, but not found as subjects in other quads, can cause
- *  issues
+ * issues
  * Note: a more processing performant solution might be possible, by creating a store from the resource
- *  and indexing from there instead of two seperate maps
- *
- * @param resource The resource that gets converted to a string
- * @param _prefixes An object which members are strings, member name being the short prefix and its
- *  value a string representing its URI. Example: `{"rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}`
+ * and indexing from there instead of two seperate maps.
+ * @param resource - The resource that gets converted to a string.
+ * @param _prefixes - An object which members are strings, member name being the short prefix and its
+ *  value a string representing its URI. Example: `{"rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}`.
  * @returns {string}
  */
 export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixes): string {
@@ -184,11 +189,11 @@ export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixe
 /**
  * Adds all the resources from each bucket entry of the BucketResources object to the specified container
  * Note: currently does not do any error handling
- *  handling should be something in the line of collecting all the resources that were added OR trying to add them again?
- *
+ * handling should be something in the line of collecting all the resources that were added OR trying to add them again?
  * @param bucketResources
  * @param metadata
  * @param ldpComm
+ * @param prefixes
  * @returns {Promise<void>}
  */
 export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication, prefixes: Prefixes) {
@@ -205,11 +210,20 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
 
 /**
  *  Rate limiting read members function so that the GET requests are
- * not sent too fast to the server so that the CSS server does not crash.
- *
+ *  not sent too fast to the server so that the CSS server does not crash.
  * @export
  */
 
+/**
+ *
+ * @param opts
+ * @param opts.from
+ * @param opts.to
+ * @param opts.ldes
+ * @param opts.communication
+ * @param opts.rate
+ * @param opts.interval
+ */
 export async function readMembersRateLimited(opts: {
     from?: Date,
     to?: Date,
@@ -242,8 +256,8 @@ export async function readMembersRateLimited(opts: {
         for await (const resource of resources) {
             resource_counter++;
             if (resource !== undefined) {
-                let members_id = resource.getSubjects(relation.path, null, null);
-                for (let member_id of members_id) {
+                const members_id = resource.getSubjects(relation.path, null, null);
+                for (const member_id of members_id) {
                     resource.removeQuads(resource.getQuads(metadata.eventStreamIdentifier, TREE.member, null, null));
                     const member: Member = {
                         id: namedNode(member_id.value),
@@ -270,11 +284,18 @@ export async function readMembersRateLimited(opts: {
 }
 
 /**
- * readPage function which is rate limited so that there are
+ * ReadPage function which is rate limited so that there are
  * not a lot of GET requests so that the CSS server does not crash.
  */
 
 
+/**
+ *
+ * @param ldes
+ * @param fragment_url
+ * @param rate_limit_comm
+ * @param metadata
+ */
 export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string, rate_limit_comm: RateLimitedLDPCommunication, metadata: ILDESinLDPMetadata): AsyncIterable<Store> {
     if (isContainerIdentifier(fragment_url)) {
         const store = await readRateLimited(ldes, fragment_url, rate_limit_comm);
@@ -294,10 +315,16 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
 }
 
 /**
- * read function which is rate limited so that there are not a lot of GET requests
+ * Read function which is rate limited so that there are not a lot of GET requests
  * so that the CSS server does not crash.
  */
 
+/**
+ *
+ * @param ldes
+ * @param resource_identifier
+ * @param rate_limit_comm
+ */
 export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
     const response = await rate_limit_comm.get(resource_identifier);
     if (response && response.status !== 200) {

@@ -11,7 +11,9 @@
         "start-solid-server": "cd scripts && rm -rf data/.internal/accounts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json -w 0",
         "restart-solid-server": "cd scripts && npx community-solid-server --config ./pod/config/unsafe.json -f ./data/ -w 0",
         "start-solid-server-extended-lock": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/extendedlock.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json",
-        "test-run": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/auth.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json --workers 1"
+        "test-run": "cd scripts && rm -rf data/.internal/ && npx community-solid-server --config ./pod/config/auth.json -f ./data/ --seededPodConfigJson ./pod/pod_credentials.json --workers 1",
+        "lint:ts": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0",
+        "lint:ts:fix": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0 --fix"
     },
     "keywords": [],
     "author": "Kushagra Singh Bisen",
@@ -21,6 +23,9 @@
         "@types/jest": "^29.2.4",
         "@types/node-fetch": "^2.6.0",
         "@types/websocket": "^1.0.6",
+        "@typescript-eslint/parser": "^6.21.0",
+        "eslint": "^8.56.0",
+        "eslint-plugin-jsdoc": "^48.0.6",
         "jest": "^29.3.1",
         "ldfetch": "^1.2.8",
         "rsp-js": "^1.1.2",
