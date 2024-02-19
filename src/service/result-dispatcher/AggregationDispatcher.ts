@@ -5,7 +5,7 @@ import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { filterRelation, ILDESinLDPMetadata, LDESinLDP, MetadataParser } from "@treecg/versionawareldesinldp";
 const ld_fetch = require('ldfetch');
 const ldfetch = new ld_fetch({});
-import { extractDateFromLiteral, LDPCommunication} from "@treecg/versionawareldesinldp";
+import { extractDateFromLiteral} from "@treecg/versionawareldesinldp";
 import { Member } from "@treecg/types";
 import { Readable } from "stream";
 import { Quad } from "rdflib/lib/tf-types";
@@ -13,7 +13,7 @@ import { hash_string_md5 } from "../../utils/Util";
 import { TREE } from "@treecg/ldes-snapshot";
 import { DataFactory, Store } from "n3";
 import { Literal } from "n3";
-const { quad, namedNode, literal } = DataFactory;
+const { namedNode} = DataFactory;
 
 export class AggregationDispatcher {
     public query: string;
@@ -90,7 +90,6 @@ export class AggregationDispatcher {
             query_streams.push(stream.stream_name);
         }
         const fragment_containers: string[] = [];
-        const aggregation_pod_ldes_identifier = AGG_CONFIG.aggregation_pod_ldes_location;
         const metadata = await this.aggregation_ldes.readMetadata();
         for (const quad of metadata) {
             if (quad.predicate.value === "http://www.w3.org/ns/ldp#contains") {
@@ -105,7 +104,7 @@ export class AggregationDispatcher {
             fno_description.set(fragment, response.triples);
         }
 
-        fno_description.forEach((value, key) => {
+        fno_description.forEach((value) => {
             const quads = value;
             for (const quad of quads) {
                 if (quad.predicate.value === "http://www.example.org/has_query_hash") {

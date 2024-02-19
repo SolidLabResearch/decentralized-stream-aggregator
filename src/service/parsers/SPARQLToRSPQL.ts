@@ -19,7 +19,7 @@ export class SPARQLToRSPQL {
     public getRSPQLQuery(sparqlQuery: string): string {
         const parsedQuery = parser.parse(sparqlQuery);
         if (parsedQuery.type === 'query') {
-            if (parsedQuery.queryType === 'SELECT' || 'select') {
+            if (parsedQuery.queryType === 'SELECT' || parsedQuery.queryType === 'select') {
                 const queryVariables = parsedQuery.variables;
                 for (let i = 0; i < queryVariables.length; i++) {
                     if (queryVariables[i].termType === 'Variable') {

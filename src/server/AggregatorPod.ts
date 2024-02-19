@@ -6,7 +6,7 @@ export class AggregatorPod{
     }
 
     public async create_solid_pod(): Promise<void>{
-        exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any, stdout: any, stderr: any) => {
+        exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any) => {
             if (err) {
                 console.error(err);
                 return;

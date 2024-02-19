@@ -144,6 +144,9 @@ export async function rebalanceContainer(ldpCommunication: Communication, metada
             const resourceUrl = resourcesLocationMap.get(resource)
             if (resourceUrl) {
                 const response = await ldpCommunication.delete(resourceUrl)
+                if (response.status !== 205) {
+                    logger.error('for some reason, following resource could not be deleted: ' + resourceUrl)
+                }
             } else {
                 logger.error('for some reason, following resource could not be deleted: ' + resourceUrl)
             }

@@ -21,6 +21,14 @@ export class TypeIndexLDESLocator {
             const response = await ldfetch.get(this.public_type_index);
             const store = new N3.Store(response.triples);
             const quads = store.getQuads();
+            const relevant_ldes_metric = metric;
+            for (const quad of quads) {
+                if (quad.predicate.value === 'https://saref.etsi.org/core/relatesToProperty') {
+                    if (quad.object.value === relevant_ldes_metric) {
+                        return quad.subject.value;
+                    }
+                }
+            }
             for (const quad of quads) {
                 if (quad.predicate.value === 'https://saref.etsi.org/core/relatesToProperty') {
                     continue;

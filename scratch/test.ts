@@ -10,6 +10,7 @@ async function main() {
     const ldes = new LDESinLDP(pod_location_bvp, new LDPCommunication());
     const stream = await ldes.readAllMembers();
     stream.on("data", (data) => {
+        console.log(data.quads);
         counter++;
     });
 

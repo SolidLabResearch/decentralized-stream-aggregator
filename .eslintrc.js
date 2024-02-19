@@ -1,13 +1,13 @@
 module.exports = {
   root: true,
-  env: {node: true, es2020: true},
+  env: {node: true, es2020: true, jest: true},
   extends: [
     'eslint:recommended'
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'tests'],
   parserOptions: {ecmaVersion: 'latest', sourceType: 'module'},
   parser: '@typescript-eslint/parser',
-  plugins: ['jsdoc'],
+  plugins: ['jsdoc', 'jest'],
   rules: {
     'prefer-const': ['error', {
       'destructuring': 'any',

@@ -89,7 +89,7 @@ export class QueryRegistry {
      * @param {string} query
      * @memberof QueryRegistry
      */
-    add_to_executing_queries(query: string) {
+    async add_to_executing_queries(query: string) {
         this.executing_queries.addItem(query);
     }
 
@@ -117,6 +117,13 @@ export class QueryRegistry {
         return false;
     }
 
+    get_query_registry_length() {
+        
+    }
+
+    delete_all_queries_from_the_registry() {
+        this.registered_queries.delete_all_items();
+    }
 
     get_executing_queries() {
         return this.executing_queries;

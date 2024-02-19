@@ -1,6 +1,5 @@
 import { storeToString } from "@treecg/versionawareldesinldp";
 import { IncomingMessage, ServerResponse } from "http";
-import { Store } from "rdflib";
 import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { AggregationDispatcher } from "../service/result-dispatcher/AggregationDispatcher";
