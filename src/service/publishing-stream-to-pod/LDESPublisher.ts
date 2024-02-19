@@ -1,22 +1,15 @@
 import {
     LDESinLDP,
-    LDESMetadata,
     LDPCommunication,
-    SolidCommunication,
     RDF,
     LDES,
-    extractLdesMetadata,
     LDESConfig,
     VersionAwareLDESinLDP,
     ILDES,
     getAuthenticatedSession,
-    LILConfig,
     VLILConfig
 } from "@treecg/versionawareldesinldp";
 import { QueryAnnotationPublishing } from "./QueryAnnotationPublishing";
-import {
-    initSession
-} from "../../utils/ldes-in-ldp/EventSource";
 import * as CONFIG from '../../config/ldes_properties.json';
 import * as AGG_CONFIG from '../../config/pod_credentials.json';
 import { RSPQLParser } from "../parsers/RSPQLParser";
@@ -27,17 +20,11 @@ import { EndpointQueries } from "../../server/EndpointQueries";
 
 export class LDESPublisher {
     public initialised: boolean = false;
-    private credentialsFileName: any = CONFIG.CREDENTIALS_FILE_NAME;
     private session: any;
     public lilURL: string = CONFIG.LIL_URL
-    private prefixFile = CONFIG.PREFIX_FILE;
     private treePath = CONFIG.TREE_PATH;
     public config: VLILConfig;
-    private amount = CONFIG.AMOUNT;
-    private bucketSize = CONFIG.BUCKET_SIZE;
-    private logLevel = CONFIG.LOG_LEVEL;
-    private aggregationQuery: string = "";
-    private parser: any;
+    public parser: RSPQLParser;
     private query_annotation_publisher: QueryAnnotationPublishing;
     public logger: Logger<ILogObj>;
     public endpoint_queries: EndpointQueries;
@@ -45,7 +32,7 @@ export class LDESPublisher {
     constructor() {
         this.initialise();
         this.config = {
-            treePath: this.treePath, versionOfPath : "1.0"
+            treePath: this.treePath, versionOfPath: "1.0"
         }
         this.parser = new RSPQLParser();
         this.logger = new Logger();
@@ -53,30 +40,24 @@ export class LDESPublisher {
         this.endpoint_queries = new EndpointQueries();
     }
 
-    async initialise() {        
+    async initialise() {
         this.session = await getAuthenticatedSession({
             webId: AGG_CONFIG.aggregation_pod_web_id,
             password: AGG_CONFIG.aggregation_pod_password,
             email: AGG_CONFIG.aggregation_pod_email,
         })
-        // const communication = new SolidCommunication(this.session);
         const communication = new LDPCommunication();
         const lil: ILDES = new LDESinLDP(this.lilURL, communication);
-        let metadata: LDESMetadata | undefined;
-        // this.config.date = new Date(0);
-        // await lil.initialise(this.config);
         const vlil: VersionAwareLDESinLDP = new VersionAwareLDESinLDP(lil)
         await vlil.initialise(this.config)
         console.log(`Initialised LDES at ${this.lilURL}`);
-        
+
         try {
             const metadataStore = await lil.readMetadata();
             const ldes = metadataStore.getSubjects(RDF.type, LDES.EventStream, null);
             if (ldes.length > 1) {
                 console.log(`More than one LDES is present. We are extracting the first one at, ${ldes[0].value}`);
             }
-            // metadata = extractLdesMetadata(metadataStore, ldes[0].value);
-
         } catch (error) {
             console.log(error);
             console.log(`No LDES is present.`);
@@ -110,7 +91,7 @@ export class LDESPublisher {
     }
 
     public async update_latest_inbox(aggregation_pod_ldes_location: string) {
-        const inbox_location:string[] = [];
+        const inbox_location: string[] = [];
         ldfetch.get(aggregation_pod_ldes_location).then((response: any) => {
             for (const quad of response.triples) {
                 if (quad.predicate.value == "http://www.w3.org/ns/ldp#inbox") {
@@ -125,7 +106,7 @@ export class LDESPublisher {
                 },
                 body: "INSERT DATA { <" + aggregation_pod_ldes_location + "> <http://www.w3.org/ns/ldp#inbox> <" + latest_inbox + "> }",
             }).then((response) => {
-                if (response.status == 200 || 201 || 205) {
+                if (response.ok) {
                     this.logger.debug(`The latest inbox of the LDP container is patched successfully.`)
                 }
                 else {

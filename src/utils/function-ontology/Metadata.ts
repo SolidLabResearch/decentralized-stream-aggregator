@@ -32,8 +32,9 @@ export async function get_metadata_container(resource: string) {
  * @param resource
  */
 export async function trace_original_events(resource: string) {
-    const stream = await get_container_stream_metadata(resource).then((stream: string) => {
-        const resource_metadata = fetch.get(resource).catch((error: Error) => {
+    await get_container_stream_metadata(resource).then((stream: string) => {
+        console.log(`Stream: ${stream}`);
+        fetch.get(resource).catch((error: Error) => {
             console.log(error);
             // TODO: add the type for the resource metadata
         }).then(async (resource_metadata: any) => {
@@ -90,9 +91,11 @@ async function get_container_stream_metadata(ldp_resource: string) {
                 return quad.object.value;
             }
             else {
+                throw new Error("No registered streams found");
             }
         }
     }
     else {
+        throw new Error("No metadata found");
     }
 }

@@ -1,5 +1,4 @@
-import { ParsedQuery } from "./ParsedQuery";
-import { RSPQLParser } from "./RSPQLParser";
+import { RSPQLParser, ParsedQuery } from "./RSPQLParser";
 const SparqlParser = require('sparqljs').Parser;
 const sparql_parser = new SparqlParser();
 export class AggregationFocusExtractor {

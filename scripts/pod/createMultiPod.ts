@@ -40,7 +40,8 @@ export class prepareSolidPod {
     }
 
     async writeJSONFile(object: multipod[]) {
-        for await (const { } of object) {
+        for await (const pod of object) {
+            console.log(`The pod name is ${pod.pod_name} and the email is ${pod.email} and the password is ${pod.password}`);
             const podContent: string = JSON.stringify(fileObject.solidpod)
             jsonFile.writeFile('pod_credentials.json', JSON.parse(podContent), function (error: string) {
                 if (error) {

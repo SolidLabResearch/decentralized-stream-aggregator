@@ -54,7 +54,7 @@ export class AggregatorInstantiator {
             this.connection.connected = true;
         });
         this.client.on('connect', (connection: typeof websocketConnection) => {
-            console.log(`The connection with the server has been established.`);
+            console.log(`The connection with the server has been established. ${connection.connected}`);
             this.rsp_emitter.on('RStream', async (object: BindingsWithTimestamp) => {
                 const window_timestamp_from = object.timestamp_from;
                 const window_timestamp_to = object.timestamp_to;

@@ -1,5 +1,5 @@
 export class Mutex {
-    private isLocked: boolean = false;
+    public isLocked: boolean = false;
     private queue: Array<() => void> = [];
 
     // Acquire the mutex

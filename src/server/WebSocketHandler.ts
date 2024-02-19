@@ -7,8 +7,8 @@ import { find_relevant_streams, hash_string_md5 } from "../utils/Util";
 import { POSTHandler } from "./POSTHandler";
 import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
-import { TypeIndexLDESLocator } from "../utils/TypeIndexLDESLocator";
 import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
+
 export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
@@ -59,13 +59,13 @@ export class WebSocketHandler {
                         const width = parsed.s2r[0].width;
                         const query_hashed = hash_string_md5(ldes_query);
                         this.connections.set(query_hashed, connection);
-                        this.process_query(ldes_query, width, this.connections);
+                        this.process_query(ldes_query, width);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         const query_hash = ws_message.query_hash;
                         for (const [key, value] of this.connections) {
                             if (key === query_hash) {
-                                this.publish_aggregation_event(ws_message, this.aggregation_publisher); 
+                                this.publish_aggregation_event(ws_message, this.aggregation_publisher);
                                 value.send(JSON.stringify(ws_message));
                                 this.logger.info({ query_id: query_hash }, `aggregation_event_sent_to_client`);
                             }
@@ -111,8 +111,7 @@ export class WebSocketHandler {
     }
     public publish_aggregation_event(aggregation_event: any, aggregation_publisher: LDESPublisher) {
         let zeroLengthDuration: number = 0;
-        let intervalId: NodeJS.Timeout | null = null;
-
+        let intervalId: any | null = null;
         const event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
         this.aggregation_resource_list.push(event_quad);
 
@@ -167,6 +166,7 @@ export class WebSocketHandler {
         });
 
         this.event_emitter.on('error', (error: Error) => {
+            this.logger.debug(`Error in aggregation event publisher: ${error}`);
             this.event_emitter.on('error', (error: Error) => {
                 this.logger.debug(`Error in aggregation event publisher: ${error}`);
             });
@@ -193,7 +193,7 @@ export class WebSocketHandler {
         }
     }
 
-    public process_query(query: string, width: number, connections: Map<string, WebSocket>) {
+    public process_query(query: string, width: number) {
         POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections);
     }
 

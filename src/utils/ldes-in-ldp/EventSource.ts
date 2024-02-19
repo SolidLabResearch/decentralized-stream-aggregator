@@ -200,7 +200,7 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
     for (const containerURL of Object.keys(bucketResources)) {
         for (const resource of bucketResources[containerURL]) {
             const response = await ldpComm.post(containerURL, resourceToOptimisedTurtle(resource, prefixes))
-            // console.log(`Resource stored at: ${response.headers.get('location')} | status: ${response.status}`)
+            console.log(`Resource stored at: ${response.headers.get('location')} | status: ${response.status}`)
             // TODO: handle when status is not 201 (Http Created)
         }
     }
@@ -246,15 +246,10 @@ export async function readMembersRateLimited(opts: {
     const metadata = await extractLdesMetadata(opts.ldes);
     const relations = filterRelation(metadata, from, to);
     const rate_limit_comm = new RateLimitedLDPCommunication(rate)
-    const pre_process_end = performance.now();
     for (const relation of relations) {        
-        const start_loop = performance.now();
         const resources = readPageRateLimited(opts.ldes, relation.node, rate_limit_comm, metadata);
-        const readPage = performance.now();
         const members: Member[] = [];
-        let resource_counter = 0;
         for await (const resource of resources) {
-            resource_counter++;
             if (resource !== undefined) {
                 const members_id = resource.getSubjects(relation.path, null, null);
                 for (const member_id of members_id) {
@@ -278,7 +273,6 @@ export async function readMembersRateLimited(opts: {
         });
         sorted_members.forEach(member => member_stream.push(member));
     }
-    const end = performance.now();
     member_stream.push(null);
     return member_stream;
 }

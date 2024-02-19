@@ -49,7 +49,7 @@ export async function measureExecutionTimeAsync(func: () => Promise<void>, compo
  *
  */
 export async function create_aggregator_pod(): Promise<boolean> {
-    exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any, stdout: any, stderr: any) => {
+    exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any, stdout: any) => {
         if (stdout.code !== 0) {
             console.log('Error: Failed to create aggregator pod');
             return false;

@@ -1,4 +1,4 @@
-import { addRelationToNode, extractLdesMetadata, LDESConfig, LDESinLDP, LDESMetadata, LDPCommunication, MetadataParser, patchSparqlUpdateInsert, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
+import { addRelationToNode, LDESConfig, LDESinLDP, LDPCommunication, MetadataParser, patchSparqlUpdateInsert, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
 import { ILogObj, Logger } from "tslog";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { getTimeStamp, Resource } from "../../utils/ldes-in-ldp/EventSource";
@@ -8,7 +8,7 @@ import { add_resources_with_metadata_to_buckets, check_if_container_exists, crea
 import { editMetadata } from "../../utils/ldes-in-ldp/Util";
 import { v4 as uuidv4 } from 'uuid';
 import { AggregationFocusExtractor } from "../parsers/AggregationFocusExtractor";
-import { ParsedQuery } from "../parsers/ParsedQuery";
+import { ParsedQuery } from "../parsers/RSPQLParser";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 const { quad, namedNode, literal } = DataFactory;
 const ldfetch = require('ldfetch');
@@ -27,8 +27,7 @@ export class QueryAnnotationPublishing {
     }
 
     public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, config: LDESConfig, start_time: Date, end_time: Date, session?: Session): Promise<void> {
-        // const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
-        const communication = new RateLimitedLDPCommunication(30, 1000);
+        const communication = session ? new SolidCommunication(session) : new RateLimitedLDPCommunication(30, 1000);
         const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, communication);
         const metadata_store = await ldes_in_ldp.readMetadata();
         const metadata = MetadataParser.extractLDESinLDPMetadata(metadata_store, ldes_in_ldp_url + "#EventStream")
@@ -98,11 +97,11 @@ export class QueryAnnotationPublishing {
                 ]
             )
             await communication.patch(ldes_in_ldp_url, patchSparqlUpdateDelete(current_inbox_store))
-            .then(async () => {
-                const ldp_response = await communication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
-                console.log("response is: ", ldp_response);
+                .then(async () => {
+                    const ldp_response = await communication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
+                    console.log("response is: ", ldp_response);
 
-            })
+                })
         });
 
 
@@ -161,7 +160,7 @@ export class QueryAnnotationPublishing {
     public patch_metadata(store: Store, location: string, ldp_communication: LDPCommunication): void {
         const location_metadata = location + '.meta';
         ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
-            if (response.status == 200 || 201 || 205) {
+            if (response.status == 200 || response.status == 201 || response.status == 205) {
                 this.logger.debug("The metadata of the LDP container is patched successfully")
             }
         }).catch((error) => {
@@ -174,5 +173,5 @@ export class QueryAnnotationPublishing {
  * @param store
  */
 export function patchSparqlUpdateDelete(store: Store): string {
-    return `DELETE DATA {${storeToString(store)}};`
+    return `DELETE DATA {${storeToString(store)}}`
 }

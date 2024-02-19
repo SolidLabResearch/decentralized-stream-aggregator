@@ -9,6 +9,7 @@ const communication = new LDPCommunication();
 export async function createPublicTypeIndex(pod_location: string) {
     const body = `INSERT DATA {${pod_location}profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> ${pod_location}settings/publicTypeIndex> . }`;
     communication.patch(pod_location + 'settings/publicTypeIndex', body).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Public type index created at ${pod_location}settings/publicTypeIndex`);
     })
 }
@@ -34,6 +35,7 @@ export async function addStreamToPublicTypeIndex(pod_location: string, ldes_loca
        tree:shape <${ldes_location}public/bvpEventTemplate.shacl> ;
        tree:view <${ldes_location}> .
     `).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Stream added to ${pod_location}settings/publicTypeIndex`);
     });
 }
@@ -46,6 +48,7 @@ export async function addStreamToPublicTypeIndex(pod_location: string, ldes_loca
  */
 export async function addPropertyToPublicTypeIndex(pod_location: string, tree_path: string, type: string) {
     communication.patch(pod_location + "settings/publicTypeIndex", `INSERT DATA {<#bvpDataset> <${tree_path}> <${type}>}`).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Type ${type} with Property ${tree_path} added to ${pod_location}settings/publicTypeIndex`);
     });
 }

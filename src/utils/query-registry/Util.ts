@@ -38,4 +38,8 @@ export class WriteLockArray<T> {
     get_length(): number {
         return this.array.length;
     }
+
+    delete_all_items() {
+        this.array = [];
+    }
 }

@@ -4,7 +4,6 @@ import {
     extractTimestampFromLiteral,
     ILDESinLDPMetadata,
     LDESinLDP,
-    LDESMetadata,
     LDPCommunication,
     storeToString
 } from "@treecg/versionawareldesinldp";
@@ -19,8 +18,8 @@ export type BucketResources = { [p: string]: Resource[] }
 /**
  * Calculates to which bucket (i.e. The ldp:Container) the resource should be added.
  * When the returned url is none, this means the resource its timestamp is less than all current bucket timestamps.
- * @param resource
- * @param metadata
+ * @param {Resource} resource - The resource to be added.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
  * @returns {string}
  */
 export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata): string {
@@ -41,8 +40,8 @@ export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata
 
 /**
  * The new container URL is calculated based on the container URL where too many resources reside and a timestamp.
- * @param containerURL
- * @param timestamp
+ * @param {string} containerURL - The LDP container to be created.
+ * @param {number} timestamp - The timestamp of the fragment which will hold the resources.
  */
 export function createBucketUrl(containerURL: string, timestamp: number) {
     const split = containerURL.split('/')
@@ -56,9 +55,9 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
 
 /**
  * Retrieve timestamp of a resource (ms).
- * @param resource
- * @param timestampPath
- * @returns {number}
+ * @param {Resource} resource - The resource to be added to the LDES.
+ * @param {string} timestampPath - The tree:path relation which was used to fragmentize the LDES.
+ * @returns {number} - The timestamp.
  */
 export function getTimeStamp(resource: Resource, timestampPath: string): number {
     const resourceStore = new Store(resource)
@@ -102,6 +101,7 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
                         uuid,
                         `INSERT DATA {${storeToString(relation_to_resource_store)}}`
                     ).then((response) => {
+                        console.log(`Relation to resource added: ${response.status}`);
                     }
                     ).catch((error) => {
                         console.log("Error while patching metadata of the LDP resource: " + error);

@@ -1,20 +1,17 @@
 import { QueryEngine } from "@comunica/query-sparql";
-import { LDESinLDP, LDPCommunication, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
+import { LDESinLDP, LDPCommunication, SolidCommunication} from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { Bindings } from '@comunica/types';
-import { quick_sort_queue, StreamEventQueue } from "../../utils/StreamEventQueue";
+import { StreamEventQueue } from "../../utils/StreamEventQueue";
 const { Store } = require('n3');
-const ld_fetch = require('ldfetch');
-const ldfetch = new ld_fetch({});
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
 import { Quad } from "n3";
-import WebSocket from 'ws';
-import { QuadWithID, WebSocketMessage } from "../../utils/Types";
+import { QuadWithID } from "../../utils/Types";
 import { session_with_credentials } from "../../utils/authentication/css-auth";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
-import { hash_string_md5, insertion_sort, quick_sort } from "../../utils/Util";
+import { hash_string_md5 } from "../../utils/Util";
 import { TREE } from "@treecg/ldes-snapshot";
 
 export class DecentralizedFileStreamer {
@@ -73,8 +70,6 @@ export class DecentralizedFileStreamer {
      * @memberof DecentralizedFileStreamer
      */
     public async add_missing_events_to_rsp_engine() {
-        const start_time = this.get_file_streamer_start_time();
-        const end_time = this.get_websocket_listening_time();
         const stream = await readMembersRateLimited({
             ldes: this.ldes,
             rate: 60,
@@ -192,8 +187,8 @@ export class DecentralizedFileStreamer {
 
 
     async subscribing_latest_events(stream_name: RDFStream) {
-        const inbox = await this.get_inbox_container(this.ldes_stream);
-
+        console.log(`Subscribing to the latest events of the stream ${stream_name}`);
+        // const inbox = await this.get_inbox_container(this.ldes_stream);
         // let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
         // const stream_websocket = new WebSocket(stream_subscription_ws);
         // stream_websocket.onmessage = async (event: any) => {

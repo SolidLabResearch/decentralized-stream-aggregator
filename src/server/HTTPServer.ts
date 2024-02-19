@@ -6,7 +6,6 @@ import { EndpointQueries } from "./EndpointQueries";
 import { POSTHandler } from "./POSTHandler";
 import { WebSocketHandler } from "./WebSocketHandler";
 import * as websocket from 'websocket';
-const url = require('url');
 const EventEmitter = require('events');
 const event_emitter = new EventEmitter();
 
@@ -40,19 +39,16 @@ export class HTTPServer {
     }
 
     private request_handler(req: IncomingMessage, res: ServerResponse) {
-        const parsed_url = url.parse(req.url, true);
-        const endpoint_name = parsed_url.pathname?.split(1); 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+        let body: string = '';
         switch (req.method) {
             case "GET":
-                const latest_minutes = parsed_url.query.latest_minutes;
-                GETHandler.handle(req, res, this.solid_server_url, this.query_registry, this.endpoint_queries, latest_minutes, this.logger);
+                GETHandler.handle(req, res);
                 res.end();
                 break;
             case "POST":
                 // TODO : bug that the notification is sent more than once from the solid server.
-                let body: string = '';
                 req.on('data', (chunk: Buffer) => {
                     body = body + chunk.toString();
                 });
@@ -67,8 +63,7 @@ export class HTTPServer {
                         event_emitter.emit(notification);
                     }
                 });
-
-                if (req.url = '/registerQuery') {
+                if (req.url === '/registerQuery') {
                     POSTHandler.handle(req, res, this.query_registry, this.solid_server_url, this.logger);
                 }
                 break;
