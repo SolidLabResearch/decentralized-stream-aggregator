@@ -60,4 +60,4 @@ This code is copyrighted by [Ghent University - imec](https://www.ugent.be/ea/id
 
 ## Contact
 
-For any questions, please contact [Kush](mailto:kushagrasingh.bisen@ugent.be) or create an issue in the repository [here])(https://github.com/SolidLabResearch/solid-stream-aggregator/issues) .
+For any questions, please contact [Kush](mailto:kushagrasingh.bisen@ugent.be) or create an issue in the repository [here](https://github.com/SolidLabResearch/solid-stream-aggregator/issues) .
