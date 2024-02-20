@@ -16,9 +16,10 @@ interface TimeDiffData {
 }
 
 /**
- *
- * @param logFilePath
- * @param outputCsvPath
+ * Process the log file and write the time differences to a CSV file.
+ * @param {string} logFilePath - The path to the log file.
+ * @param {string} outputCsvPath - The path to the output CSV file.
+ * @returns {void}
  */
 function processLog(logFilePath: string, outputCsvPath: string): void {
     const logs: LogEntry[] = [];

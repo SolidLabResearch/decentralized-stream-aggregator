@@ -17,7 +17,7 @@ import { extractDateFromMember, extractLdesMetadata } from "../../service/result
 import { Readable } from "stream";
 import { Member } from "@treecg/types";
 import { TREE } from "@treecg/ldes-snapshot";
-import { Prefixes } from "../Types";
+import { Prefixes, readOpts } from "../Types";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 
 const namedNode = DataFactory.namedNode;
@@ -28,10 +28,9 @@ export type Resource = Quad[]
 export type BucketResources = { [p: string]: Resource[] }
 
 /**
- * @param credentialsFile - Filepath to a JSON containing credentials to setup a
- * Solid communication session.
- * @param credentialsFilepath
- * @returns {Promise<Session | undefined>}
+ * Initialises an authenticated Solid communication session with the Solid Server.
+ * @param {string} credentialsFilepath - The path to the file containing the credentials.
+ * @returns {Promise<Session | undefined>} - Returns a Solid communication session.
  */
 export async function initSession(credentialsFilepath: string): Promise<Session | undefined> {
     if (existsSync(credentialsFilepath)) {
@@ -51,9 +50,9 @@ export async function initSession(credentialsFilepath: string): Promise<Session 
 /**
  * Calculates to which bucket (i.e. The ldp:Container) the resource should be added.
  * When the returned url is none, this means the resource its timestamp is less than all current bucket timestamps.
- * @param resource
- * @param metadata
- * @returns {string}
+ * @param {Resource} resource - The resource to be added.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES in LDP.
+ * @returns {string} - The URL of the bucket.
  */
 export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata): string {
     const relations = metadata.view.relations
@@ -73,8 +72,9 @@ export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata
 
 /**
  * The new container URL is calculated based on the container URL where too many resources reside and a timestamp.
- * @param containerURL
- * @param timestamp
+ * @param {string} containerURL - The LDP container to be created.
+ * @param {number} timestamp - The timestamp of the fragment which will hold the resources.
+ * @returns {string} - The URL of the new container.
  */
 export function createBucketUrl(containerURL: string, timestamp: number) {
     const split = containerURL.split('/')
@@ -83,9 +83,9 @@ export function createBucketUrl(containerURL: string, timestamp: number) {
 
 /**
  * Retrieve timestamp of a resource (ms).
- * @param resource
- * @param timestampPath
- * @returns {number}
+ * @param {Resource} resource - The resource to be added to the LDES.
+ * @param {string} timestampPath - The tree:path relation which was used to fragmentize the LDES.
+ * @returns {number} - The timestamp.
  */
 export function getTimeStamp(resource: Resource, timestampPath: string): number {
     const resourceStore = new Store(resource)
@@ -93,9 +93,10 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
 }
 
 /**
- *
- * @param path
- * @param url
+ * Generates the prefixes from a file containing RDF data.
+ * @param {string} path - The path to the file containing the RDF data.
+ * @param {string} url - The URL of the file containing the RDF data.
+ * @returns {Promise<any>} - Returns the prefixes as an object.
  */
 export async function prefixesFromFilepath(path: string, url?: string): Promise<any> {
     const prefixes: { [key: string]: string } = {};
@@ -125,10 +126,10 @@ export async function prefixesFromFilepath(path: string, url?: string): Promise<
  * issues
  * Note: a more processing performant solution might be possible, by creating a store from the resource
  * and indexing from there instead of two seperate maps.
- * @param resource - The resource that gets converted to a string.
- * @param _prefixes - An object which members are strings, member name being the short prefix and its
+ * @param {Resource} resource - The resource that gets converted to a string.
+ * @param {Prefixes} _prefixes - An object which members are strings, member name being the short prefix and its
  *  value a string representing its URI. Example: `{"rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}`.
- * @returns {string}
+ * @returns {string} - Returns the resource as a string.
  */
 export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixes): string {
     // get a grouped overview of this resource's content
@@ -190,11 +191,11 @@ export function resourceToOptimisedTurtle(resource: Resource, _prefixes: Prefixe
  * Adds all the resources from each bucket entry of the BucketResources object to the specified container
  * Note: currently does not do any error handling
  * handling should be something in the line of collecting all the resources that were added OR trying to add them again?
- * @param bucketResources
- * @param metadata
- * @param ldpComm
- * @param prefixes
- * @returns {Promise<void>}
+ * @param {BucketResources} bucketResources - The resources to be added to the LDES in seperate fragments (i.e. LDP containers) or buckets.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
+ * @param {LDPCommunication} ldpComm - The LDP communication object to communicate to the LDP.
+ * @param {Prefixes} prefixes - The prefixes of the LDES.
+ * @returns {Promise<void>} - Returns nothing (void) and just creates the resources in the LDP.
  */
 export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication, prefixes: Prefixes) {
     for (const containerURL of Object.keys(bucketResources)) {
@@ -206,23 +207,17 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
     }
 }
 
-
-
 /**
- *  Rate limiting read members function so that the GET requests are
- *  not sent too fast to the server so that the CSS server does not crash.
- * @export
- */
-
-/**
- *
- * @param opts
- * @param opts.from
- * @param opts.to
- * @param opts.ldes
- * @param opts.communication
- * @param opts.rate
- * @param opts.interval
+ * Rate limiting read members function so that the GET requests are
+ * not sent too fast to the server so that the CSS server does not crash.
+ * @param {readOpts} opts - The options for the read function.
+ * @param {Date} opts.from - The date from which the members should be read.
+ * @param {Date} opts.to - The date to which the members should be read.
+ * @param {LDESinLDP} opts.ldes - The LDES in LDP object.
+ * @param {LDPCommunication | SolidCommunication | RateLimitedLDPCommunication} opts.communication - The communication object to communicate to the LDP.
+ * @param {number} opts.rate - The rate at which the GET requests should be sent.
+ * @param {number} opts.interval - The interval at which the GET requests should be sent.
+ * @returns {Promise<Readable>} - Returns the members as a readable stream.
  */
 export async function readMembersRateLimited(opts: {
     from?: Date,
@@ -246,7 +241,7 @@ export async function readMembersRateLimited(opts: {
     const metadata = await extractLdesMetadata(opts.ldes);
     const relations = filterRelation(metadata, from, to);
     const rate_limit_comm = new RateLimitedLDPCommunication(rate)
-    for (const relation of relations) {        
+    for (const relation of relations) {
         const resources = readPageRateLimited(opts.ldes, relation.node, rate_limit_comm, metadata);
         const members: Member[] = [];
         for await (const resource of resources) {
@@ -280,15 +275,11 @@ export async function readMembersRateLimited(opts: {
 /**
  * ReadPage function which is rate limited so that there are
  * not a lot of GET requests so that the CSS server does not crash.
- */
-
-
-/**
- *
- * @param ldes
- * @param fragment_url
- * @param rate_limit_comm
- * @param metadata
+ * @param {LDESinLDP} ldes - The LDES in LDP object.
+ * @param {string} fragment_url - The URL of the fragment to be read.
+ * @param {RateLimitedLDPCommunication} rate_limit_comm - The rate limited LDP communication object to communicate to the LDP.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
+ * @yields {AsyncIterable<Store>} - Returns the fragment as an N3 Store.
  */
 export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string, rate_limit_comm: RateLimitedLDPCommunication, metadata: ILDESinLDPMetadata): AsyncIterable<Store> {
     if (isContainerIdentifier(fragment_url)) {
@@ -308,16 +299,14 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
     }
 }
 
+
 /**
  * Read function which is rate limited so that there are not a lot of GET requests
  * so that the CSS server does not crash.
- */
-
-/**
- *
- * @param ldes
- * @param resource_identifier
- * @param rate_limit_comm
+ * @param {LDESinLDP} ldes - The LDES in LDP object.
+ * @param {string} resource_identifier - The identifier of the resource to be read.
+ * @param {RateLimitedLDPCommunication} rate_limit_comm - The rate limited LDP communication object to communicate to the LDP.
+ * @returns {Promise<Store>} - Returns the resource as an N3 Store.
  */
 export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
     const response = await rate_limit_comm.get(resource_identifier);

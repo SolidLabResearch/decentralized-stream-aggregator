@@ -8,7 +8,7 @@ const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
 import { Quad } from "n3";
 import { QuadWithID } from "../../utils/Types";
-import { session_with_credentials } from "../../utils/authentication/css-auth";
+import { session_with_credentials } from "../../utils/authentication/CSSAuthentication";
 import { readMembersRateLimited } from "../../utils/ldes-in-ldp/EventSource";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { hash_string_md5 } from "../../utils/Util";

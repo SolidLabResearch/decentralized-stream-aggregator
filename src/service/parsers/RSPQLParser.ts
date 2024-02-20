@@ -8,8 +8,8 @@ export class RSPQLParser {
     }
     /**
      * Parse a RSPQL query to a parsedQuery Object containing the R2S and S2R mappings along with the SPARQL query.
-     * @param {string} rspql_query
-     * @returns {*}  {ParsedQuery}.
+     * @param {string} rspql_query - The RSPQL query to be parsed.
+     * @returns {ParsedQuery} - The parsed query object.
      * @memberof RSPQLParser
      */
     parse(rspql_query: string): ParsedQuery {
@@ -60,9 +60,9 @@ export class RSPQLParser {
 
     /**
      * Unwraps a prefixed IRI to a full IRI.
-     * @param {string} prefixedIRI
-     * @param {Map<string, string>} prefixMapper
-     * @returns {*} 
+     * @param {string} prefixedIRI - The prefixed IRI to be unwrapped.
+     * @param {Map<string, string>} prefixMapper - The prefix mapper to be used for unwrapping.
+     * @returns {string} - The unwrapped IRI. - The unwrapped IRI.
      * @memberof RSPQLParser
      */
     unwrap(prefixedIRI: string, prefixMapper: Map<string, string>) {

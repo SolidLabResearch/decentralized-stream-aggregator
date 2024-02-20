@@ -122,8 +122,9 @@ export class AggregationDispatcher {
 }
 
 /**
- *
- * @param ldes_in_ldp
+ * Extracts the metadata of an LDES in LDP.
+ * @param {LDESinLDP} ldes_in_ldp - The LDES in LDP object.
+ * @returns {Promise<ILDESinLDPMetadata>} - The metadata of the LDES in LDP.
  */
 export async function extractLdesMetadata(ldes_in_ldp: LDESinLDP): Promise<ILDESinLDPMetadata> {
     const metadata_store = await ldes_in_ldp.readMetadata();
@@ -131,9 +132,10 @@ export async function extractLdesMetadata(ldes_in_ldp: LDESinLDP): Promise<ILDES
 }
 
 /**
- *
- * @param member
- * @param path
+ * Extracts the date from a member using the path.
+ * @param {Member} member - The member to extract the date from.
+ * @param {string} path - The TREE path used to fragment the LDES and therefore the path to extract the date.
+ * @returns {Date} - The date of the member.
  */
 export function extractDateFromMember(member: Member, path: string): Date {
     const store = new Store(member.quads);

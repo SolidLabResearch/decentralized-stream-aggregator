@@ -38,7 +38,7 @@ export function convertLdesMetadata(metadata: LDESMetadata): Store {
 }
 
 /**
- *
+ * Editing the metadata of the LDES.
  * @param {string} resourceIdentifier - The identifier of the resource.
  * @param {Communication} communication - The communication object to communicate to the LDP.
  * @param {string} body - The body (in string) of the metadata to be inserted.

@@ -3,7 +3,7 @@ import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
 const pod_location_bvp = "http://localhost:3000/dataset_participant1/xyz/";
 
 /**
- *
+ * Main function.
  */
 async function main() {
     let counter = 0;

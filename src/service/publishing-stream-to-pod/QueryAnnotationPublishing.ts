@@ -169,8 +169,9 @@ export class QueryAnnotationPublishing {
     }
 }
 /**
- *
- * @param store
+ * The function returns the SPARQL Update DELETE query to delete the data.
+ * @param {Store} store - The store to be deleted.
+ * @returns {string} - The SPARQL Update DELETE query to delete the data.
  */
 export function patchSparqlUpdateDelete(store: Store): string {
     return `DELETE DATA {${storeToString(store)}}`

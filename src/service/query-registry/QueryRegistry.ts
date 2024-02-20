@@ -86,7 +86,7 @@ export class QueryRegistry {
 
     /**
      * Add a query to the executing queries.
-     * @param {string} query
+     * @param {string} query - The query to be added.
      * @memberof QueryRegistry
      */
     async add_to_executing_queries(query: string) {
@@ -95,9 +95,9 @@ export class QueryRegistry {
 
     /**
      * Checking if the query is unique or if it is isomorphic with an already executing query.
-     * @param {string} query
-     * @param logger
-     * @returns {*} 
+     * @param {string} query - The query to be checked.
+     * @param {any} logger - The logger object.
+     * @returns {boolean} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
     checkUniqueQuery(query: string, logger: any) {

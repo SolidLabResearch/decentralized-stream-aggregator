@@ -66,8 +66,10 @@ export class StreamEventQueue<T> {
 
 
 /**
- *
- * @param stream_event_queue
+ * Sort a queue using the quick sort algorithm.
+ * @template T - The type of the event.
+ * @param {StreamEventQueue<T>} stream_event_queue - The queue to be sorted.
+ * @returns {StreamEventQueue<T>} - The sorted queue.
  */
 export function quick_sort_queue<T>(stream_event_queue: StreamEventQueue<T>): StreamEventQueue<T> {
     if (stream_event_queue.items.length <= 1) {

@@ -37,14 +37,14 @@ import { Prefixes } from "../Types";
  *    LDESinLDPURL (string)
  *    1000 resources (Resource[])
  *    version ID.
- * @param lilURL
- * @param resources
- * @param versionID
- * @param bucketSize
- * @param config
- * @param prefixes
- * @param session
- * @param loglevel
+ * @param {string} lilURL - The URL of the LDES in LDP.
+ * @param {Resource[]} resources - The resources array to be added to the LDES.
+ * @param {string} versionID - The version identifier of the LDES.
+ * @param {number} bucketSize - The maximum number of resources per container.
+ * @param {LDESConfig} config - The configuration of the LDES.
+ * @param {Prefixes} prefixes - The prefixes of the LDES.
+ * @param {Session} session - The session of the user.
+ * @param {string} loglevel - The loglevel of the logger.
  */
 export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: Prefixes, session?: Session, loglevel: string = 'info'): Promise<void> {
 

@@ -20,7 +20,7 @@ export type BucketResources = { [p: string]: Resource[] }
  * When the returned url is none, this means the resource its timestamp is less than all current bucket timestamps.
  * @param {Resource} resource - The resource to be added.
  * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
- * @returns {string}
+ * @returns {string} - The URL of the bucket.
  */
 export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata): string {
     const relations = metadata.view.relations
@@ -42,6 +42,7 @@ export function calculateBucket(resource: Resource, metadata: ILDESinLDPMetadata
  * The new container URL is calculated based on the container URL where too many resources reside and a timestamp.
  * @param {string} containerURL - The LDP container to be created.
  * @param {number} timestamp - The timestamp of the fragment which will hold the resources.
+ * @returns {string} - The URL of the new container.
  */
 export function createBucketUrl(containerURL: string, timestamp: number) {
     const split = containerURL.split('/')
@@ -76,10 +77,10 @@ export function getTimeStamp(resource: Resource, timestampPath: string): number 
  */
 
 /**
- *
- * @param bucket_resources
- * @param metadata
- * @param ldp_communication
+ * Adds the resources with metadata to the LDP.
+ * @param {BucketResources} bucket_resources - The resources to be added to the LDES in seperate fragments (i.e. LDP containers) or buckets.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
+ * @param {LDPCommunication} ldp_communication - The LDP communication object to communicate to the LDP.
  */
 export async function add_resources_with_metadata_to_buckets(bucket_resources: BucketResources, metadata: ILDESinLDPMetadata, ldp_communication: LDPCommunication) {
     for (const containerURL of Object.keys(bucket_resources)) {
@@ -117,9 +118,9 @@ export async function add_resources_with_metadata_to_buckets(bucket_resources: B
 }
 
 /**
- *
- * @param url
- * @param communication
+ * Creates a new LDP container.
+ * @param {string} url - The URL of the container to be created.
+ * @param {Communication} communication - The communication object to communicate to the LDP.
  */
 export async function create_ldp_container(url: string, communication: Communication) {
     if (url.endsWith('/')) {
@@ -135,9 +136,10 @@ export async function create_ldp_container(url: string, communication: Communica
 
 
 /**
- *
- * @param ldes_in_ldp
- * @param bucket_url
+ * Checks if the container already exists in the LDP.
+ * @param {LDESinLDP} ldes_in_ldp - The LDES in LDP object.
+ * @param {string} bucket_url - The URL of the bucket to be checked.
+ * @returns {Promise<boolean>} - Returns true if the container exists, otherwise false.
  */
 export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_url: string) {
     const metadata = await ldes_in_ldp.readMetadata();
@@ -154,10 +156,10 @@ export async function check_if_container_exists(ldes_in_ldp: LDESinLDP, bucket_u
 }
 
 /**
- *
- * @param bucketResources
- * @param metadata
- * @param ldpComm
+ * Adds the resources to the LDP container/bucket.
+ * @param {BucketResources} bucketResources - The resources to be added to the LDES in seperate fragments (i.e. LDP containers) or buckets.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
+ * @param {LDPCommunication} ldpComm - The LDP communication object.
  */
 export async function addResourcesToBuckets(bucketResources: BucketResources, metadata: ILDESinLDPMetadata, ldpComm: LDPCommunication) {
     for (const containerURL of Object.keys(bucketResources)) {
