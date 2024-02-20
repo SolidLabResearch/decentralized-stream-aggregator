@@ -44,7 +44,7 @@ export class HTTPServer {
         let body: string = '';
         switch (req.method) {
             case "GET":
-                GETHandler.handle(req, res);
+                GETHandler.handle(req, res, this.query_registry);
                 res.end();
                 break;
             case "POST":

@@ -41,12 +41,15 @@ export class QueryRegistry {
     }
     /**
      *  Register a query in the QueryRegistry.
-     * @param {string} rspql_query
-     * @returns {*} 
+     * @param {string} rspql_query - The RSPQL query to be registered.
+     * @param {QueryRegistry} query_registry - The QueryRegistry object.
+     * @param {number} from_timestamp - The timestamp from where the query is to be executed.
+     * @param {number} to_timestamp - The timestamp to where the query is to be executed.
+     * @param {any} logger - The logger object.
+     * @returns {Promise<boolean>} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
-
-    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any) {
+    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any): Promise<boolean> {
         if (await query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
@@ -67,7 +70,15 @@ export class QueryRegistry {
 
     }
 
-    async add_query_in_registry(rspql_query: string, logger: any) {
+    /**
+     * Add a query to the registry.
+     * @param {string} rspql_query - The RSPQL query to be added.
+     * @param {any} logger - The logger object.
+     * @returns {Promise<boolean>} - Returns true if the query is unique, otherwise false.
+     * @memberof QueryRegistry
+     */
+
+    async add_query_in_registry(rspql_query: string, logger: any): Promise<boolean> {
         await this.registered_queries.addItem(rspql_query);
         if (this.checkUniqueQuery(rspql_query, logger)) {
             /*
@@ -87,9 +98,10 @@ export class QueryRegistry {
     /**
      * Add a query to the executing queries.
      * @param {string} query - The query to be added.
+     * @returns {Promise<void>} - Returns nothing.
      * @memberof QueryRegistry
      */
-    async add_to_executing_queries(query: string) {
+    async add_to_executing_queries(query: string): Promise<void> {
         this.executing_queries.addItem(query);
     }
 
@@ -100,7 +112,7 @@ export class QueryRegistry {
      * @returns {boolean} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
-    checkUniqueQuery(query: string, logger: any) {
+    checkUniqueQuery(query: string, logger: any): boolean {
         const query_hashed = hash_string_md5(query);
         const registered_queries = this.get_registered_queries();
         const array_length = registered_queries.get_length();
@@ -118,11 +130,18 @@ export class QueryRegistry {
     }
 
     get_query_registry_length() {
-        
+        return this.registered_queries.get_length();
     }
 
-    delete_all_queries_from_the_registry() {
+    public async delete_all_queries_from_the_registry() {
         this.registered_queries.delete_all_items();
+        const registered_queries = this.get_registered_queries();
+        if (registered_queries.getArrayCopy().length === 0) {
+            this.logger.info('query_registry_cleared');
+        }
+        else {
+            this.logger.error('query_registry_not_cleared');
+        }
     }
 
     get_executing_queries() {
