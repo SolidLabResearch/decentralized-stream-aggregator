@@ -1,0 +1,253 @@
+import { Parser } from "n3";
+import * as WebSocket from 'websocket';
+import { EventEmitter } from "events";
+import * as CONFIG from '../config/ldes_properties.json';
+import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
+import { find_relevant_streams, hash_string_md5 } from "../utils/Util";
+import { POSTHandler } from "./POSTHandler";
+import { RSPQLParser } from "../service/parsers/RSPQLParser";
+import { QueryRegistry } from "../service/query-registry/QueryRegistry";
+import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
+/**
+ * Class for handling the Websocket server.
+ * @class WebSocketHandler
+ */
+export class WebSocketHandler {
+
+    private aggregation_resource_list: any[];
+    private readonly aggregation_resource_list_batch_size: number = CONFIG.BUCKET_SIZE;
+    private connections: Map<string, WebSocket>;
+    private parser: RSPQLParser;
+    private n3_parser: Parser;
+    public websocket_server: WebSocket.server;
+    public event_emitter: EventEmitter;
+    public aggregation_publisher: LDESPublisher;
+    public logger: any;
+    private query_registry: QueryRegistry;
+    /**
+     * Creates an instance of WebSocketHandler.
+     * @param {WebSocket.server} websocket_server - The Websocket server.
+     * @param {EventEmitter} event_emitter - The event emitter.
+     * @param {LDESPublisher} aggregation_publisher - The LDES Publisher class instance.
+     * @param {*} logger - The logger object.
+     * @memberof WebSocketHandler
+     */
+    constructor(websocket_server: WebSocket.server, event_emitter: EventEmitter, aggregation_publisher: LDESPublisher, logger: any) {
+        this.aggregation_resource_list = [];
+        this.logger = logger;
+        this.websocket_server = websocket_server;
+        this.event_emitter = event_emitter;
+        this.aggregation_publisher = aggregation_publisher;
+        this.connections = new Map<string, WebSocket>();
+        this.parser = new RSPQLParser();
+        this.query_registry = new QueryRegistry();
+        this.n3_parser = new Parser({ format: 'N-Triples' });
+    }
+
+    /**
+     * Handle the Websocket server.
+     * It retrieves the query from the client and processes it.
+     * It also sends the result to the client.
+     * It also stores the aggregation event in the Solid Pod of the Solid Stream Aggregator.
+     * @memberof WebSocketHandler
+     */
+    public handle_wss() {
+        // TODO: find the type of the request object
+        console.log(`Handling the websocket server.`);
+        this.websocket_server.on('connect', (request: any) => {
+            console.log(`Connection received from ${request.remoteAddress}`);
+        });
+        this.websocket_server.on('request', async (request: any) => {
+            const connection = request.accept('solid-stream-aggregator-protocol', request.origin);
+            connection.on('message', async (message: WebSocket.Message) => {
+                console.log(`Message received from ${connection.remoteAddress}`);
+                if (message.type === 'utf8') {
+                    const message_utf8 = message.utf8Data;
+                    const ws_message = JSON.parse(message_utf8);
+                    if (Object.keys(ws_message).includes('query')) {
+                        this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
+                        const query: string = ws_message.query;
+                        const parsed = this.parser.parse(query);
+                        const pod_url = parsed.s2r[0].stream_name;
+                        const interest_metric = new AggregationFocusExtractor(query).extract_focus();
+                        const streams = await find_relevant_streams(pod_url, [interest_metric])
+                        const ldes_stream = streams[0];
+                        const ldes_query = query.replace(pod_url, ldes_stream);
+                        const width = parsed.s2r[0].width;
+                        const query_hashed = hash_string_md5(ldes_query);
+                        this.connections.set(query_hashed, connection);
+                        this.process_query(ldes_query, width);
+                    }
+                    else if (Object.keys(ws_message).includes('aggregation_event')) {
+                        const query_hash = ws_message.query_hash;
+                        for (const [key, value] of this.connections) {
+                            if (key === query_hash) {
+                                this.publish_aggregation_event(ws_message, this.aggregation_publisher);
+                                value.send(JSON.stringify(ws_message));
+                                this.logger.info({ query_id: query_hash }, `aggregation_event_sent_to_client`);
+                            }
+                        }
+                    }
+                    else if (Object.keys(ws_message).includes('status')) {
+                        const query_hash = ws_message.query_hash;
+                        for (const [key, value] of this.connections) {
+                            if (key === query_hash) {
+                                value.send(JSON.stringify(ws_message));
+                            }
+                        }
+                    }
+
+                    else if (Object.keys(ws_message).includes('type')) {
+                        console.log(ws_message);
+                    }
+                    else {
+                        throw new Error('Unknown message, not handled.');
+                    }
+                }
+            });
+            connection.on('close', (reason_code: string, description: string) => {
+                this.logger.debug(`Connection closed from ${connection.remoteAddress}: ${reason_code} - ${description}`);
+            });
+            connection.on('error', (error: Error) => {
+                this.logger.debug(`Error in connection from ${connection.remoteAddress}: ${error}`);
+            });
+        });
+        this.client_response_publisher();
+        this.aggregation_event_publisher();
+    }
+
+    /**
+     * Send the aggregation event to the client's Websocket channel.
+     * @memberof WebSocketHandler
+     */
+    public async client_response_publisher() {
+        this.event_emitter.on('aggregation_event', (object: string) => {
+            const event = JSON.parse(object)
+            const query_id = event.query_hash;
+            const connection = this.connections.get(query_id);
+            if (connection) {
+                connection.send(event.aggregation_event);
+            }
+        });
+    }
+    /**
+     * Publish the aggregation event to the Solid Pod of the Solid Stream Aggregator.
+     * @param {*} aggregation_event - The aggregation event to be published.
+     * @param {LDESPublisher} aggregation_publisher - The LDES Publisher class instance.
+     * @memberof WebSocketHandler
+     */
+    public publish_aggregation_event(aggregation_event: any, aggregation_publisher: LDESPublisher) {
+        let zeroLengthDuration: number = 0;
+        let intervalId: any | null = null;
+        const event_quad: any = this.n3_parser.parse(aggregation_event.aggregation_event);
+        this.aggregation_resource_list.push(event_quad);
+
+        if (this.aggregation_resource_list.length === this.aggregation_resource_list_batch_size) {
+            this.logger.info({ query_id: aggregation_event.query_hash }, `publishing_aggregation_event_bucket`);
+            aggregation_publisher.publish(
+                this.aggregation_resource_list,
+                aggregation_event.aggregation_window_from,
+                aggregation_event.aggregation_window_to
+            );
+            this.aggregation_resource_list = [];
+        }
+
+        if (this.aggregation_resource_list.length === 0) {
+            this.logger.debug(`No aggregation events to publish.`);
+        }
+
+        const checkInterval: number = 500; // Check every 500 milliseconds
+        intervalId = setInterval(() => {
+            if (this.aggregation_resource_list.length === 0) {
+                zeroLengthDuration += 500; // Increment the duration by the check interval
+
+                if (zeroLengthDuration >= 5000) {
+                    this.logger.info({ query_id: aggregation_event.query_hash }, `aggregation_publishing_has_been_done`);
+                    clearInterval(intervalId!); // Clear the interval when threshold reached
+                    zeroLengthDuration = 0; // Reset the duration
+                }
+            } else {
+                zeroLengthDuration = 0; // Reset the duration when events are present
+            }
+        }, checkInterval);
+    }
+    /**
+     * Publish the aggregation event to the Solid Pod of the Solid Stream Aggregator.
+     * @memberof WebSocketHandler
+     */
+    public aggregation_event_publisher() {
+        this.event_emitter.on('aggregation_event', async (object: string) => {
+            const parser = new Parser({ format: 'N-Triples' });
+            const aggregation_event = JSON.parse(object)
+            const event_quad: any = parser.parse(aggregation_event.aggregation_event);
+            this.aggregation_resource_list.push(event_quad);
+            if (this.aggregation_resource_list.length == this.aggregation_resource_list_batch_size) {
+                await this.aggregation_publisher.publish(this.aggregation_resource_list, aggregation_event.aggregation_window_from, aggregation_event.aggregation_window_to);
+                this.aggregation_resource_list = [];
+            }
+            if (this.aggregation_resource_list.length == 0) {
+                this.logger.debug(`No aggregation events to publish.`);
+                this.aggregation_publisher.update_latest_inbox(this.aggregation_publisher.lilURL);
+            }
+        });
+
+        this.event_emitter.on('close', () => {
+            this.logger.debug(`Closing the aggregation event publisher.`);
+        });
+
+        this.event_emitter.on('error', (error: Error) => {
+            this.logger.debug(`Error in aggregation event publisher: ${error}`);
+            this.event_emitter.on('error', (error: Error) => {
+                this.logger.debug(`Error in aggregation event publisher: ${error}`);
+            });
+
+            this.event_emitter.on('end', () => {
+                this.logger.debug(`End of aggregation event publisher.`);
+            });
+        });
+    }
+    /**
+     * Associate a Websocket channel with the query.
+     * @param {string} query_id - The id of the query.
+     * @param {WebSocket} ws - The Websocket channel to be associated with the query.
+     * @memberof WebSocketHandler
+     */
+    public associate_channel_with_query(query_id: string, ws: WebSocket) {
+        this.connections.set(query_id, ws);
+    }
+    /**
+     * Send the result to the client for the given query.
+     * @param {string} query_id - The id of the query.
+     * @param {*} result - The result to be sent (the aggregation result).
+     * @memberof WebSocketHandler
+     */
+    public send_result_to_client(query_id: string, result: any) {
+        const ws = this.connections.get(query_id);
+        if (ws) {
+            ws.send(JSON.stringify(result));
+        }
+        else {
+            this.logger.debug(`No connection found for query id: ${query_id}`);
+        }
+    }
+    /**
+     * Process the query and send the result to the client.
+     * @param {string} query - The query to be processed (RSP-QL query).
+     * @param {number} width - The width of the window to be processed.
+     * @memberof WebSocketHandler
+     */
+    public process_query(query: string, width: number) {
+        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections);
+    }
+    /**
+     * Send a test message to the client.
+     * @param {string} query - The query to which the test message is to be sent.
+     * @memberof WebSocketHandler
+     */
+    public send_test(query: string) {
+        const ws = this.connections.get(query);
+        if (ws) {
+            ws.send(JSON.stringify({ "test": "test", "query": query }));
+        }
+    }
+}
