@@ -63,6 +63,7 @@ export class RSPQLParser {
             }
         });
         parsed.sparql = sparqlLines.join("\n");
+        this.parse_sparql_query(parsed.sparql, parsed);
         return parsed;
     }
 

@@ -37,7 +37,7 @@ describe('RSPQLParser', () => {
             '}\n' +
             '}\n')
         expect(parsed_query.r2s).toEqual({ operator: 'RStream', name: 'output' });
-        expect(parsed_query.s2r).toEqual([{ window_name: 'https://rsp.js/w1', stream_name: 'http://localhost:3000/', width: 180000, slide: 30000 }]);
+        expect(parsed_query.s2r).toEqual([{ window_name: 'https://rsp.js/w1', stream_name: 'http://localhost:3000/', width: 180000, slide: 30000 }]);        
         expect(parsed_query.aggregation_function).toBe('max');
         expect(parsed_query.projection_variables[0]).toBe('maxSKT');
         expect(parsed_query.aggregation_thing_in_context.length).toBe(0);
@@ -57,5 +57,15 @@ describe('RSPQLParser', () => {
         const unwrapped = parser.unwrap('<https://saref.etsi.org/core/hasValue>', prefixMapper);
         expect(unwrapped).toBe('https://saref.etsi.org/core/hasValue');
     });
-    
+
+    it('should_unwrap_the_prefixed_iri_with_no_prefix', () => {
+        const prefixMapper = new Map<string, string>();
+        const unwrapped = parser.unwrap('hasValue', prefixMapper);
+        expect(unwrapped).toBe('');
+    });
+
+    it('should_unwrap_the_prefixed_iri_with_no_prefix_mapper', () => {
+        const unwrapped = parser.unwrap('saref:hasValue', new Map<string, string>());
+        expect(unwrapped).toBe('');
+    });
 });
