@@ -309,6 +309,28 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
  * @returns {Promise<Store>} - Returns the resource as an N3 Store.
  */
 export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
+    try {
+        // TODO : check for headers, as well as error handling. check if you can increase the timeout for the get request as some resources might take longer to load (due to large files, slow server, etc.)
+        const response = await rate_limit_comm.get(resource_identifier);
+        if (response && response.status !== 200) {
+            throw new Error(`Resource not found: ${resource_identifier}`);
+        }
+        if (response && response.headers.get('content-type') !== 'text/turtle') {
+            throw new Error(`Resource is not turtle: ${resource_identifier}`);
+        }
+        const text = response ? await response.text() : '';
+        if (text === '') {
+            throw new Error(`Resource is empty: ${resource_identifier}`);
+        }
+        return await turtleStringToStore(text, resource_identifier);
+    } catch (error) {
+        console.error(`Error reading resource: ${resource_identifier}`, error);
+        if (error instanceof Error) {
+            if (error.message.includes('Resource not found')) {
+                console.log(`Resource not found: ${resource_identifier}`);
+            }
+        }
+    }
     const response = await rate_limit_comm.get(resource_identifier);
     if (response && response.status !== 200) {
         console.log(`Resource not found: ${resource_identifier}`);

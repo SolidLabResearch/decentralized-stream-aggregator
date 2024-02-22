@@ -49,17 +49,24 @@ export class AggregatorInstantiator {
     }
     /**
      * Initiate the Decentralized File Streamer for the LDES in the Solid Pod and then initialize the subscription to the RStream of the RSP Engine.
+     * @returns {Promise<boolean>} - The promise of the initiation of the Decentralized File Streamer, which is true if it is initiated, and false if it is not initiated.
      * @memberof AggregatorInstantiator
      */
-    public async intiateDecentralizedFileStreamer() {
+    public async intiateDecentralizedFileStreamer(): Promise<boolean> {
         const query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
-        for (const stream of this.stream_array) {
-            const session_credentials = this.get_session_credentials(stream);
-            this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
-            new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+        if (this.stream_array.length !== 0) {
+            for (const stream of this.stream_array) {
+                const session_credentials = this.get_session_credentials(stream);
+                this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
+                new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+            }
+            this.subscribeRStream();
+            return true;
         }
-        this.subscribeRStream();
+        else {
+            return false;
+        }
     }
 
     /**

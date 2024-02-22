@@ -1,4 +1,3 @@
-// TODO: util has to be moved to LdesUtil of the package VersionAwareLIL
 import {Communication, LDES, LDESMetadata, LDP, RDF, TREE, XSD} from "@treecg/versionawareldesinldp";
 import {DataFactory, Store} from "n3";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
