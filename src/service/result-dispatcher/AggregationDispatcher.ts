@@ -12,8 +12,8 @@ import { Quad } from "rdflib/lib/tf-types";
 import { hash_string_md5 } from "../../utils/Util";
 import { TREE } from "@treecg/ldes-snapshot";
 import { DataFactory, Store } from "n3";
-import { Literal } from "n3";
 import { aggregationDispatcherType } from "../../utils/Types";
+import { Literal } from "n3";
 const { namedNode } = DataFactory;
 
 /**

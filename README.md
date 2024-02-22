@@ -22,7 +22,7 @@ We employ [Type Indexes](https://solid.github.io/type-indexes/) to store the loc
 npm run start-solid-server
 ``` 
 The command will start a Solid Server on the port 3000 with a Solid Pod named `aggregation_pod` which can be accessed at `http://localhost:3000/aggregation_pod/`. The aggregation results are stored in the aggregator's Solid Pod in form of the LDES stream using the [LDES in LDP](https://woutslabbinck.github.io/LDESinLDP/) specification.
-
+- Create a folder and a file named `logs/aggregation.log` in the root directory of the project. The logs of the Solid Stream Aggregator is stored in this file.
 - Now, start the Solid Stream Aggregator with the command
 ```bash
 npm run start aggregation 

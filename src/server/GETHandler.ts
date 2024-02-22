@@ -20,7 +20,7 @@ export class GETHandler {
              * The following API path of the Solid Stream Aggregator is used to clear all of the registered queries from the query registry.
              */
             if (req.url === '/clearQueryRegistry') {
-                await query_registry.delete_all_queries_from_the_registry();
+                query_registry.delete_all_queries_from_the_registry();
                 res.write('Query registry cleared');
             }
         }

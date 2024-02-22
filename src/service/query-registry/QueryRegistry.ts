@@ -142,17 +142,19 @@ export class QueryRegistry {
 
     /**
      * Delete all the queries from the registry.
-     * @returns {Promise<void>} - Returns nothing.
+     * @returns {boolean} - Returns true if the queries are deleted, otherwise false.
      * @memberof QueryRegistry
      */
-    public async delete_all_queries_from_the_registry() {
+    public delete_all_queries_from_the_registry() {
         this.registered_queries.delete_all_items();
         const registered_queries = this.get_registered_queries();
         if (registered_queries.getArrayCopy().length === 0) {
             this.logger.info('query_registry_cleared');
+            return true;
         }
         else {
             this.logger.error('query_registry_not_cleared');
+            return false;
         }
     }
 
