@@ -1,5 +1,16 @@
-
+/**
+ * This class contains the queries for the endpoints.
+ * @class EndpointQueries
+ */
 export class EndpointQueries {
+    /**
+     * Get the query for the given name.
+     * @param {string} name - The name of the query.
+     * @param {Date} from_timestamp - The start of the time window.
+     * @param {Date} to_timestamp - The end of the time window.
+     * @returns {string} - The query.
+     * @memberof EndpointQueries
+     */
     get_query(name: string, from_timestamp: Date, to_timestamp: Date) {
         const from = Date.parse(from_timestamp.toString())
         const to = Date.parse(to_timestamp.toString());

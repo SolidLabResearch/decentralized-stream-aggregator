@@ -23,8 +23,9 @@ async function createAuthenticationTokenCSS(options: any) {
 }
 
 /**
- *
- * @param options
+ * Get the Identity Provider from a WebID.
+ * @param {any} options - The options for the token generation.
+ * @returns {Promise<string>} - The resulting Identity Provider.
  */
 async function getIdpFromWebID(options: any) {
     const parser = new N3.Parser({ baseIRI: options.webid });
@@ -48,8 +49,9 @@ async function getIdpFromWebID(options: any) {
 }
 
 /**
- *
- * @param options
+ * Generate a authentication token from the IDP of the Community Solid Server.
+ * @param {any} options - The options for the token generation.
+ * @returns {Promise<CredentialsToken>} - The resulting token.
  */
 export async function generateToken(options: any) {
     // This assumes your server is started under http://localhost:3000/.
@@ -87,9 +89,10 @@ async function makeAuthenticatedFetch(credentials: any, fetch: any) {
 }
 
 /**
- *
- * @param credentials
- * @param passedFetch
+ * Create an authenticated fetch function using a file with a CSS client credentials token for CSS v4.0.0 and higher.
+ * @param {any} credentials - Client Credentials Token.
+ * @param {any} passedFetch - Optional fetch function to authenticate. Defaults to built-in fetch function.
+ * @returns {Promise<Function>} - The authenticated fetch function.
  */
 async function createAuthenticatedFetchFunction(credentials: any, passedFetch: any) {
     const { id, secret, idp } = credentials;
@@ -130,8 +133,9 @@ async function createAuthenticatedFetchFunction(credentials: any, passedFetch: a
     return authFetch
 }
 /**
- *
- * @param credentials
+ * Create a session with a file with a CSS client credentials token for CSS v4.0.0 and higher.
+ * @param {any} credentials - Client Credentials Token.
+ * @returns {Promise<Session>} - The resulting session.
  */
 export async function session_with_credentials(credentials: any): Promise<Session> {
     const session = new Session();

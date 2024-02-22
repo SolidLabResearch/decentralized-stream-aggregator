@@ -25,13 +25,13 @@ import { Prefixes } from "../Types";
 /**
  * In order to correctly rebalance the container,
  * this algorithm assumes that all resources in the container are in fact part of the LDES in LDP.
- * @param ldpCommunication
- * @param metadata
- * @param containerURL
- * @param bucketSize
- * @param prefixes
- * @param loglevel
- * @returns {Promise<void>}
+ * @param {Communication} ldpCommunication - The communication object to communicate to the LDP.
+ * @param {ILDESinLDPMetadata} metadata - The metadata of the LDES.
+ * @param {string} containerURL - The URL of the container to be rebalanced.
+ * @param {number} bucketSize - The maximum number of resources per container.
+ * @param {Prefixes} prefixes - The prefixes of the LDES.
+ * @param {string} loglevel - The loglevel of the logger.
+ * @returns {Promise<void>} - Returns a promise.
  */
 export async function rebalanceContainer(ldpCommunication: Communication, metadata: ILDESinLDPMetadata, containerURL: string,
                                          bucketSize: number, prefixes: Prefixes, loglevel: string = 'info'): Promise<void> {
@@ -144,6 +144,9 @@ export async function rebalanceContainer(ldpCommunication: Communication, metada
             const resourceUrl = resourcesLocationMap.get(resource)
             if (resourceUrl) {
                 const response = await ldpCommunication.delete(resourceUrl)
+                if (response.status !== 205) {
+                    logger.error('for some reason, following resource could not be deleted: ' + resourceUrl)
+                }
             } else {
                 logger.error('for some reason, following resource could not be deleted: ' + resourceUrl)
             }

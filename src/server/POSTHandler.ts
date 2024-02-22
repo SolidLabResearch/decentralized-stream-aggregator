@@ -1,6 +1,5 @@
 import { storeToString } from "@treecg/versionawareldesinldp";
 import { IncomingMessage, ServerResponse } from "http";
-import { Store } from "rdflib";
 import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { AggregationDispatcher } from "../service/result-dispatcher/AggregationDispatcher";
@@ -9,13 +8,19 @@ import { hash_string_md5 } from "../utils/Util";
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
 const N3 = require('n3');
-
+/**
+ * Class for handling the POST request from the client.
+ * @class POSTHandler
+ */
 export class POSTHandler {
     static connection: typeof websocketConnection;
     public static client: any;
     static request_body: RequestBody;
     static sparql_to_rspql: SPARQLToRSPQL;
-
+    /**
+     * Creates an instance of POSTHandler.
+     * @memberof POSTHandler
+     */
     constructor() {
         POSTHandler.sparql_to_rspql = new SPARQLToRSPQL();
         POSTHandler.connection = websocketConnection;
@@ -23,6 +28,16 @@ export class POSTHandler {
         POSTHandler.client = new WebSocketClient();
     }
 
+    /**
+     * Handle the POST request from the client.
+     * @static
+     * @param {IncomingMessage} req - The request from the client.
+     * @param {ServerResponse} res - The response to the client.
+     * @param {QueryRegistry} query_registry - The QueryRegistry object.
+     * @param {string} solid_server_url - The URL of the Solid Server.
+     * @param {*} logger - The logger object.
+     * @memberof POSTHandler
+     */
     public static async handle(req: IncomingMessage, res: ServerResponse, query_registry: QueryRegistry, solid_server_url: string, logger: any) {
         const to_timestamp = new Date().getTime(); // current time
         let post_body: string = '';
@@ -60,7 +75,19 @@ export class POSTHandler {
         });
 
     }
-
+    /**
+     * Handle the Websocket query from the client.
+     * It checks if the query is unique and if it is, then it registers the query in the QueryRegistry and if it is not, then it sends the aggregated events to the client.
+     * The non unique query is the query that is already registered in the QueryRegistry, and it uses the Function Ontology Description from the Solid Stream Aggregator's Solid Pod
+     * To get the aggregated events and send them to the client.
+     * @static
+     * @param {string} query - The query to be handled (RSPQL or SPARQL).
+     * @param {number} width - The width of the window.
+     * @param {QueryRegistry} query_registry - The QueryRegistry object.
+     * @param {*} logger - The logger object.
+     * @param {*} websocket_connections - The Websocket connections.
+     * @memberof POSTHandler
+     */
     public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any) {
         const aggregation_dispatcher = new AggregationDispatcher(query);
         // let to_timestamp = new Date().getTime(); // current time
@@ -106,7 +133,12 @@ export class POSTHandler {
         }
 
     }
-
+    /**
+     * Connect with the Websocket server of the Solid Stream Aggregator.
+     * @static
+     * @param {string} wssURL - The URL of the Websocket server.
+     * @memberof POSTHandler
+     */
     static async connect_with_server(wssURL: string) {
         this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
         this.client.on('connect', (connection: typeof websocketConnection) => {
@@ -117,7 +149,12 @@ export class POSTHandler {
             console.log('Connect Error: ' + error.toString());
         });
     }
-
+    /**
+     * Send a message to the Websocket server of the Solid Stream Aggregator.
+     * @static
+     * @param {string} message - The message to be sent to the server.
+     * @memberof POSTHandler
+     */
     static sendToServer(message: string) {
         if (this.connection.connected) {
             this.connection.sendUTF(message);

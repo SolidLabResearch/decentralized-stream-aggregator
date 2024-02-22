@@ -19,16 +19,12 @@ import {
 } from "@treecg/versionawareldesinldp";
 import {Session} from "@rubensworks/solid-client-authn-isomorphic"
 import {addRelationToNode, createContainer} from "@treecg/versionawareldesinldp/dist/ldes/Util";
-import {DataFactory, Store} from "n3";
+import {Store} from "n3";
 import {rebalanceContainer} from "./NaiveRebalancing";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 import {performance, PerformanceObserver} from 'perf_hooks'
 import {editMetadata} from "../ldes-in-ldp/Util";
 import { Prefixes } from "../Types";
-
-const {quad, namedNode} = DataFactory
-
-
 /**
  * Algorithm A.
  *
@@ -38,17 +34,17 @@ const {quad, namedNode} = DataFactory
  *  step 3: rebalance.
  *
  *  Params:
- *    * LDESinLDPURL (string)
- *    * 1000 resources (Resource[])
- *    * version ID.
- * @param lilURL
- * @param resources
- * @param versionID
- * @param bucketSize
- * @param config
- * @param prefixes
- * @param session
- * @param loglevel
+ *    LDESinLDPURL (string)
+ *    1000 resources (Resource[])
+ *    version ID.
+ * @param {string} lilURL - The URL of the LDES in LDP.
+ * @param {Resource[]} resources - The resources array to be added to the LDES.
+ * @param {string} versionID - The version identifier of the LDES.
+ * @param {number} bucketSize - The maximum number of resources per container.
+ * @param {LDESConfig} config - The configuration of the LDES.
+ * @param {Prefixes} prefixes - The prefixes of the LDES.
+ * @param {Session} session - The session of the user.
+ * @param {string} loglevel - The loglevel of the logger.
  */
 export async function naiveAlgorithm(lilURL: string, resources: Resource[], versionID: string, bucketSize: number, config: LDESConfig, prefixes: Prefixes, session?: Session, loglevel: string = 'info'): Promise<void> {
 
@@ -108,6 +104,7 @@ export async function naiveAlgorithm(lilURL: string, resources: Resource[], vers
          // add version identifier to resource
         const resourceStore = new Store(resource)
         const subject = resourceStore.getSubjects(config.treePath, null, null)[0] // Note: kind of hardcoded to get subject of resource
+        console.log(`Adding version to resource ${subject}`);
         // resourceStore.add(quad(subject, namedNode(metadata.versionOfPath), namedNode(versionID)))
     }
     console.log(resources.length)

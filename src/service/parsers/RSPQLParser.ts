@@ -1,16 +1,23 @@
-import { ParsedQuery } from "./ParsedQuery";
 const { Parser: SparqlParser } = require('sparqljs');
+/**
+ * Class for parsing a RSPQL query.
+ * @class RSPQLParser
+ */
 export class RSPQLParser {
     r2s: Map<string, string> = new Map<string, string>();
     s2r: Array<string> = new Array<string>();
     sparql_parser: typeof SparqlParser;
+    /**
+     * Creates an instance of RSPQLParser.
+     * @memberof RSPQLParser
+     */
     constructor() {
         this.sparql_parser = new SparqlParser();
     }
     /**
      * Parse a RSPQL query to a parsedQuery Object containing the R2S and S2R mappings along with the SPARQL query.
-     * @param {string} rspql_query
-     * @returns {*}  {ParsedQuery}.
+     * @param {string} rspql_query - The RSPQL query to be parsed.
+     * @returns {ParsedQuery} - The parsed query object.
      * @memberof RSPQLParser
      */
     parse(rspql_query: string): ParsedQuery {
@@ -56,15 +63,15 @@ export class RSPQLParser {
             }
         });
         parsed.sparql = sparqlLines.join("\n");
-        const sparql_parsed = this.parse_sparql_query(parsed.sparql, parsed);
+        this.parse_sparql_query(parsed.sparql, parsed);
         return parsed;
     }
 
     /**
      * Unwraps a prefixed IRI to a full IRI.
-     * @param {string} prefixedIRI
-     * @param {Map<string, string>} prefixMapper
-     * @returns {*} 
+     * @param {string} prefixedIRI - The prefixed IRI to be unwrapped.
+     * @param {Map<string, string>} prefixMapper - The prefix mapper to be used for unwrapping.
+     * @returns {string} - The unwrapped IRI. - The unwrapped IRI.
      * @memberof RSPQLParser
      */
     unwrap(prefixedIRI: string, prefixMapper: Map<string, string>) {
@@ -82,13 +89,11 @@ export class RSPQLParser {
     }
 
     /**
-     * Returns the name of the sensor from the SPARQL query.
+     * Parses the SPARQL query to extract the prefixes, projection variables and aggregation function.
+     * @param {string} sparqlQuery - The SPARQL query to be parsed.
+     * @param {ParsedQuery} parsed - The parsed query object to be used for storing the parsed data.
+     * @memberof RSPQLParser
      */
-
-    get_sensor_name(parsed_query: ParsedQuery) {
-        console.log(parsed_query.sparql)
-    }
-
     parse_sparql_query(sparqlQuery: string, parsed: ParsedQuery) {
         const parsed_sparql_query = this.sparql_parser.parse(sparqlQuery);
         const prefixes = parsed_sparql_query.prefixes;
@@ -103,4 +108,66 @@ export class RSPQLParser {
         }
     }
 }
+/**
+ * The parsed query object.
+ * @class ParsedQuery
+ */
+export class ParsedQuery {
+    public prefixes: Map<string, string>;
+    public aggregation_thing_in_context: Array<string>;
+    public projection_variables: Array<string>;
+    public aggregation_function: string;
+    public sparql: string;
+    public r2s: R2S;
+    public s2r: Array<WindowDefinition>;
+    /**
+     * Creates an instance of ParsedQuery.
+     * @memberof ParsedQuery
+     */
+    constructor() {
+        this.sparql = "Select * WHERE{?s ?p ?o}";
+        this.r2s = { operator: "RStream", name: "undefined" };
+        this.s2r = new Array<WindowDefinition>();
+        this.prefixes = new Map<string, string>();
+        this.aggregation_thing_in_context = new Array<string>();
+        this.projection_variables = new Array<string>();
+        this.aggregation_function = "";
+    }
+    /**
+     * Set the SPARQL query.
+     * @param {string} sparql - The SPARQL query to be set.
+     * @memberof ParsedQuery
+     */
+    set_sparql(sparql: string) {
+        this.sparql = sparql;
+    }
+    /**
+     * Set the R2S mapping (The Relation to Stream Operator).
+     * @param {R2S} r2s - The R2S mapping to be set.
+     * @memberof ParsedQuery
+     */
+    set_r2s(r2s: R2S) {
+        this.r2s = r2s;
+    }
+    /**
+     * Add a window definition. (The Stream to Relation Operator).
+     * @param {WindowDefinition} s2r - The window definition to be added.
+     * @memberof ParsedQuery
+     */
+    add_s2r(s2r: WindowDefinition) {
+        this.s2r.push(s2r);
+    }
+}
+
+export type WindowDefinition = {
+    window_name: string,
+    stream_name: string,
+    width: number,
+    slide: number
+}
+type R2S = {
+    operator: "RStream" | "IStream" | "DStream",
+    name: string
+}
+
 

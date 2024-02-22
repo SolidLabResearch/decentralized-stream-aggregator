@@ -1,6 +1,7 @@
 /**
- *
- * @param ldes_stream
+ * Subscribe to a webhook notification.
+ * @param {string} ldes_stream - The LDES stream to subscribe to.
+ * @returns {Promise<void>} - Returns nothing.
  */
 async function subscribe_webhook_notification(ldes_stream: string): Promise<void> {
     const solid_server = ldes_stream.split("/").slice(0, 3).join("/");
@@ -31,7 +32,7 @@ async function subscribe_webhook_notification(ldes_stream: string): Promise<void
 }
 
 /**
- *
+ * Main function.
  */
 async function main() {
     const ldes_stream = "http://localhost:3000/dataset_participant1/xyz/";

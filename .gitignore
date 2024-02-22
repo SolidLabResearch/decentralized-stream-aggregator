@@ -3,7 +3,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+.idea/
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -109,3 +109,5 @@ src/utils/rsp.ts
 src/utils/DecentralizedFileStreamer.ts
 src/utils/UpdateLDES.ts
 aggregation-data
+logs/
+scratch/

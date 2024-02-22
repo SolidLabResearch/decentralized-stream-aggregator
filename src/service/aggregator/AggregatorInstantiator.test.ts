@@ -1,0 +1,3 @@
+describe('aggregator_instantiator', () => {
+    
+});

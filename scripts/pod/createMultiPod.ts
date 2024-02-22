@@ -19,9 +19,16 @@ type myType = {
 const fileObject: myType = {
     solidpod: [],
 };
-
+/**
+ * Class for preparing the solid pods for the multi-pod setup.
+ * @class prepareSolidPod
+ */
 export class prepareSolidPod {
-
+    /**
+     * Lists the files in the directory and creates a solid pod's email and password for each file.
+     * @param {string} path - The path to the directory.
+     * @memberof prepareSolidPod
+     */
     async listFile(path: string) {
         const dir = await fs.promises.opendir(path)
         for await (const value of dir) {
@@ -38,9 +45,14 @@ export class prepareSolidPod {
             fileObject.solidpod.push(solidObject);
         }
     }
-
+    /**
+     * Writes the JSON file with the solid pod credentials.
+     * @param {multipod[]} object - The object to write to the JSON file.
+     * @memberof prepareSolidPod
+     */
     async writeJSONFile(object: multipod[]) {
-        for await (const { } of object) {
+        for await (const pod of object) {
+            console.log(`The pod name is ${pod.pod_name}`);
             const podContent: string = JSON.stringify(fileObject.solidpod)
             jsonFile.writeFile('pod_credentials.json', JSON.parse(podContent), function (error: string) {
                 if (error) {

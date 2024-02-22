@@ -1,14 +1,23 @@
-const {Parser: SparqlParser} = require('sparqljs');
+const { Parser: SparqlParser } = require('sparqljs');
 const parser = new SparqlParser();
 const Store = require('n3').Store;
 import { Quad } from 'rdflib/lib/tf-types';
 import * as RSPQLConfig from '../../config/rspql_query.json';
 
+/**
+ * Class for converting a SPARQL query to a RSPQL query.
+ * @class SPARQLToRSPQL
+ */
 export class SPARQLToRSPQL {
     private extractedVariables: string[];
     private extractedGraphPatterns: typeof Store;
     private operationArgs: Map<string, string>;
     private operator: string;
+
+    /**
+     * Creates an instance of SPARQLToRSPQL.
+     * @memberof SPARQLToRSPQL
+     */
     constructor() {
         this.extractedVariables = [];
         this.extractedGraphPatterns = new Store();
@@ -16,10 +25,16 @@ export class SPARQLToRSPQL {
         this.operator = '';
     }
 
+    /**
+     * Generate a RSPQL query from a SPARQL query by adding the necessary RSPQL syntax as well as a window and a stream.
+     * @param {string} sparqlQuery - The SPARQL query to be converted to RSPQL.
+     * @returns {string} - The RSPQL query.
+     * @memberof SPARQLToRSPQL
+     */
     public getRSPQLQuery(sparqlQuery: string): string {
         const parsedQuery = parser.parse(sparqlQuery);
         if (parsedQuery.type === 'query') {
-            if (parsedQuery.queryType === 'SELECT' || 'select') {
+            if (parsedQuery.queryType === 'SELECT' || parsedQuery.queryType === 'select') {
                 const queryVariables = parsedQuery.variables;
                 for (let i = 0; i < queryVariables.length; i++) {
                     if (queryVariables[i].termType === 'Variable') {

@@ -1,4 +1,4 @@
-import { addRelationToNode, extractLdesMetadata, LDESConfig, LDESinLDP, LDESMetadata, LDPCommunication, MetadataParser, patchSparqlUpdateInsert, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
+import { addRelationToNode, LDESConfig, LDESinLDP, LDPCommunication, MetadataParser, patchSparqlUpdateInsert, SolidCommunication, storeToString } from "@treecg/versionawareldesinldp";
 import { ILogObj, Logger } from "tslog";
 import { RSPQLParser } from "../parsers/RSPQLParser";
 import { getTimeStamp, Resource } from "../../utils/ldes-in-ldp/EventSource";
@@ -8,27 +8,50 @@ import { add_resources_with_metadata_to_buckets, check_if_container_exists, crea
 import { editMetadata } from "../../utils/ldes-in-ldp/Util";
 import { v4 as uuidv4 } from 'uuid';
 import { AggregationFocusExtractor } from "../parsers/AggregationFocusExtractor";
-import { ParsedQuery } from "../parsers/ParsedQuery";
+import { ParsedQuery } from "../parsers/RSPQLParser";
 import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 const { quad, namedNode, literal } = DataFactory;
 const ldfetch = require('ldfetch');
 const fetch = new ldfetch({});
-
+/**
+ * The QueryAnnotationPublishing class is responsible for publishing the generated aggregation events from the RSP Engine with the
+ * Function Ontology Metadata to the LDP container in a LDES in LDP fashion to the Solid Pod of the Aggregator. The aggregator's Solid Pod stores the materialized results.
+ * @class QueryAnnotationPublishing
+ */
 export class QueryAnnotationPublishing {
     private logger: Logger<ILogObj>;
     public parser: RSPQLParser;
     public bucket_resources: {
         [key: string]: Resource[];
     }
+    /**
+     * Creates an instance of QueryAnnotationPublishing.
+     * @memberof QueryAnnotationPublishing
+     */
     constructor() {
         this.logger = new Logger();
         this.parser = new RSPQLParser();
         this.bucket_resources = {};
     }
 
+    /**
+     * Published the generated aggregation events from the RSP Engine with the
+     * Function Ontology Metadata to the LDP container in a LDES in LDP fashion to the
+     * Solid Pod of the Aggregator. The aggregator's Solid Pod stores the materialized results
+     * Which can be used, and reused by other query processes.
+     * @param {string} query - The RSPQL query.
+     * @param {string} ldes_in_ldp_url - The URL of the LDES in LDP inside the Solid Pod.
+     * @param {Resource[]} resources - The resources to be published which were generated from the RSP Engine.
+     * @param {string} version_id - The version identifier of the LDES in LDP.
+     * @param {LDESConfig} config  - The configuration of the LDES in LDP.
+     * @param {Date} start_time - The starting time of the aggregation function.
+     * @param {Date} end_time - The endtime of the aggregation function.
+     * @param {Session} [session] - The session object to communicate with the Solid Pod.
+     * @returns {*}  {Promise<void>} - A promise that resolves to void when the publishing is done. It just logs the result.
+     * @memberof QueryAnnotationPublishing
+     */
     public async publish(query: string, ldes_in_ldp_url: string, resources: Resource[], version_id: string, config: LDESConfig, start_time: Date, end_time: Date, session?: Session): Promise<void> {
-        // const comunication = session ? new SolidCommunication(session) : new LDPCommunication();
-        const communication = new RateLimitedLDPCommunication(30, 1000);
+        const communication = session ? new SolidCommunication(session) : new RateLimitedLDPCommunication(30, 1000);
         const ldes_in_ldp = new LDESinLDP(ldes_in_ldp_url, communication);
         const metadata_store = await ldes_in_ldp.readMetadata();
         const metadata = MetadataParser.extractLDESinLDPMetadata(metadata_store, ldes_in_ldp_url + "#EventStream")
@@ -98,16 +121,25 @@ export class QueryAnnotationPublishing {
                 ]
             )
             await communication.patch(ldes_in_ldp_url, patchSparqlUpdateDelete(current_inbox_store))
-            .then(async () => {
-                const ldp_response = await communication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
-                console.log("response is: ", ldp_response);
+                .then(async () => {
+                    const ldp_response = await communication.patch(ldes_in_ldp_url, patchSparqlUpdateInsert(latest_inbox_store))
+                    console.log("response is: ", ldp_response);
 
-            })
+                })
         });
 
 
     }
 
+
+    /**
+     * Generates a function ontology description for a query on the stream generated from the solid pod.
+     * @param {string} query - The RSPQL query.
+     * @param {Date} start_time - The starting time of the aggregation function.
+     * @param {Date} end_time - The endtime of the aggregation function.
+     * @returns {*}  {Store} - Returns a Store of quads containing the Function Ontology which can be patched.
+     * @memberof QueryAnnotationPublishing
+     */
     public get_query_metadata(query: string, start_time: Date, end_time: Date): Store {
         const query_identifier_uuid = uuidv4();
         const aggregation_query_identifier: string = `http://example.org/aggregation_query/${query_identifier_uuid}`;
@@ -158,10 +190,18 @@ export class QueryAnnotationPublishing {
             ])
         return store;
     }
+
+    /**
+     * Patches the Function Ontology Description of the stream events to the ./meta file of the LDP container.
+     * @param {Store} store - The store contains the quads related to the function ontology description.
+     * @param {string} location - The location of the container of which the description is generated.
+     * @param {LDPCommunication} ldp_communication - The communication object to communicate to the LDP.
+     * @memberof QueryAnnotationPublishing
+     */
     public patch_metadata(store: Store, location: string, ldp_communication: LDPCommunication): void {
         const location_metadata = location + '.meta';
         ldp_communication.patch(location_metadata, `INSERT DATA {${storeToString(store)}}`).then((response) => {
-            if (response.status == 200 || 201 || 205) {
+            if (response.status == 200 || response.status == 201 || response.status == 205) {
                 this.logger.debug("The metadata of the LDP container is patched successfully")
             }
         }).catch((error) => {
@@ -170,9 +210,10 @@ export class QueryAnnotationPublishing {
     }
 }
 /**
- *
- * @param store
+ * The function returns the SPARQL Update DELETE query to delete the data.
+ * @param {Store} store - The store to be deleted.
+ * @returns {string} - The SPARQL Update DELETE query to delete the data.
  */
 export function patchSparqlUpdateDelete(store: Store): string {
-    return `DELETE DATA {${storeToString(store)}};`
+    return `DELETE DATA {${storeToString(store)}}`
 }

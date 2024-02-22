@@ -1,13 +1,13 @@
 module.exports = {
   root: true,
-  env: {node: true, es2020: true},
+  env: {node: true, es2020: true, jest: true},
   extends: [
     'eslint:recommended'
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'tests'],
   parserOptions: {ecmaVersion: 'latest', sourceType: 'module'},
   parser: '@typescript-eslint/parser',
-  plugins: ['jsdoc'],
+  plugins: ['jsdoc', 'jest'],
   rules: {
     'prefer-const': ['error', {
       'destructuring': 'any',
@@ -50,7 +50,7 @@ module.exports = {
     // 'jsdoc/require-example': 1,
     // 'jsdoc/require-file-overview': 1,
     'jsdoc/require-hyphen-before-param-description': 1,
-    'jsdoc/require-jsdoc': 1, // Recommended
+    'jsdoc/require-jsdoc': [1, { contexts: ['ClassDeclaration', 'ClassProperty', 'FunctionDeclaration', 'MethodDefinition'] }],
     'jsdoc/require-param': 1, // Recommended
     'jsdoc/require-param-description': 1, // Recommended
     'jsdoc/require-param-name': 1, // Recommended

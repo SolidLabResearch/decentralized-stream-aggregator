@@ -1,4 +1,6 @@
 import { Bindings } from "@comunica/types";
+import { LDESinLDP, LDPCommunication, SolidCommunication } from "@treecg/versionawareldesinldp";
+import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { Quad } from "rdflib/lib/tf-types";
 
 export type QuadWithID = {
@@ -29,3 +31,17 @@ export type WebSocketMessage = {
 }
 
 export type Prefixes = { [key: string]: string }
+
+export type readOpts =  {
+    from?: Date,
+    to?: Date,
+    ldes: LDESinLDP,
+    communication: LDPCommunication | SolidCommunication | RateLimitedLDPCommunication,
+    rate: number,
+    interval: number
+}
+
+export type aggregationDispatcherType = {
+    from ?: Date,
+    to ?: Date
+}

@@ -1,8 +1,17 @@
+/**
+ * A simple mutex implementation.
+ * @class Mutex
+ */
 export class Mutex {
-    private isLocked: boolean = false;
+    public isLocked: boolean = false;
     private queue: Array<() => void> = [];
 
-    // Acquire the mutex
+
+    /**
+     * Acquire the mutex.
+     * @returns {*} - {Promise<void>}.
+     * @memberof Mutex
+     */
     async acquire(): Promise<void> {
         return new Promise<void>((resolve) => {
             const acquireLock = () => {
@@ -17,7 +26,10 @@ export class Mutex {
         });
     }
 
-    // Release the mutex
+    /**
+     * Release the mutex.
+     * @memberof Mutex
+     */
     release() {
         if (this.isLocked) {
             this.isLocked = false;

@@ -3,21 +3,23 @@ import { LDPCommunication } from "@treecg/versionawareldesinldp";
 const communication = new LDPCommunication();
 
 /**
- *
- * @param pod_location
+ * Create a public type index for the given pod location.
+ * @param {string} pod_location - The location of the pod.
+ * @returns {Promise<void>} - The response of the request.
  */
 export async function createPublicTypeIndex(pod_location: string) {
     const body = `INSERT DATA {${pod_location}profile/card#> <http://www.w3.org/ns/solid/terms#publicTypeIndex> ${pod_location}settings/publicTypeIndex> . }`;
     communication.patch(pod_location + 'settings/publicTypeIndex', body).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Public type index created at ${pod_location}settings/publicTypeIndex`);
     })
 }
 
 /**
- *
- * @param pod_location
- * @param ldes_location
- * @param sensor_metric
+ * Add a stream to the public type index.
+ * @param {string} pod_location - The location of the pod.
+ * @param {string} ldes_location - The location of the LDES stream stored in the pod.
+ * @param {string} sensor_metric - The sensor metric.
  */
 export async function addStreamToPublicTypeIndex(pod_location: string, ldes_location: string, sensor_metric: string) {
     communication.put(pod_location + "settings/publicTypeIndex", `
@@ -34,18 +36,21 @@ export async function addStreamToPublicTypeIndex(pod_location: string, ldes_loca
        tree:shape <${ldes_location}public/bvpEventTemplate.shacl> ;
        tree:view <${ldes_location}> .
     `).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Stream added to ${pod_location}settings/publicTypeIndex`);
     });
 }
 
 /**
- *
- * @param pod_location
- * @param tree_path
- * @param type
+ * Add a property to the public type index.
+ * @param {string} pod_location - The location of the pod.
+ * @param {string} tree_path - The path of the tree which was used to fragment the LDES stream.
+ * @param {string} type - The type of the property.
+ * @returns {Promise<void>} - The response of the request.
  */
 export async function addPropertyToPublicTypeIndex(pod_location: string, tree_path: string, type: string) {
     communication.patch(pod_location + "settings/publicTypeIndex", `INSERT DATA {<#bvpDataset> <${tree_path}> <${type}>}`).then(async (response) => {
+        console.log(`Response: ${response.status} ${response.statusText}`);
         console.log(`Type ${type} with Property ${tree_path} added to ${pod_location}settings/publicTypeIndex`);
     });
 }

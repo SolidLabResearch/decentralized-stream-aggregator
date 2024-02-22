@@ -9,7 +9,10 @@ import { hash_string_md5 } from "../../utils/Util";
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const parser = new RSPQLParser();
-
+/**
+ * Class for the Aggregator Instantiator.
+ * @class AggregatorInstantiator
+ */
 export class AggregatorInstantiator {
     public query: string;
     public rsp_engine: RSPEngine;
@@ -21,6 +24,14 @@ export class AggregatorInstantiator {
     public to_date: Date;
     public client = new WebSocketClient();
     public connection: typeof websocketConnection;
+    /**
+     * Creates an instance of AggregatorInstantiator.
+     * @param {string} query - The RSPQL query.
+     * @param {number} from_timestamp - The timestamp from where the query is to be executed.
+     * @param {number} to_timestamp - The timestamp to where the query is to be executed.
+     * @param {*} logger - The logger object.
+     * @memberof AggregatorInstantiator
+     */
     public constructor(query: string, from_timestamp: number, to_timestamp: number, logger: any) {
         this.query = query;
         this.logger = logger;
@@ -36,25 +47,39 @@ export class AggregatorInstantiator {
         this.rsp_emitter = this.rsp_engine.register();
         this.intiateDecentralizedFileStreamer();
     }
-    public async intiateDecentralizedFileStreamer() {
+    /**
+     * Initiate the Decentralized File Streamer for the LDES in the Solid Pod and then initialize the subscription to the RStream of the RSP Engine.
+     * @returns {Promise<boolean>} - The promise of the initiation of the Decentralized File Streamer, which is true if it is initiated, and false if it is not initiated.
+     * @memberof AggregatorInstantiator
+     */
+    public async intiateDecentralizedFileStreamer(): Promise<boolean> {
         const query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
-        for (const stream of this.stream_array) {
-            const session_credentials = this.get_session_credentials(stream);
-            this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
-            new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+        if (this.stream_array.length !== 0) {
+            for (const stream of this.stream_array) {
+                const session_credentials = this.get_session_credentials(stream);
+                this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
+                new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+            }
+            this.subscribeRStream();
+            return true;
         }
-        this.executeRSP();
+        else {
+            return false;
+        }
     }
 
-    public async executeRSP() {
-        // RSP Engine event emitter.
+    /**
+     * Subscribe to the RStream of the RSP Engine to listen to the bindings, i.e the generated aggregation events and send it to the Solid Stream Aggregator's Websocket server for further processing (i.e publishing to the Solid Pod & sending to the clients).
+     * @memberof AggregatorInstantiator
+     */
+    public async subscribeRStream() {
         this.connect_with_server('ws://localhost:8080/').then(() => {
             console.log(`The connection with the websocket server has been established.`);
             this.connection.connected = true;
         });
         this.client.on('connect', (connection: typeof websocketConnection) => {
-            console.log(`The connection with the server has been established.`);
+            console.log(`The connection with the server has been established. ${connection.connected}`);
             this.rsp_emitter.on('RStream', async (object: BindingsWithTimestamp) => {
                 const window_timestamp_from = object.timestamp_from;
                 const window_timestamp_to = object.timestamp_to;
@@ -78,6 +103,17 @@ export class AggregatorInstantiator {
     }
 
     // TODO : add extra projection variables to the aggregation event.
+    // Relevant Issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/34
+    /**
+     * Generate an aggregation event.
+     * @param {string} value - The value of the aggregation event.
+     * @param {number} event_timestamp - The timestamp of the aggregation event when it was generated.
+     * @param {(string[] | undefined)} stream_array - The array of streams that the aggregation event is generated from.
+     * @param {number} timestamp_from - The timestamp of the start of the aggregation window.
+     * @param {number} timestamp_to -  The timestamp of the end of the aggregation window.
+     * @returns {string} - The aggregation event in string RDF.
+     * @memberof AggregatorInstantiator
+     */
     generate_aggregation_event(value: string, event_timestamp: number, stream_array: string[] | undefined, timestamp_from: number, timestamp_to: number): string {
         if (stream_array === undefined) {
             throw new Error("The stream array is undefined. ");
@@ -101,8 +137,11 @@ export class AggregatorInstantiator {
             return aggregation_event;
         }
     }
-
-
+    /**
+     * Connect with the Websocket server of the Solid Stream Aggregator.
+     * @param {string} wssURL - The URL of the Websocket server of the Solid Stream Aggregator.
+     * @memberof AggregatorInstantiator
+     */
     async connect_with_server(wssURL: string) {
         this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
         this.client.on('connectFailed', (error: Error) => {
@@ -113,7 +152,11 @@ export class AggregatorInstantiator {
             this.connection = connection;
         });
     }
-
+    /**
+     * Send a message to the Websocket server of the Solid Stream Aggregator.
+     * @param {string} message - The message to be sent.
+     * @memberof AggregatorInstantiator
+     */
     sendToServer(message: string) {
         if (this.connection.connected) {
             this.connection.sendUTF(message);
@@ -124,7 +167,12 @@ export class AggregatorInstantiator {
             });
         }
     }
-
+    /**
+     * Get the session credentials for the Solid Pod.
+     * @param {string} stream_name - The name of the stream (i.e the LDES in LDP of the Solid Pod).
+     * @returns {Credentials} - The session credentials.
+     * @memberof AggregatorInstantiator
+     */
     get_session_credentials(stream_name: string) {
         const credentials: Credentials = CREDENTIALS;
         const session_credentials = credentials[stream_name];

@@ -5,8 +5,9 @@ const ld_fetch = new ldfetch({});
 const N3 = require('n3');
 
 /**
- *
- * @param input_string
+ * Hash a string using the MD5 algorithm.
+ * @param {string} input_string - The input string to be hashed.
+ * @returns {string} - The hashed string.
  */
 export function hash_string_md5(input_string: string) {
     input_string = input_string.replace(/\s/g, '');
@@ -16,9 +17,10 @@ export function hash_string_md5(input_string: string) {
 }
 
 /**
- *
- * @param func
- * @param component_name
+ * Measure the execution time of a function.
+ * @param {void} func - The function to be measured.
+ * @param {string} component_name - The name of the component.
+ * @returns {object} - The execution time of the function.
  */
 export function measureExecutionTimeSync(func: () => void, component_name: string) {
     const start_time = new Date().getTime();
@@ -31,9 +33,10 @@ export function measureExecutionTimeSync(func: () => void, component_name: strin
 }
 
 /**
- *
- * @param func
- * @param component_name
+ * Measure the execution time of a function which is asynchronous.
+ * @param {void} func - The function to be measured.
+ * @param {string} component_name - The name of the component.
+ * @returns {object} - The execution time of the function.
  */
 export async function measureExecutionTimeAsync(func: () => Promise<void>, component_name: string) {
     const start_time = new Date().getTime();
@@ -46,10 +49,11 @@ export async function measureExecutionTimeAsync(func: () => Promise<void>, compo
 }
 
 /**
- *
+ * Create an aggregator pod.
+ * @returns {Promise<boolean>} - Returns true if the aggregator pod was created successfully, otherwise false.
  */
 export async function create_aggregator_pod(): Promise<boolean> {
-    exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any, stdout: any, stderr: any) => {
+    exec('npx community-solid-server --config src/server/aggregator-pod/config.json -f ./aggregation-data/ --seededPodConfigJson src/server/aggregator-pod/account.json', (err: any, stdout: any) => {
         if (stdout.code !== 0) {
             console.log('Error: Failed to create aggregator pod');
             return false;
@@ -62,8 +66,9 @@ export async function create_aggregator_pod(): Promise<boolean> {
 }
 
 /**
- *
- * @param arr
+ * Sort an array using the quick sort algorithm.
+ * @param {string[]} arr - The array to be sorted.
+ * @returns {string[]} - The sorted array.
  */
 export function quick_sort(arr: string[]): string[] {
     if (arr.length <= 1) {
@@ -88,11 +93,11 @@ export function quick_sort(arr: string[]): string[] {
     return [...quick_sort(left), ...equal, ...quick_sort(right)];
 }
 
-// TODO: sort it on the hashmap but will be faster.
 
 /**
- *
- * @param arr
+ * Sort an array using the insertion sort algorithm.
+ * @param {string[]} arr - The array to be sorted.
+ * @returns {string[]} - The sorted array.
  */
 export function insertion_sort(arr: string[]): string[] {
     const len = arr.length;
@@ -113,9 +118,10 @@ export function insertion_sort(arr: string[]): string[] {
 }
 
 /**
- *
- * @param solid_pod_url
- * @param interest_metrics
+ * Find relevant streams in a Solid Pod.
+ * @param {string} solid_pod_url - The URL of the Solid Pod.
+ * @param {string[]} interest_metrics - The array of interest metrics which are relevant and being searched inside the aggregator pod.
+ * @returns {Promise<string[]>} - The relevant streams.
  */
 export async function find_relevant_streams(solid_pod_url: string, interest_metrics: string[]): Promise<string[]> {
     const relevant_streams: string[] = [];
@@ -141,9 +147,10 @@ export async function find_relevant_streams(solid_pod_url: string, interest_metr
 }
 
 /**
- *
- * @param solid_pod_url
- * @param interest_metrics
+ * Check if relevant streams exist in a Solid Pod.
+ * @param {string} solid_pod_url - The URL of the Solid Pod.
+ * @param {string[]} interest_metrics - The array of interest metrics which are relevant and being searched inside the aggregator pod.
+ * @returns {Promise<boolean>} - Returns true if relevant streams exist, otherwise false.
  */
 export async function if_exists_relevant_streams(solid_pod_url: string, interest_metrics: string[]): Promise<boolean> {
     try {
@@ -166,8 +173,9 @@ export async function if_exists_relevant_streams(solid_pod_url: string, interest
 }
 
 /**
- *
- * @param solid_pod_url
+ * Find the public type index of a Solid Pod.
+ * @param {string} solid_pod_url - The URL of the Solid Pod.
+ * @returns {Promise<string>} - The public type index.
  */
 export async function find_public_type_index(solid_pod_url: string): Promise<string> {
     const profie_document = solid_pod_url + "/profile/card";

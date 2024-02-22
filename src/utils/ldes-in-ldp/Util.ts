@@ -1,13 +1,12 @@
-// TODO: util has to be moved to LdesUtil of the package VersionAwareLIL
-import {Communication, LDES, LDESMetadata, LDP, RDF, storeToString, TREE, XSD} from "@treecg/versionawareldesinldp";
+import {Communication, LDES, LDESMetadata, LDP, RDF, TREE, XSD} from "@treecg/versionawareldesinldp";
 import {DataFactory, Store} from "n3";
 import {Logger} from "@treecg/versionawareldesinldp/dist/logging/Logger";
 const {quad, namedNode, literal} = DataFactory
 
 /**
  * Convert the ldes metadata object back to an N3 Store.
- * @param metadata
- * @returns {Store}
+ * @param {LDESMetadata} metadata - The metadata of the LDES.
+ * @returns {Store} - Returns the metadata as an N3 Store.
  */
 export function convertLdesMetadata(metadata: LDESMetadata): Store {
     const metadataStore = new Store()
@@ -38,10 +37,10 @@ export function convertLdesMetadata(metadata: LDESMetadata): Store {
 }
 
 /**
- *
- * @param resourceIdentifier
- * @param communication
- * @param body
+ * Editing the metadata of the LDES.
+ * @param {string} resourceIdentifier - The identifier of the resource.
+ * @param {Communication} communication - The communication object to communicate to the LDP.
+ * @param {string} body - The body (in string) of the metadata to be inserted.
  */
 export async function editMetadata(resourceIdentifier: string, communication: Communication, body: string): Promise<void> {
     const logger = new Logger(editMetadata.name)

@@ -6,7 +6,10 @@ import { WriteLockArray } from "../../utils/query-registry/Util";
 import { hash_string_md5 } from "../../utils/Util";
 const websocketConnection = require('websocket').connection;
 const WebSocketClient = require('websocket').client;
-
+/**
+ * The QueryRegistry class is responsible for registering, executing and storing the queries.
+ * @class QueryRegistry
+ */
 export class QueryRegistry {
     registered_queries: WriteLockArray<string>;
     executed_queries: WriteLockArray<string>;
@@ -41,12 +44,15 @@ export class QueryRegistry {
     }
     /**
      *  Register a query in the QueryRegistry.
-     * @param {string} rspql_query
-     * @returns {*} 
+     * @param {string} rspql_query - The RSPQL query to be registered.
+     * @param {QueryRegistry} query_registry - The QueryRegistry object.
+     * @param {number} from_timestamp - The timestamp from where the query is to be executed.
+     * @param {number} to_timestamp - The timestamp to where the query is to be executed.
+     * @param {any} logger - The logger object.
+     * @returns {Promise<boolean>} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
-
-    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any) {
+    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any): Promise<boolean> {
         if (await query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
@@ -58,7 +64,6 @@ export class QueryRegistry {
         else {
             /*
             The query is already computed and stored in the Solid Stream Aggregator's Solid Pod. So, read from there and send via a websocket.
-            TODO : make a result dispatcher module.
             */
             logger.info({}, 'query_is_not_unique');
             this.logger.debug(`The query you have registered is already executing.`);
@@ -67,7 +72,14 @@ export class QueryRegistry {
 
     }
 
-    async add_query_in_registry(rspql_query: string, logger: any) {
+    /**
+     * Add a query to the registry.
+     * @param {string} rspql_query - The RSPQL query to be added.
+     * @param {any} logger - The logger object.
+     * @returns {Promise<boolean>} - Returns true if the query is unique, otherwise false.
+     * @memberof QueryRegistry
+     */
+    async add_query_in_registry(rspql_query: string, logger: any): Promise<boolean> {
         await this.registered_queries.addItem(rspql_query);
         if (this.checkUniqueQuery(rspql_query, logger)) {
             /*
@@ -86,21 +98,22 @@ export class QueryRegistry {
 
     /**
      * Add a query to the executing queries.
-     * @param {string} query
+     * @param {string} query - The query to be added.
+     * @returns {Promise<void>} - Returns nothing.
      * @memberof QueryRegistry
      */
-    add_to_executing_queries(query: string) {
+    async add_to_executing_queries(query: string): Promise<void> {
         this.executing_queries.addItem(query);
     }
 
     /**
      * Checking if the query is unique or if it is isomorphic with an already executing query.
-     * @param {string} query
-     * @param logger
-     * @returns {*} 
+     * @param {string} query - The query to be checked.
+     * @param {any} logger - The logger object.
+     * @returns {boolean} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
-    checkUniqueQuery(query: string, logger: any) {
+    checkUniqueQuery(query: string, logger: any): boolean {
         const query_hashed = hash_string_md5(query);
         const registered_queries = this.get_registered_queries();
         const array_length = registered_queries.get_length();
@@ -117,15 +130,59 @@ export class QueryRegistry {
         return false;
     }
 
+    /**
+     * Get the query registry length.
+     * @returns {number} - The length of the query registry.
+     * @memberof QueryRegistry
+     */
+    get_query_registry_length() {
+        return this.registered_queries.get_length();
+    }
 
+    /**
+     * Delete all the queries from the registry.
+     * @returns {boolean} - Returns true if the queries are deleted, otherwise false.
+     * @memberof QueryRegistry
+     */
+    public delete_all_queries_from_the_registry() {
+        this.registered_queries.delete_all_items();
+        const registered_queries = this.get_registered_queries();
+        if (registered_queries.getArrayCopy().length === 0) {
+            this.logger.info('query_registry_cleared');
+            return true;
+        }
+        else {
+            this.logger.error('query_registry_not_cleared');
+            return false;
+        }
+    }
+
+    /**
+     * Get the executing queries.
+     * @returns {WriteLockArray<string>} - The executing queries.
+     * @memberof QueryRegistry
+     */
     get_executing_queries() {
         return this.executing_queries;
     }
 
+
+    /** 
+     * Get the registered queries.
+     * @returns {WriteLockArray<string>} - The registered queries.
+     * @memberof QueryRegistry
+     */
     get_registered_queries() {
         return this.registered_queries;
     }
 
+
+    /**
+     * Send a message to the server.
+     * @static
+     * @param {string} message - The message to be sent.
+     * @memberof QueryRegistry
+     */
     static send_to_server(message: string) {
         if (this.connection.connected) {
             this.connection.sendUTF(message);
@@ -137,6 +194,12 @@ export class QueryRegistry {
         }
     }
 
+    /**
+     * Connect with the Websocket server.
+     * @static
+     * @param {string} websocketURL - The URL of the websocket server.
+     * @memberof QueryRegistry
+     */
     static async connect_with_server(websocketURL: string) {
         this.client.connect(websocketURL, 'solid-stream-aggregator-protocol');
         this.client.on('connect', (connection: typeof websocketConnection) => {
