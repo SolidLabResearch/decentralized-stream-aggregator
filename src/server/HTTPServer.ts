@@ -63,6 +63,7 @@ export class HTTPServer {
                 break;
             case "POST":
                 // TODO : bug that the notification is sent more than once from the solid server.
+                // Relevant issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/33
                 req.on('data', (chunk: Buffer) => {
                     body = body + chunk.toString();
                 });

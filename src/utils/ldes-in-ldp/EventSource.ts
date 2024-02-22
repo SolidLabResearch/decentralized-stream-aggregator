@@ -327,7 +327,7 @@ export async function readRateLimited(ldes: LDESinLDP, resource_identifier: stri
         console.error(`Error reading resource: ${resource_identifier}`, error);
         if (error instanceof Error) {
             if (error.message.includes('Resource not found')) {
-                console.log(`Resource not found: ${resource_identifier}`);
+                console.log(`Resource not found: ${resource_identifier}`);OD
             }
         }
     }
