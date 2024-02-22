@@ -166,7 +166,6 @@ export async function addResourcesToBuckets(bucketResources: BucketResources, me
         for (const resource of bucketResources[containerURL]) {
             const response = await ldpComm.post(containerURL, storeToString(new Store(resource)));
             console.log(`Resource stored at: ${response.headers.get('location')} | status: ${response.status}`)
-            // TODO: handle when status is not 201 (Http Created)
         }
     }
 }

@@ -106,6 +106,7 @@ export class AggregationDispatcher {
     public async if_aggregated_events_exist(): Promise<boolean> {
         // TODO : add the feature for query isomorphism here.
         // by creating a mapping between the query and the query hash(es).
+        // Relevant Issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/36
         let aggregated_events_exist: boolean = false;
         const parsed_query = parser.parse(this.query);
         const query_streams: string[] = [];

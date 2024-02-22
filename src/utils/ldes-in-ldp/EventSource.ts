@@ -311,6 +311,7 @@ export async function* readPageRateLimited(ldes: LDESinLDP, fragment_url: string
 export async function readRateLimited(ldes: LDESinLDP, resource_identifier: string, rate_limit_comm: RateLimitedLDPCommunication) {
     try {
         // TODO : check for headers, as well as error handling. check if you can increase the timeout for the get request as some resources might take longer to load (due to large files, slow server, etc.)
+        // relevant issue: https://github.com/SolidLabResearch/solid-stream-aggregator/issues/35
         const response = await rate_limit_comm.get(resource_identifier);
         if (response && response.status !== 200) {
             throw new Error(`Resource not found: ${resource_identifier}`);
@@ -327,7 +328,7 @@ export async function readRateLimited(ldes: LDESinLDP, resource_identifier: stri
         console.error(`Error reading resource: ${resource_identifier}`, error);
         if (error instanceof Error) {
             if (error.message.includes('Resource not found')) {
-                console.log(`Resource not found: ${resource_identifier}`);OD
+                console.log(`Resource not found: ${resource_identifier}`);
             }
         }
     }

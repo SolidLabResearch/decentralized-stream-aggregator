@@ -103,6 +103,7 @@ export class AggregatorInstantiator {
     }
 
     // TODO : add extra projection variables to the aggregation event.
+    // Relevant Issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/34
     /**
      * Generate an aggregation event.
      * @param {string} value - The value of the aggregation event.

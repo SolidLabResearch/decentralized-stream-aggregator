@@ -363,6 +363,7 @@ export class DecentralizedFileStreamer {
         for (let i = 0; i < sorted_queue.size(); i++) {
             const element = sorted_queue.dequeue();
             // TODO : extract the timestamp from the element and add it to the RSP Engine.
+            // Relevant Issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/37
             if (this.stream_name !== undefined && element !== undefined) {
                 this.stream_name?.add(element, Date.now());
             }

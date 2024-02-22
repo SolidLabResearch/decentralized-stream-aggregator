@@ -64,7 +64,6 @@ export class QueryRegistry {
         else {
             /*
             The query is already computed and stored in the Solid Stream Aggregator's Solid Pod. So, read from there and send via a websocket.
-            TODO : make a result dispatcher module.
             */
             logger.info({}, 'query_is_not_unique');
             this.logger.debug(`The query you have registered is already executing.`);

@@ -93,7 +93,6 @@ export function quick_sort(arr: string[]): string[] {
     return [...quick_sort(left), ...equal, ...quick_sort(right)];
 }
 
-// TODO: sort it on the hashmap but will be faster.
 
 /**
  * Sort an array using the insertion sort algorithm.
