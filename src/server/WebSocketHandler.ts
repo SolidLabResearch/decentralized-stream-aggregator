@@ -66,16 +66,8 @@ export class WebSocketHandler {
                     const ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
                         this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
-                        const query: string = ws_message.query;
-                        const parsed = this.parser.parse(query);
-                        const pod_url = parsed.s2r[0].stream_name;
-                        const interest_metric = new AggregationFocusExtractor(query).extract_focus();
-                        const streams = await find_relevant_streams(pod_url, [interest_metric])
-                        const ldes_stream = streams[0];
-                        const ldes_query = query.replace(pod_url, ldes_stream);
-                        const width = parsed.s2r[0].width;
-                        const query_hashed = hash_string_md5(ldes_query);
-                        this.connections.set(query_hashed, connection);
+                        const { ldes_query, query_hashed, width } = await this.preprocess_query(ws_message.query)
+                        this.set_connections(query_hashed, connection);
                         this.process_query(ldes_query, width);
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
@@ -250,4 +242,36 @@ export class WebSocketHandler {
             ws.send(JSON.stringify({ "test": "test", "query": query }));
         }
     }
+
+    /**
+     * Preprocess the query to find the relevant LDES stream from the Type Index of the Solid Pod.
+     * @param {string} query - The query to be preprocessed which was received from the client.
+     * @returns {Promise<{ ldes_query: string, query_hashed: string, width: number }>} - The preprocessed query (which now contains the LDES stream instead of just the pod), the hashed query and the width of the window.
+     * @memberof WebSocketHandler
+     */
+    public async preprocess_query(query: string): Promise<{ ldes_query: string, query_hashed: string, width: number }> {
+        const parsed = this.parser.parse(query);
+        const pod_url = parsed.s2r[0].stream_name;
+        const interest_metric = new AggregationFocusExtractor(query).extract_focus();
+        const streams = await find_relevant_streams(pod_url, [interest_metric]);
+        const ldes_stream = streams[0];
+        const ldes_query = query.replace(pod_url, ldes_stream);
+        const width = parsed.s2r[0].width;
+        const query_hashed = hash_string_md5(ldes_query);
+        return { ldes_query, query_hashed, width };
+    }
+    /**
+     * Set the connections for the given query.
+     * @param {string} query_hashed - The hashed query.
+     * @param {WebSocket} connection - The Websocket connection to be set for the query (to be associated with the query).
+     * @returns {void} - Nothing, just sets the connection for the query in the connections map.
+     * @memberof WebSocketHandler
+     */
+    public set_connections(query_hashed: string, connection: WebSocket): void {
+        this.connections.set(query_hashed, connection);
+    }
+
+    public get_connections(): Map<string, WebSocket> { 
+        return this.connections;
+     }
 }
