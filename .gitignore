@@ -110,4 +110,5 @@ src/utils/DecentralizedFileStreamer.ts
 src/utils/UpdateLDES.ts
 aggregation-data
 logs/
+componentsjs-error-state.json
 scratch/

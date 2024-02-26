@@ -270,8 +270,12 @@ export class WebSocketHandler {
     public set_connections(query_hashed: string, connection: WebSocket): void {
         this.connections.set(query_hashed, connection);
     }
-
-    public get_connections(): Map<string, WebSocket> { 
+    /**
+     * Get the connections map.
+     * @returns {Map<string, WebSocket>} - The connections map.
+     * @memberof WebSocketHandler
+     */
+    public get_connections(): Map<string, WebSocket> {
         return this.connections;
-     }
+    }
 }
