@@ -80,7 +80,7 @@ export class WriteLockArray<T> {
      * @memberof WriteLockArray
      * @returns {void} - Deletes all items from the array.
      */
-    delete_all_items() {
+    delete_all_items(): void {
         this.array = [];
     }
 }

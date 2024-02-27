@@ -1,59 +1,100 @@
-import { HTTPServer } from './HTTPServer';
+// import { CSSServer } from "./CSSServer";
+// import { HTTPServer } from "./HTTPServer";
+
+// describe('HTTPServer', () => {
+//   const port: number = 8080;
+//   let css_server: CSSServer = new CSSServer();
+//   let http_server: HTTPServer;
+//   beforeEach(() => {
+//     css_server.start('scripts/pod/config/unsafe.json');
+//     http_server = new HTTPServer(port, 'http://localhost:3000', {});
+//   });
+//   afterEach(() => {
+//     css_server.stop();
+//   });
+
+
+//   it('handles GET requests', () => {
+//     // Test that the request_handler method handles GET requests
+//   HTTPServer.    
+//   });
+// });
+import { HttpError } from "koa";
+import { CSSServer } from "./CSSServer";
+import { HTTPServer } from "./HTTPServer";
 
 describe('HTTPServer', () => {
-  let httpServer: HTTPServer;
-
+  const port: number = 8080;
+  let css_server: CSSServer = new CSSServer();
+  let http_server: HTTPServer;
   beforeEach(() => {
-    // Mock values
-    const httpPort = 8080;
-    const solidServerUrl = 'http://example.com';
-    const logger = jest.fn();
-
-    httpServer = new HTTPServer(httpPort, solidServerUrl, logger);
+    css_server.start('scripts/pod/config/unsafe.json');
+    http_server = new HTTPServer(port, 'http://localhost:3000', {});
   });
-
   afterEach(() => {
-    // Cleanup code if needed
+    css_server.stop();
+    http_server.close();
   });
 
-  it('should handle GET requests', () => {
-    // Mock request and response objects
-    const req = {} as any;
-    const res = {
+  it('handles GET requests', () => {
+    // Test that the request_handler method handles GET requests
+    const req: any = {
+      method: 'GET',
+      url: '/test'
+    };
+    const res: any = {
       setHeader: jest.fn(),
-      end: jest.fn(),
-    } as any;
-
-    // Call the request handler
-    httpServer['request_handler'](req, res);
-
-    // Assert the response
+      end: jest.fn()
+    };
+    http_server['request_handler'](req, res);
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'OPTIONS, GET');
-    // Add more assertions as needed
+    expect(res.end).toHaveBeenCalled();
   });
 
-  it('should handle POST requests', () => {
-    // Mock request and response objects
-    const req = {
+  it('handles POST requests', () => {
+    // Test that the request_handler method handles POST requests
+    const req: any = {
       method: 'POST',
       url: '/registerQuery',
-      on: jest.fn(),
-    } as any;
-    const res = {
+      on: jest.fn((event: string, callback: any) => {
+        if (event === 'data') {
+          callback(Buffer.from(JSON.stringify({ type: 'Add' })));
+        } else if (event === 'end') {
+          callback();
+        }
+      })
+    };
+    const res: any = {
       setHeader: jest.fn(),
       writeHead: jest.fn(),
-      end: jest.fn(),
-    } as any;
-
-    // Call the request handler
-    httpServer['request_handler'](req, res);
-
-    // Assert the response
+      end: jest.fn()
+    };
+    http_server['request_handler'](req, res);
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'OPTIONS, GET');
-    // Add more assertions as needed
+    expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Headers', 'Content-Type');
+    expect(res.writeHead).toHaveBeenCalledWith(200, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'OPTIONS, GET',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Length': 0
+    });
+    expect(res.end).toHaveBeenCalled();
   });
 
-  // Add more test cases as needed
+  it('handles unsupported requests', () => {
+    // Test that the request_handler method handles unsupported requests
+    const req: any = {
+      method: 'PUT',
+      url: '/test'
+    };
+    const res: any = {
+      writeHead: jest.fn(),
+      end: jest.fn()
+    };
+    http_server['request_handler'](req, res);
+    expect(res.writeHead).toHaveBeenCalledWith(405, { 'Content-Type': 'text/plain' });
+    expect(res.end).toHaveBeenCalled();
+  });
 });

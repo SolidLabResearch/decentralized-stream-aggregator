@@ -97,4 +97,12 @@ export class HTTPServer {
         }
         res.end();
     }
+
+    /**
+     * Close the HTTP server.
+     * @memberof HTTPServer
+     */
+    public close() {
+        this.http_server.close();
+    }
 }

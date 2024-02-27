@@ -39,7 +39,7 @@ export class StreamEventQueue<T> {
             timestamp
         });
     }
-    
+
     /**
      * Dequeue an event from the queue.
      * @template T - The type of the event.
