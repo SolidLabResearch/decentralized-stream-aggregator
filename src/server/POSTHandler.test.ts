@@ -1,100 +1,8 @@
 import { POSTHandler } from './POSTHandler';
-import { IncomingMessage, ServerResponse } from 'http';
 import { QueryRegistry } from '../service/query-registry/QueryRegistry';
 describe('POSTHandler', () => {
   describe('handle', () => {
-    it('should handle rspql query', async () => {
-      // Mock dependencies and setup test data
-      const req = {} as IncomingMessage;
-      const res = {} as ServerResponse;
-      const query_registry = {} as QueryRegistry;
-      const solid_server_url = 'http://example.com';
-      const logger = console;
-
-      const body = {
-        query: 'SELECT * WHERE { ?s ?p ?o }',
-        latest_minutes: 10,
-        query_type: 'rspql',
-      };
-      const post_body = JSON.stringify(body);
-
-      // Mock request events
-      req.on = jest.fn().mockImplementation((event, callback) => {
-        if (event === 'data') {
-          callback(Buffer.from(post_body));
-        } else if (event === 'end') {
-          callback();
-        }
-      });
-
-      // Call the handle method
-      await POSTHandler.handle(req, res, query_registry, solid_server_url, logger);
-
-      // Assert the expected behavior
-      // Add your assertions here
-    });
-
-    it('should handle sparql query', async () => {
-      // Mock dependencies and setup test data
-      const req = {} as IncomingMessage;
-      const res = {} as ServerResponse;
-      const query_registry = {} as QueryRegistry;
-      const solid_server_url = 'http://example.com';
-      const logger = console;
-
-      const body = {
-        query: 'SELECT * WHERE { ?s ?p ?o }',
-        latest_minutes: 10,
-        query_type: 'sparql',
-      };
-      const post_body = JSON.stringify(body);
-
-      // Mock request events
-      req.on = jest.fn().mockImplementation((event, callback) => {
-        if (event === 'data') {
-          callback(Buffer.from(post_body));
-        } else if (event === 'end') {
-          callback();
-        }
-      });
-
-      // Call the handle method
-      await POSTHandler.handle(req, res, query_registry, solid_server_url, logger);
-
-      // Assert the expected behavior
-      // Add your assertions here
-    });
-
-    it('should handle other query types', async () => {
-      // Mock dependencies and setup test data
-      const req = {} as IncomingMessage;
-      const res = {} as ServerResponse;
-      const query_registry = {} as QueryRegistry;
-      const solid_server_url = 'http://example.com';
-      const logger = console;
-
-      const body = {
-        query: 'SELECT * WHERE { ?s ?p ?o }',
-        latest_minutes: 10,
-        query_type: 'other',
-      };
-      const post_body = JSON.stringify(body);
-
-      // Mock request events
-      req.on = jest.fn().mockImplementation((event, callback) => {
-        if (event === 'data') {
-          callback(Buffer.from(post_body));
-        } else if (event === 'end') {
-          callback();
-        }
-      });
-
-      // Call the handle method
-      await POSTHandler.handle(req, res, query_registry, solid_server_url, logger);
-
-      // Assert the expected behavior
-      // Add your assertions here
-    });
+    
   });
 
   describe('handle_ws_query', () => {
@@ -107,7 +15,7 @@ describe('POSTHandler', () => {
       const websocket_connections = new Map();
 
       // Call the handle_ws_query method
-      await POSTHandler.handle_ws_query(query, width, query_registry, logger, websocket_connections);
+      await POSTHandler.handle_ws_query(query, width, query_registry, logger, websocket_connections, 'rspql', {});
 
       // Assert the expected behavior
       // Add your assertions here

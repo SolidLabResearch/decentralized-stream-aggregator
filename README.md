@@ -32,8 +32,10 @@ The command will start the Solid Stream Aggregator on the port 8080. The Solid S
 - The protocol to communicate to the Solid Stream Aggregator is by sending a RSP-QL query to the Aggregator.
 ```ts
 let message = {
+    // The query to be sent to the Solid Stream Aggregator (RSP-QL query)
     query: `INSERT YOUR QUERY HERE`,
-    queryID: `INSERT YOUR QUERY ID HERE`,
+    // The type of mointoring query can be either, `historical+live` or `live`
+    type: `INSERT YOUR TYPE HERE`
 }
 ```
 and send this message object to the aggregator using the WebSocket connection.

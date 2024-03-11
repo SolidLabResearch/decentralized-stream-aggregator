@@ -1,31 +1,9 @@
-// import { CSSServer } from "./CSSServer";
-// import { HTTPServer } from "./HTTPServer";
-
-// describe('HTTPServer', () => {
-//   const port: number = 8080;
-//   let css_server: CSSServer = new CSSServer();
-//   let http_server: HTTPServer;
-//   beforeEach(() => {
-//     css_server.start('scripts/pod/config/unsafe.json');
-//     http_server = new HTTPServer(port, 'http://localhost:3000', {});
-//   });
-//   afterEach(() => {
-//     css_server.stop();
-//   });
-
-
-//   it('handles GET requests', () => {
-//     // Test that the request_handler method handles GET requests
-//   HTTPServer.    
-//   });
-// });
-import { HttpError } from "koa";
 import { CSSServer } from "./CSSServer";
 import { HTTPServer } from "./HTTPServer";
 
 describe('HTTPServer', () => {
   const port: number = 8080;
-  let css_server: CSSServer = new CSSServer();
+  const css_server: CSSServer = new CSSServer();
   let http_server: HTTPServer;
   beforeEach(() => {
     css_server.start('scripts/pod/config/unsafe.json');

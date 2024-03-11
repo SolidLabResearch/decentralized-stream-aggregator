@@ -6,6 +6,8 @@ import { EventEmitter } from "events";
 import * as CREDENTIALS from '../../config/PodToken.json';
 import { BindingsWithTimestamp } from "../../utils/Types";
 import { hash_string_md5 } from "../../utils/Util";
+import { Credentials, aggregation_object } from "../../utils/Types";
+import { NotificationStreamProcessor } from "./NotificationStreamProcessor";
 const WebSocketClient = require('websocket').client;
 const websocketConnection = require('websocket').connection;
 const parser = new RSPQLParser();
@@ -17,6 +19,7 @@ export class AggregatorInstantiator {
     public query: string;
     public rsp_engine: RSPEngine;
     public rsp_emitter: EventEmitter;
+    public event_emitter: EventEmitter;
     public from_date: Date;
     public stream_array: string[];
     public hash_string: string;
@@ -30,11 +33,14 @@ export class AggregatorInstantiator {
      * @param {number} from_timestamp - The timestamp from where the query is to be executed.
      * @param {number} to_timestamp - The timestamp to where the query is to be executed.
      * @param {*} logger - The logger object.
+     * @param {string} query_type - The type of the query (either 'historical+live' or just 'live').
+     * @param {any} event_emitter - The event emitter object.
      * @memberof AggregatorInstantiator
      */
-    public constructor(query: string, from_timestamp: number, to_timestamp: number, logger: any) {
+    public constructor(query: string, from_timestamp: number, to_timestamp: number, logger: any, query_type: string, event_emitter: any) {
         this.query = query;
         this.logger = logger;
+        this.event_emitter = event_emitter;
         this.hash_string = hash_string_md5(query);
         this.rsp_engine = new RSPEngine(query);
         this.from_date = new Date(from_timestamp);
@@ -45,26 +51,42 @@ export class AggregatorInstantiator {
             this.stream_array.push(stream.stream_name);
         });
         this.rsp_emitter = this.rsp_engine.register();
-        this.intiateDecentralizedFileStreamer();
+        this.initializeProcessing(query_type);
     }
+
     /**
-     * Initiate the Decentralized File Streamer for the LDES in the Solid Pod and then initialize the subscription to the RStream of the RSP Engine.
-     * @returns {Promise<boolean>} - The promise of the initiation of the Decentralized File Streamer, which is true if it is initiated, and false if it is not initiated.
+     * Initialize the processing of the query.
+     * @param {string} query_type - The type of the query (either 'historical+live' or just 'live').
+     * @returns {Promise<boolean>} - Returns true if the processing is successful, otherwise false.
      * @memberof AggregatorInstantiator
      */
-    public async intiateDecentralizedFileStreamer(): Promise<boolean> {
+    public async initializeProcessing(query_type: string): Promise<boolean> {
         const query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
         if (this.stream_array.length !== 0) {
-            for (const stream of this.stream_array) {
-                const session_credentials = this.get_session_credentials(stream);
-                this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
-                new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+            if (query_type === 'historial+live') {
+                for (const stream of this.stream_array) {
+                    const session_credentials = this.get_session_credentials(stream);
+                    this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
+                    new DecentralizedFileStreamer(stream, session_credentials, this.from_date, this.to_date, this.rsp_engine, this.query, this.logger);
+                }
+                this.subscribeRStream();
+                return true;
             }
-            this.subscribeRStream();
-            return true;
+            else if (query_type === 'live') {
+                for (const stream of this.stream_array) {
+                    this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
+                    new NotificationStreamProcessor(stream, this.logger, this.rsp_engine, this.event_emitter);
+
+                }
+                return true;
+            }
+            else {
+                throw new Error('The query type is not currently supported by the Solid Stream Aggregator.');
+            }
         }
         else {
+            console.log(`The stream array is empty. The query is not valid.`);
             return false;
         }
     }
@@ -97,7 +119,6 @@ export class AggregatorInstantiator {
                     const aggregation_object_string = JSON.stringify(aggregation_object);
                     this.sendToServer(aggregation_object_string);
                 }
-
             })
         });
     }
@@ -180,18 +201,3 @@ export class AggregatorInstantiator {
     }
 
 }
-
-export type aggregation_object = {
-    query_hash: string,
-    aggregation_event: string,
-    aggregation_window_from: Date,
-    aggregation_window_to: Date
-}
-
-export type Credentials = {
-    [key: string]: {
-        id: string;
-        secret: string;
-        idp: string;
-    };
-};

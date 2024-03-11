@@ -45,3 +45,24 @@ export type aggregationDispatcherType = {
     from ?: Date,
     to ?: Date
 }
+
+export type SubscriptionServerNotification = {
+    location: string,
+    channelType: string,
+    channelLocation: string
+}
+
+export type aggregation_object = {
+    query_hash: string,
+    aggregation_event: string,
+    aggregation_window_from: Date,
+    aggregation_window_to: Date
+}
+
+export type Credentials = {
+    [key: string]: {
+        id: string;
+        secret: string;
+        idp: string;
+    };
+};

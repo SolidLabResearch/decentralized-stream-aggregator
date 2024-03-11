@@ -66,9 +66,15 @@ export class WebSocketHandler {
                     const ws_message = JSON.parse(message_utf8);
                     if (Object.keys(ws_message).includes('query')) {
                         this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
-                        const { ldes_query, query_hashed, width } = await this.preprocess_query(ws_message.query)
-                        this.set_connections(query_hashed, connection);
-                        this.process_query(ldes_query, width);
+                        const query_type = ws_message.type;
+                        if (query_type === 'historical+live' || query_type === 'live') {
+                            const { ldes_query, query_hashed, width } = await this.preprocess_query(ws_message.query);
+                            this.set_connections(query_hashed, connection);
+                            this.process_query(ldes_query, width, query_type, this.event_emitter);
+                        }
+                        else {
+                            throw new Error(`The type of Query is not supported/handled. The type of query is: ${ws_message.type}`);
+                        }
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         const query_hash = ws_message.query_hash;
@@ -226,10 +232,12 @@ export class WebSocketHandler {
      * Process the query and send the result to the client.
      * @param {string} query - The query to be processed (RSP-QL query).
      * @param {number} width - The width of the window to be processed.
+     * @param {string} query_type - The type of the query (historical+live or live).
+     * @param {EventEmitter} event_emitter - The event emitter object.
      * @memberof WebSocketHandler
      */
-    public process_query(query: string, width: number) {
-        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections);
+    public process_query(query: string, width: number, query_type: string, event_emitter: EventEmitter) {
+        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections, query_type, event_emitter);
     }
     /**
      * Send a test message to the client.
@@ -256,6 +264,8 @@ export class WebSocketHandler {
         const streams = await find_relevant_streams(pod_url, [interest_metric]);
         const ldes_stream = streams[0];
         const ldes_query = query.replace(pod_url, ldes_stream);
+        // Only for testing purposes where there is no type index document present in the Solid Pod.
+        // const ldes_query = query;
         const width = parsed.s2r[0].width;
         const query_hashed = hash_string_md5(ldes_query);
         return { ldes_query, query_hashed, width };

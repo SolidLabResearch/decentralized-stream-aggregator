@@ -2,11 +2,9 @@ import { createServer, ServerResponse, IncomingMessage, Server } from "http";
 import { GETHandler } from "./GETHandler";
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
-import { POSTHandler } from "./POSTHandler";
 import { WebSocketHandler } from "./WebSocketHandler";
 import * as websocket from 'websocket';
 const EventEmitter = require('events');
-const event_emitter = new EventEmitter();
 /**
  * Class for the HTTP Server.
  * @class HTTPServer
@@ -20,6 +18,7 @@ export class HTTPServer {
     public websocket_server: any;
     public aggregation_publisher: any;
     public websocket_handler: any;
+    public event_emitter: any;
     /**
      * Creates an instance of HTTPServer.
      * @param {number} http_port - The port on which the HTTP server is to be started.
@@ -38,8 +37,9 @@ export class HTTPServer {
 
         this.http_server.keepAliveTimeout = 6000;
         this.aggregation_publisher = new LDESPublisher();
+        this.event_emitter = new EventEmitter();
         this.query_registry = new QueryRegistry();
-        this.websocket_handler = new WebSocketHandler(this.websocket_server, event_emitter, this.aggregation_publisher, this.logger);
+        this.websocket_handler = new WebSocketHandler(this.websocket_server, this.event_emitter, this.aggregation_publisher, this.logger);
         this.websocket_handler.handle_wss();
         this.websocket_handler.aggregation_event_publisher();
         this.logger.info({}, 'http_server_started');
@@ -68,19 +68,24 @@ export class HTTPServer {
                     body = body + chunk.toString();
                 });
 
-                req.on('end', () => {
+                req.on('end', async () => {
                     const webhook_notification_data = JSON.parse(body);
                     if (webhook_notification_data.type === 'Add') {
-                        const notification = {
-                            "type": "latest_event_notification",
-                            "data": webhook_notification_data
-                        }
-                        event_emitter.emit(notification);
+                        // the target is where a new notification is added into the ldes stream.
+                        // LDES stream can be found by stripping the inbox from the target with the slash semantics as described in the Solid Protocol.
+                        const inbox_where_event_is_added = webhook_notification_data.target;
+                        const ldes_stream_where_event_is_added = inbox_where_event_is_added.replace(/\/\d+\/$/, '/');
+                        const added_event_location = webhook_notification_data.object;
+                        const latest_event_response = await fetch(added_event_location, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'text/turtle'
+                            }
+                        });
+                        const latest_event = await latest_event_response.text();
+                        this.event_emitter.emit(`${ldes_stream_where_event_is_added}`, latest_event);
                     }
                 });
-                if (req.url === '/registerQuery') {
-                    POSTHandler.handle(req, res, this.query_registry, this.solid_server_url, this.logger);
-                }
                 break;
             default:
                 res.writeHead(405, { 'Content-Type': 'text/plain' });

@@ -14,6 +14,7 @@ import { RateLimitedLDPCommunication } from "rate-limited-ldp-communication";
 import { hash_string_md5 } from "../../utils/Util";
 import { TREE } from "@treecg/ldes-snapshot";
 import { Session } from "@inrupt/solid-client-authn-node";
+import { create_subscription, extract_ldp_inbox, extract_subscription_server } from "../../utils/notifications/Util";
 /**
  * Class for streaming the events from the Solid Pod to the RSP Engine by reading the events and converting the events stored into files into a stream.
  * @class DecentralizedFileStreamer
@@ -59,6 +60,7 @@ export class DecentralizedFileStreamer {
         this.stream_name = rsp_engine.getStream(this.ldes_stream);
         this.comunica_engine = new QueryEngine();
         this.observation_array = [];
+        this.subscribing_latest_events(this.stream_name);
         DecentralizedFileStreamer.connect_with_server('ws://localhost:8080/').then(() => {
             console.log(`The connection with the websocket server was established.`);
         });
@@ -148,7 +150,7 @@ export class DecentralizedFileStreamer {
             const timestamp_epoch = Date.parse(timestamp);
             if (this.stream_name) {
                 this.logger.info({ query_id: this.query_hash }, `event_added_to_rsp_engine for ${this.ldes_stream}`)
-                await this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp_epoch);
+                this.add_event_to_rsp_engine(member_store, [this.stream_name], timestamp_epoch);
             }
         });
 
@@ -232,47 +234,35 @@ export class DecentralizedFileStreamer {
      * @param {RDFStream} stream_name - The name of the RDF stream generated from the Solid Pod.
      * @memberof DecentralizedFileStreamer
      */
-    async subscribing_latest_events(stream_name: RDFStream) {
-        console.log(`Subscribing to the latest events of the stream ${stream_name}`);
-        // const inbox = await this.get_inbox_container(this.ldes_stream);
-        // let stream_subscription_ws = await this.get_stream_subscription_websocket_url(this.ldes_stream);
-        // const stream_websocket = new WebSocket(stream_subscription_ws);
-        // stream_websocket.onmessage = async (event: any) => {
-        //     this.notification_listening_time = Date.now();
-        //     const parsed = JSON.parse(event.data);
-        //     inbox = parsed.object;
-        //     if (inbox !== undefined) {
-        //         let subscription_ws = await this. url(this.ldes_stream, inbox);
-        //         const websocket = new WebSocket(subscription_ws);
-        //         websocket.onmessage = async (event: any) => {
-        //             const parsed = JSON.parse(event.data);
-        //             let resource_url = parsed.object;
-        //             let resource = await ldfetch.get(resource_url);
-        //             let resource_store = new Store(resource.triples);
-        //             const binding_stream = await this.comunica_engine.queryBindings(`
-        //             PREFIX saref: <https://saref.etsi.org/core/>
-        //             SELECT ?time WHERE {
-        //                 ?s saref:hasTimestamp ?time .
-        //             }
-        //             `, {
-        //                 sources: [resource_store]
-        //             });
-
-        //             binding_stream.on('data', async (bindings: Bindings) => {
-        //                 let time = bindings.get('time');
-        //                 if (time !== undefined) {
-        //                     let timestamp = await this.epoch(time.value);
-        //                     this.missing_event_queue.enqueue(resource_store.getQuads(), timestamp);
-        //                 }
-        //             });
-
-        //             let sorted_queue = quick_sort_queue(this.missing_event_queue);
-        //             this.add_event_store_to_rsp_engine(resource_store, [stream_name]);
-        //         };
-        //     }
-        // }
-
+    async subscribing_latest_events(stream_name: RDFStream | undefined) {
+        if (stream_name !== undefined) {
+            console.log(`Subscribing to the latest events of the stream`, stream_name);
+            const inbox = await extract_ldp_inbox(this.ldes_stream);            
+            if (inbox !== undefined) {
+                const subscription_server = await extract_subscription_server(inbox);
+                if (subscription_server !== undefined) {
+                    const server = subscription_server.location;
+                    const response_subscription = await create_subscription(server, inbox);
+                    if (response_subscription) {
+                        this.logger.info(`The subscription has been succesful.`);
+                    } else {
+                        this.logger.error('Error while creating the subscription. The response object is empty.');
+                    }
+                } else {
+                    console.log(`The subscription server is undefined.`);
+                    this.logger.error({ query_id: this.query_hash }, `The subscription server is undefined.`);
+                }
+            } else {
+                console.log(`The inbox for subscribing to the latest events is undefined.`);
+                this.logger.error({ query_id: this.query_hash }, `The inbox for subscribing to the latest events is undefined.`);
+            }
+        }
+        else {
+            this.logger.error(`The stream name is not defined, thus can't subscribe to the latest events.`);
+        }
     }
+    
+
     /**
      * Get the inbox container from the LDP container or return undefined if the inbox container does not exist.
      * @param {string} stream - The LDES in LDP URL.

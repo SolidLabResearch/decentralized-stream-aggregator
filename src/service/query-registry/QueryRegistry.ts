@@ -49,16 +49,18 @@ export class QueryRegistry {
      * @param {number} from_timestamp - The timestamp from where the query is to be executed.
      * @param {number} to_timestamp - The timestamp to where the query is to be executed.
      * @param {any} logger - The logger object.
+     * @param {string} query_type - The type of the query (either 'historical+live' or just 'live').
+     * @param {any} event_emitter - The event emitter object.
      * @returns {Promise<boolean>} - Returns true if the query is unique, otherwise false.
      * @memberof QueryRegistry
      */
-    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any): Promise<boolean> {
+    async register_query(rspql_query: string, query_registry: QueryRegistry, from_timestamp: number, to_timestamp: number, logger: any, query_type: any, event_emitter: any): Promise<boolean> {
         if (await query_registry.add_query_in_registry(rspql_query, logger)) {
             /*
             The query is not already executing or computed ; it is unique. So, just compute it and send it via the websocket.
             */
             logger.info({}, 'query_is_unique');
-            new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp, logger);
+            new AggregatorInstantiator(rspql_query, from_timestamp, to_timestamp, logger, query_type, event_emitter);
             return true;
         }
         else {
