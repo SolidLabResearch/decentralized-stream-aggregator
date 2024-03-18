@@ -77,8 +77,8 @@ export class AggregatorInstantiator {
                 for (const stream of this.stream_array) {
                     this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
                     new NotificationStreamProcessor(stream, this.logger, this.rsp_engine, this.event_emitter);
-
                 }
+                this.subscribeRStream();
                 return true;
             }
             else {

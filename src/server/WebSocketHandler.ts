@@ -16,7 +16,7 @@ export class WebSocketHandler {
 
     private aggregation_resource_list: any[];
     private readonly aggregation_resource_list_batch_size: number = CONFIG.BUCKET_SIZE;
-    private connections: Map<string, WebSocket>;
+    private connections: Map<string, WebSocket[]>;
     private parser: RSPQLParser;
     private n3_parser: Parser;
     public websocket_server: WebSocket.server;
@@ -38,7 +38,7 @@ export class WebSocketHandler {
         this.websocket_server = websocket_server;
         this.event_emitter = event_emitter;
         this.aggregation_publisher = aggregation_publisher;
-        this.connections = new Map<string, WebSocket>();
+        this.connections = new Map<string, WebSocket[]>();
         this.parser = new RSPQLParser();
         this.query_registry = new QueryRegistry();
         this.n3_parser = new Parser({ format: 'N-Triples' });
@@ -78,23 +78,24 @@ export class WebSocketHandler {
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
                         const query_hash = ws_message.query_hash;
-                        for (const [key, value] of this.connections) {
-                            if (key === query_hash) {
-                                this.publish_aggregation_event(ws_message, this.aggregation_publisher);
-                                value.send(JSON.stringify(ws_message));
-                                this.logger.info({ query_id: query_hash }, `aggregation_event_sent_to_client`);
+                        for (const [query, connections] of this.connections) {
+                            if (query === query_hash) {
+                                for (const connection of connections) {
+                                    connection.send(JSON.stringify(ws_message));
+                                }
                             }
                         }
                     }
                     else if (Object.keys(ws_message).includes('status')) {
                         const query_hash = ws_message.query_hash;
-                        for (const [key, value] of this.connections) {
-                            if (key === query_hash) {
-                                value.send(JSON.stringify(ws_message));
+                        for (const [query, connections] of this.connections) {
+                            if (query === query_hash) {
+                                for (const connection of connections) {
+                                    connection.send(JSON.stringify(ws_message));
+                                }
                             }
                         }
                     }
-
                     else if (Object.keys(ws_message).includes('type')) {
                         console.log(ws_message);
                     }
@@ -122,9 +123,11 @@ export class WebSocketHandler {
         this.event_emitter.on('aggregation_event', (object: string) => {
             const event = JSON.parse(object)
             const query_id = event.query_hash;
-            const connection = this.connections.get(query_id);
-            if (connection) {
-                connection.send(event.aggregation_event);
+            const connections = this.connections.get(query_id);
+            if (connections !== undefined) {
+                for (const connection of connections) {
+                    connection.send(event.aggregation_event);
+                }
             }
         });
     }
@@ -205,26 +208,20 @@ export class WebSocketHandler {
         });
     }
     /**
-     * Associate a Websocket channel with the query.
-     * @param {string} query_id - The id of the query.
-     * @param {WebSocket} ws - The Websocket channel to be associated with the query.
-     * @memberof WebSocketHandler
-     */
-    public associate_channel_with_query(query_id: string, ws: WebSocket) {
-        this.connections.set(query_id, ws);
-    }
-    /**
      * Send the result to the client for the given query.
      * @param {string} query_id - The id of the query.
      * @param {*} result - The result to be sent (the aggregation result).
      * @memberof WebSocketHandler
      */
     public send_result_to_client(query_id: string, result: any) {
-        const ws = this.connections.get(query_id);
-        if (ws) {
-            ws.send(JSON.stringify(result));
+        const websocket_clients = this.connections.get(query_id);
+        if (websocket_clients !== undefined) {
+            for (const client of websocket_clients) {
+                client.send(JSON.stringify(result));
+            }
         }
         else {
+            console.log(`There is no websocket connection available for the query`);
             this.logger.debug(`No connection found for query id: ${query_id}`);
         }
     }
@@ -239,17 +236,6 @@ export class WebSocketHandler {
     public process_query(query: string, width: number, query_type: string, event_emitter: EventEmitter) {
         POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections, query_type, event_emitter);
     }
-    /**
-     * Send a test message to the client.
-     * @param {string} query - The query to which the test message is to be sent.
-     * @memberof WebSocketHandler
-     */
-    public send_test(query: string) {
-        const ws = this.connections.get(query);
-        if (ws) {
-            ws.send(JSON.stringify({ "test": "test", "query": query }));
-        }
-    }
 
     /**
      * Preprocess the query to find the relevant LDES stream from the Type Index of the Solid Pod.
@@ -263,9 +249,9 @@ export class WebSocketHandler {
         const interest_metric = new AggregationFocusExtractor(query).extract_focus();
         const streams = await find_relevant_streams(pod_url, [interest_metric]);
         const ldes_stream = streams[0];
-        const ldes_query = query.replace(pod_url, ldes_stream);
+        // const ldes_query = query.replace(pod_url, ldes_stream);
         // Only for testing purposes where there is no type index document present in the Solid Pod.
-        // const ldes_query = query;
+        const ldes_query = query;
         const width = parsed.s2r[0].width;
         const query_hashed = hash_string_md5(ldes_query);
         return { ldes_query, query_hashed, width };
@@ -278,14 +264,15 @@ export class WebSocketHandler {
      * @memberof WebSocketHandler
      */
     public set_connections(query_hashed: string, connection: WebSocket): void {
-        this.connections.set(query_hashed, connection);
-    }
-    /**
-     * Get the connections map.
-     * @returns {Map<string, WebSocket>} - The connections map.
-     * @memberof WebSocketHandler
-     */
-    public get_connections(): Map<string, WebSocket> {
-        return this.connections;
+        if (!this.connections.has(query_hashed)) {
+            this.connections.set(query_hashed, [connection]);
+        }
+        else {
+            const connections = this.connections.get(query_hashed);
+            if (connections !== undefined) {
+                connections.push(connection);
+                this.connections.set(query_hashed, connections);
+            }
+        }
     }
 }

@@ -112,3 +112,5 @@ aggregation-data
 logs/
 componentsjs-error-state.json
 scratch/
+.internal/
+.vscode/
