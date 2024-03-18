@@ -54,15 +54,17 @@ export class POSTHandler {
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
-            for (const [query, websocket_connection] of websocket_connections) {
+            for (const [query, connections] of websocket_connections) {
                 // make it work such that you get the messages directly rather than the location of the websocket connection.
                 if (query === query_hashed) {
-                    websocket_connection.send(JSON.stringify(`{
-                        "type": "status",
-                        "status": "duplicate_query",
-                        "connection_id": ${websocket_connection}
-                    }`));
-                    logger.info({ query_id: query_hashed }, `duplicate_query`);
+                    for(const connection of connections) {
+                        connection.send(JSON.stringify(`{
+                            "type": "status",
+                            "status": "duplicate_query",
+                            "connection_id": ${connection}
+                        }`));
+                        logger.info({ query_id: query_hashed }, `duplicate_query`);
+                    }
                 }
                 else {
                     const aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
