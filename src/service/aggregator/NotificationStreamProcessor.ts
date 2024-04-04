@@ -45,25 +45,26 @@ export class NotificationStreamProcessor {
             if (inbox !== undefined) {
                 const subscription_server = await extract_subscription_server(inbox);
                 if (subscription_server !== undefined) {
+                    console.log(`The inbox is ${inbox}`);
                     const server = subscription_server.location;
                     const response_subscription = await create_subscription(server, inbox);
                     if (response_subscription) {
-                        this.logger.info(`Subscription to the LDES Stream ${this.ldes_stream} was successful`);
+                        console.log(`Subscription to the LDES Stream ${this.ldes_stream}'s inbox ${inbox} was successful`);
                     }
                     else {
-                        this.logger.error(`Subscription to the LDES Stream ${this.ldes_stream} failed. The response object is empty.`);
+                        console.log(`Subscription to the LDES Stream ${this.ldes_stream} failed. The response object is empty.`);
                     }
                 }
                 else {
-                    this.logger.error(`The subscription server is undefined. The subscription to the LDES Stream ${this.ldes_stream} failed.`)
+                    console.log(`The subscription server is undefined. The subscription to the LDES Stream ${this.ldes_stream} failed.`);
                 }
             }
             else {
-                this.logger.error(`The inbox of the LDES Stream ${this.ldes_stream} is undefined. The subscription to the LDES Stream failed.`)
+                console.log(`The inbox of the LDES Stream ${this.ldes_stream} is undefined. The subscription to the LDES Stream failed.`);
             }
         }
         else {
-            this.logger.error(`The LDES Stream is undefined. The subscription to the LDES Stream failed.`)
+            console.log(`The LDES Stream is undefined. The subscription to the LDES Stream failed.`);
         }
     }
 
@@ -91,6 +92,7 @@ export class NotificationStreamProcessor {
             const timestamp = latest_event_store.getQuads(null, bucket_strategy, null, null)[0].object.value;
             const timestamp_epoch = Date.parse(timestamp);
             if (this.stream_name) {
+                console.log(`Adding the event store to the RSP Engine for the stream ${this.stream_name}`);
                 await this.add_event_store_to_rsp_engine(latest_event_store, [this.stream_name], timestamp_epoch);
             }
         });

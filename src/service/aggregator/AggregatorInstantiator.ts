@@ -64,7 +64,7 @@ export class AggregatorInstantiator {
         const query_hashed = hash_string_md5(this.query);
         console.log(`Initiating LDES Reader for ${this.stream_array}`);
         if (this.stream_array.length !== 0) {
-            if (query_type === 'historial+live') {
+            if (query_type === 'historical+live') {
                 for (const stream of this.stream_array) {
                     const session_credentials = this.get_session_credentials(stream);
                     this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
@@ -74,6 +74,7 @@ export class AggregatorInstantiator {
                 return true;
             }
             else if (query_type === 'live') {
+                console.log(`The query type is live.`);
                 for (const stream of this.stream_array) {
                     this.logger.info({ query_hashed }, `stream_credentials_retrieved`);
                     new NotificationStreamProcessor(stream, this.logger, this.rsp_engine, this.event_emitter);

@@ -22,7 +22,7 @@ export class AggregationFocusExtractor {
         this.parser = new RSPQLParser();
         // Example focus predicates which can or should be changed.
         this.focus_predicates = ['https://saref.etsi.org/core/relatesToProperty', 'https://www.w3.org/2000/01/rdf-schema#range'];
-        this.focus_of_query = {};
+        this.focus_of_query = [];
     }
 
     /**
@@ -39,8 +39,7 @@ export class AggregationFocusExtractor {
             for (let graph_counter = 0; graph_counter < sparql_query_parsed.where[bgp_counter].patterns.length; graph_counter++) {
                 sparql_query_parsed.where[bgp_counter].patterns[graph_counter].triples.forEach((triple: any) => {
                     if (triple.predicate.termType == 'NamedNode' && this.focus_predicates.includes(triple.predicate.value)) {
-                        const focus_name = 'focus_' + (Object.keys(this.focus_of_query).length + 1);
-                        this.focus_of_query[focus_name] = triple.object.value;
+                        this.focus_of_query.push(triple.object.value);
                     }
                 });
             }

@@ -4,7 +4,7 @@ import { EventEmitter } from "events";
 import * as CONFIG from '../config/ldes_properties.json';
 import { LDESPublisher } from "../service/publishing-stream-to-pod/LDESPublisher";
 import { find_relevant_streams, hash_string_md5 } from "../utils/Util";
-import { POSTHandler } from "./POSTHandler";
+import { QueryHandler } from "./QueryHandler";
 import { RSPQLParser } from "../service/parsers/RSPQLParser";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { AggregationFocusExtractor } from "../service/parsers/AggregationFocusExtractor";
@@ -234,7 +234,7 @@ export class WebSocketHandler {
      * @memberof WebSocketHandler
      */
     public process_query(query: string, width: number, query_type: string, event_emitter: EventEmitter) {
-        POSTHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections, query_type, event_emitter);
+        QueryHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections, query_type, event_emitter);
     }
 
     /**
@@ -247,11 +247,9 @@ export class WebSocketHandler {
         const parsed = this.parser.parse(query);
         const pod_url = parsed.s2r[0].stream_name;
         const interest_metric = new AggregationFocusExtractor(query).extract_focus();
-        const streams = await find_relevant_streams(pod_url, [interest_metric]);
+        const streams = await find_relevant_streams(pod_url, interest_metric);
         const ldes_stream = streams[0];
-        // const ldes_query = query.replace(pod_url, ldes_stream);
-        // Only for testing purposes where there is no type index document present in the Solid Pod.
-        const ldes_query = query;
+        const ldes_query = query.replace(pod_url, ldes_stream);
         const width = parsed.s2r[0].width;
         const query_hashed = hash_string_md5(ldes_query);
         return { ldes_query, query_hashed, width };

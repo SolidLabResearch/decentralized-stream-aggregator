@@ -9,22 +9,22 @@ const WebSocketClient = require('websocket').client;
 const N3 = require('n3');
 /**
  * Class for handling the POST request from the client.
- * @class POSTHandler
+ * @class QueryHandler
  */
-export class POSTHandler {
+export class QueryHandler {
     static connection: typeof websocketConnection;
     public static client: any;
     static request_body: RequestBody;
     static sparql_to_rspql: SPARQLToRSPQL;
     /**
-     * Creates an instance of POSTHandler.
-     * @memberof POSTHandler
+     * Creates an instance of QueryHandler.
+     * @memberof QueryHandler
      */
     constructor() {
-        POSTHandler.sparql_to_rspql = new SPARQLToRSPQL();
-        POSTHandler.connection = websocketConnection;
+        QueryHandler.sparql_to_rspql = new SPARQLToRSPQL();
+        QueryHandler.connection = websocketConnection;
 
-        POSTHandler.client = new WebSocketClient();
+        QueryHandler.client = new WebSocketClient();
     }
 
     /**
@@ -40,24 +40,23 @@ export class POSTHandler {
      * @param {any} websocket_connections - The Websocket connections.
      * @param {string} query_type - The type of the query (either historical+live or live).
      * @param {any} event_emitter - The event emitter object.
-     * @memberof POSTHandler
+     * @memberof QueryHandler
      */
-    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any, query_type: string, event_emitter: any) {
+    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any, query_type: string, event_emitter: any) {        
         const aggregation_dispatcher = new AggregationDispatcher(query);
-        // let to_timestamp = new Date().getTime(); // current time
-        // let to_timestamp = new Date("2023-11-15T09:47:09.8120Z").getTime(); // time setup for the testing (the BVP query)
-        const to_timestamp = new Date("2024-02-01T18:14:02.8320Z").getTime(); // time setup for the testing (the SKT query)
+        let to_timestamp = new Date().getTime(); // current time
         const from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
         const query_hashed = hash_string_md5(query);
         const is_query_unique = query_registry.register_query(query, query_registry, from_timestamp, to_timestamp, logger, query_type, event_emitter);
         if (await is_query_unique) {
+            console.log(`The query is unique.`);
             logger.info({ query_id: query_hashed }, `unique_query_registered`);
         } else {
             logger.info({ query_id: query_hashed }, `non_unique_query_registered`);
             for (const [query, connections] of websocket_connections) {
                 // make it work such that you get the messages directly rather than the location of the websocket connection.
                 if (query === query_hashed) {
-                    for(const connection of connections) {
+                    for (const connection of connections) {
                         connection.send(JSON.stringify(`{
                             "type": "status",
                             "status": "duplicate_query",
@@ -93,12 +92,12 @@ export class POSTHandler {
      * Connect with the Websocket server of the Solid Stream Aggregator.
      * @static
      * @param {string} wssURL - The URL of the Websocket server.
-     * @memberof POSTHandler
+     * @memberof QueryHandler
      */
     static async connect_with_server(wssURL: string) {
         this.client.connect(wssURL, 'solid-stream-aggregator-protocol');
         this.client.on('connect', (connection: typeof websocketConnection) => {
-            POSTHandler.connection = connection;
+            QueryHandler.connection = connection;
         });
         this.client.setMaxListeners(Infinity);
         this.client.on('connectFailed', (error: Error) => {
@@ -109,7 +108,7 @@ export class POSTHandler {
      * Send a message to the Websocket server of the Solid Stream Aggregator.
      * @static
      * @param {string} message - The message to be sent to the server.
-     * @memberof POSTHandler
+     * @memberof QueryHandler
      */
     static sendToServer(message: string) {
         if (this.connection.connected) {

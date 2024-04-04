@@ -124,11 +124,11 @@ export function insertion_sort(arr: string[]): string[] {
  * @returns {Promise<string[]>} - The relevant streams.
  */
 export async function find_relevant_streams(solid_pod_url: string, interest_metrics: string[]): Promise<string[]> {
-    const relevant_streams: string[] = [];
+    const relevant_streams: string[] = [];    
     if (await if_exists_relevant_streams(solid_pod_url, interest_metrics)) {
         try {
-            const public_type_index = await find_public_type_index(solid_pod_url);
-            const response = await ld_fetch.get(public_type_index);
+            const public_type_index = await find_public_type_index(solid_pod_url);      
+            const response = await ld_fetch.get(public_type_index);            
             const store = new N3.Store(await response.triples);
             for (const quad of store) {
                 if (quad.predicate.value == "https://w3id.org/tree#view") {
@@ -141,7 +141,9 @@ export async function find_relevant_streams(solid_pod_url: string, interest_metr
             console.log(`Error: ${error}`);
             return relevant_streams;
         }
-
+    }
+    else {
+        console.log(`No relevant streams found in ${solid_pod_url}`);
     }
     return relevant_streams;
 }
@@ -178,18 +180,15 @@ export async function if_exists_relevant_streams(solid_pod_url: string, interest
  * @returns {Promise<string>} - The public type index.
  */
 export async function find_public_type_index(solid_pod_url: string): Promise<string> {
-    const profie_document = solid_pod_url + "/profile/card";
-
+    const profile_document = solid_pod_url + "profile/card";    
     try {
-        const response = await ld_fetch.get(profie_document);
+        const response = await ld_fetch.get(profile_document);
         const store = new N3.Store(await response.triples);
-
-        for (const quad of store) {
+        for (const quad of store) {            
             if (quad.predicate.value == "http://www.w3.org/ns/solid/terms#publicTypeIndex") {
                 return quad.object.value;
             }
         }
-
         console.log(`Could not find a public type index for ${solid_pod_url}`);
         return '';
     }

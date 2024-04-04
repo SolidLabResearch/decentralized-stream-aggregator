@@ -1,6 +1,6 @@
-import { POSTHandler } from './POSTHandler';
+import { QueryHandler } from './QueryHandler';
 import { QueryRegistry } from '../service/query-registry/QueryRegistry';
-describe('POSTHandler', () => {
+describe('QueryHandler', () => {
   describe('handle', () => {
     
   });
@@ -15,7 +15,7 @@ describe('POSTHandler', () => {
       const websocket_connections = new Map();
 
       // Call the handle_ws_query method
-      await POSTHandler.handle_ws_query(query, width, query_registry, logger, websocket_connections, 'rspql', {});
+      await QueryHandler.handle_ws_query(query, width, query_registry, logger, websocket_connections, 'rspql', {});
 
       // Assert the expected behavior
       // Add your assertions here
@@ -28,7 +28,7 @@ describe('POSTHandler', () => {
       const wssURL = 'ws://example.com';
 
       // Call the connect_with_server method
-      await POSTHandler.connect_with_server(wssURL);
+      await QueryHandler.connect_with_server(wssURL);
 
       // Assert the expected behavior
       // Add your assertions here
@@ -45,10 +45,10 @@ describe('POSTHandler', () => {
       };
 
       // Set the connection
-      POSTHandler.connection = connection;
+      QueryHandler.connection = connection;
 
       // Call the sendToServer method
-      POSTHandler.sendToServer(message);
+      QueryHandler.sendToServer(message);
 
       // Assert the expected behavior
       expect(connection.sendUTF).toHaveBeenCalledWith(message);
@@ -63,16 +63,16 @@ describe('POSTHandler', () => {
       };
 
       // Set the connection
-      POSTHandler.connection = connection;
+      QueryHandler.connection = connection;
 
       // Mock the connect_with_server method
-      POSTHandler.connect_with_server = jest.fn().mockResolvedValue(undefined);
+      QueryHandler.connect_with_server = jest.fn().mockResolvedValue(undefined);
 
       // Call the sendToServer method
-      POSTHandler.sendToServer(message);
+      QueryHandler.sendToServer(message);
 
       // Assert the expected behavior
-      expect(POSTHandler.connect_with_server).toHaveBeenCalledWith('ws://localhost:8080/');
+      expect(QueryHandler.connect_with_server).toHaveBeenCalledWith('ws://localhost:8080/');
       expect(connection.sendUTF).toHaveBeenCalledWith(message);
     });
   });
