@@ -6,5 +6,4 @@
     "BUCKET_SIZE": 20,
     "CREDENTIALS_FILE_NAME" : null,
     "LOG_LEVEL": "info"
-
 }

@@ -15,6 +15,7 @@ import { hash_string_md5 } from "../../utils/Util";
 import { TREE } from "@treecg/ldes-snapshot";
 import { Session } from "@inrupt/solid-client-authn-node";
 import { create_subscription, extract_ldp_inbox, extract_subscription_server } from "../../utils/notifications/Util";
+import * as AGGREGATOR_SETUP from '../../config/aggregator_setup.json'
 /**
  * Class for streaming the events from the Solid Pod to the RSP Engine by reading the events and converting the events stored into files into a stream.
  * @class DecentralizedFileStreamer
@@ -237,7 +238,7 @@ export class DecentralizedFileStreamer {
     async subscribing_latest_events(stream_name: RDFStream | undefined) {
         if (stream_name !== undefined) {
             console.log(`Subscribing to the latest events of the stream`, stream_name);
-            const inbox = await extract_ldp_inbox(this.ldes_stream);            
+            const inbox = await extract_ldp_inbox(this.ldes_stream);
             if (inbox !== undefined) {
                 const subscription_server = await extract_subscription_server(inbox);
                 if (subscription_server !== undefined) {
@@ -261,7 +262,7 @@ export class DecentralizedFileStreamer {
             this.logger.error(`The stream name is not defined, thus can't subscribe to the latest events.`);
         }
     }
-    
+
 
     /**
      * Get the inbox container from the LDP container or return undefined if the inbox container does not exist.
@@ -301,7 +302,7 @@ export class DecentralizedFileStreamer {
             "@context": [],
             "type": "http://www.w3.org/ns/solid/notifications#WebhookChannel2023",
             "topic": `${ldes_stream}`,
-            "sendTo": "http://localhost:8080/"
+            "sendTo": `${AGGREGATOR_SETUP.aggregator_http_server_url}`
         };
 
         const response = await fetch(webhook_notification_server, {

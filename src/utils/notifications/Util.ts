@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { SubscriptionServerNotification } from '../Types';
+import * as AGGREGATOR_SETUP from '../../config/aggregator_setup.json';
 const N3 = require('n3');
 const parser = new N3.Parser();
 const store = new N3.Store();
@@ -89,7 +90,7 @@ export async function create_subscription(subscription_server: string, inbox_loc
             "@context": ["https://www.w3.org/ns/solid/notification/v1"],
             "type": "http://www.w3.org/ns/solid/notifications#WebhookChannel2023",
             "topic": `${inbox_location}`,
-            "sendTo": "http://localhost:8080/",
+            "sendTo": `${AGGREGATOR_SETUP.aggregator_http_server_url}`,
         }
         const response = await fetch(subscription_server, {
             method: 'POST',
