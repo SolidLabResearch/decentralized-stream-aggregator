@@ -62,7 +62,7 @@ export class AggregatorInstantiator {
      */
     public async initializeProcessing(query_type: string): Promise<boolean> {
         const query_hashed = hash_string_md5(this.query);
-        console.log(`Initiating LDES Reader for ${this.stream_array}`);
+        this.logger.info({}, 'stream_processing_from_solid_pod_initialized');
         if (this.stream_array.length !== 0) {
             if (query_type === 'historical+live') {
                 for (const stream of this.stream_array) {
@@ -104,6 +104,7 @@ export class AggregatorInstantiator {
         this.client.on('connect', (connection: typeof websocketConnection) => {
             console.log(`The connection with the server has been established. ${connection.connected}`);
             this.rsp_emitter.on('RStream', async (object: BindingsWithTimestamp) => {
+                this.logger.info({}, 'aggregation_event_generated_from_rstream');
                 const window_timestamp_from = object.timestamp_from;
                 const window_timestamp_to = object.timestamp_to;
                 const iterable = object.bindings.values();
@@ -119,6 +120,7 @@ export class AggregatorInstantiator {
                     };
                     const aggregation_object_string = JSON.stringify(aggregation_object);
                     this.sendToServer(aggregation_object_string);
+                    this.logger.info({}, 'aggregation_event_sent_to_solid_stream_aggregator_websocket_server');
                 }
             })
         });

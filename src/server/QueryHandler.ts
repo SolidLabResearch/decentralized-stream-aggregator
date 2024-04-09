@@ -23,7 +23,6 @@ export class QueryHandler {
     constructor() {
         QueryHandler.sparql_to_rspql = new SPARQLToRSPQL();
         QueryHandler.connection = websocketConnection;
-
         QueryHandler.client = new WebSocketClient();
     }
 
@@ -42,7 +41,7 @@ export class QueryHandler {
      * @param {any} event_emitter - The event emitter object.
      * @memberof QueryHandler
      */
-    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any, query_type: string, event_emitter: any) {        
+    public static async handle_ws_query(query: string, width: number, query_registry: QueryRegistry, logger: any, websocket_connections: any, query_type: string, event_emitter: any) {
         const aggregation_dispatcher = new AggregationDispatcher(query);
         let to_timestamp = new Date().getTime(); // current time
         const from_timestamp = new Date(to_timestamp - (width)).getTime(); // latest seconds ago
@@ -68,6 +67,7 @@ export class QueryHandler {
                 else {
                     const aggregated_events_exist = await aggregation_dispatcher.if_aggregated_events_exist();
                     if (aggregated_events_exist) {
+                        logger.info({ query_id: query_hashed }, 'aggregated_events_exist_for_query_in_aggregator_pod');
                         const aggregation_stream = await aggregation_dispatcher.dispatch_aggregated_events({});
                         aggregation_stream.on('data', async (data) => {
                             const store = new N3.Store(data.quads);

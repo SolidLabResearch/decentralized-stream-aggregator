@@ -43,6 +43,7 @@ export class HTTPServer {
         this.websocket_handler.handle_wss();
         this.websocket_handler.aggregation_event_publisher();
         this.logger.info({}, 'http_server_started');
+        console.log('HTTP Server started on port ' + http_port);
     }
     /**
      * Handle the request from the client.
@@ -58,21 +59,21 @@ export class HTTPServer {
         let body: string = '';
         switch (req.method) {
             case "GET":
+                this.logger.info({}, 'http_get_request_received');
                 GETHandler.handle(req, res, this.query_registry);
                 res.end();
                 break;
             case "POST":
-                // TODO : bug that the notification is sent more than once from the solid server.
-                // Relevant issue : https://github.com/SolidLabResearch/solid-stream-aggregator/issues/33
                 req.on('data', (chunk: Buffer) => {
                     body = body + chunk.toString();
                 });
-
                 req.on('end', async () => {
                     const webhook_notification_data = JSON.parse(body);
                     if (webhook_notification_data.type === 'Add') {
+                        this.logger.info({}, 'webhook_notification_received');
                         // the target is where a new notification is added into the ldes stream.
                         // LDES stream can be found by stripping the inbox from the target with the slash semantics as described in the Solid Protocol.
+                        // Link : https://solidproject.org/TR/protocol#uri-slash-semantics
                         const inbox_where_event_is_added = webhook_notification_data.target;
                         const ldes_stream_where_event_is_added = inbox_where_event_is_added.replace(/\/\d+\/$/, '/');
                         const added_event_location = webhook_notification_data.object;
@@ -83,8 +84,8 @@ export class HTTPServer {
                             }
                         });
                         const latest_event = await latest_event_response.text();
-                        console.log(`The latest event is ${latest_event}`);
                         this.event_emitter.emit(`${ldes_stream_where_event_is_added}`, latest_event);
+                        this.logger.info({}, 'webhook_notification_processed_and_emitted');
                     }
                 });
                 break;
@@ -110,5 +111,6 @@ export class HTTPServer {
      */
     public close() {
         this.http_server.close();
+        this.logger.info({}, 'http_server_closed');
     }
 }

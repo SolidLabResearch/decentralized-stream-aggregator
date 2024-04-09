@@ -31,8 +31,8 @@ export class NotificationStreamProcessor {
         this.event_emitter = event_emitter;
         this.subscribe_webhook_events();
         this.retrieve_notification_from_server(this.event_emitter);
+        this.logger.info({}, 'notification_stream_processor_started');
     }
-
 
     /**
      * Subscribe to the LDES Stream for the latest events.
@@ -40,6 +40,7 @@ export class NotificationStreamProcessor {
      */
     public async subscribe_webhook_events() {
         if (this.ldes_stream !== undefined) {
+            this.logger.info({}, `subscribing_to_ldes_stream_${this.ldes_stream}_for_the_latest_events`);
             console.log(`Subscribing to the LDES Stream ${this.ldes_stream} for the latest events`);
             const inbox = await extract_ldp_inbox(this.ldes_stream);
             if (inbox !== undefined) {
@@ -49,21 +50,26 @@ export class NotificationStreamProcessor {
                     const server = subscription_server.location;
                     const response_subscription = await create_subscription(server, inbox);
                     if (response_subscription) {
+                        this.logger.info({}, `subscription_to_ldes_stream_${this.ldes_stream}_inbox_${inbox}_was_successful`);
                         console.log(`Subscription to the LDES Stream ${this.ldes_stream}'s inbox ${inbox} was successful`);
                     }
                     else {
+                        this.logger.error({}, `subscription_to_ldes_stream_${this.ldes_stream}_failed`);
                         console.log(`Subscription to the LDES Stream ${this.ldes_stream} failed. The response object is empty.`);
                     }
                 }
                 else {
+                    this.logger.error({}, `subscription_server_is_undefined_subscription_to_ldes_stream_${this.ldes_stream}_failed`);
                     console.log(`The subscription server is undefined. The subscription to the LDES Stream ${this.ldes_stream} failed.`);
                 }
             }
             else {
+                this.logger.error({}, `inbox_of_ldes_stream_${this.ldes_stream}_is_undefined_subscription_to_ldes_stream_failed`);
                 console.log(`The inbox of the LDES Stream ${this.ldes_stream} is undefined. The subscription to the LDES Stream failed.`);
             }
         }
         else {
+            this.logger.error({}, `ldes_stream_is_undefined_subscription_to_ldes_stream_failed`);
             console.log(`The LDES Stream is undefined. The subscription to the LDES Stream failed.`);
         }
     }
@@ -79,6 +85,7 @@ export class NotificationStreamProcessor {
         const metadata = await ldes.readMetadata();
         const bucket_strategy = metadata.getQuads(this.ldes_stream + "#BucketizeStrategy", TREE.path, null, null)[0].object.value;
         event_emitter.on(`${this.ldes_stream}`, async (latest_event: string) => {
+            this.logger.info({}, 'latest_event_received_preprocessing_started');
             /** 
              * The latest event is a string in Turtle format.
              * Under the assumption that the event is a set of triple(s), where you have one stream event per LDP resource.
@@ -92,8 +99,10 @@ export class NotificationStreamProcessor {
             const timestamp = latest_event_store.getQuads(null, bucket_strategy, null, null)[0].object.value;
             const timestamp_epoch = Date.parse(timestamp);
             if (this.stream_name) {
+                this.logger.info({}, 'latest_event_received_preprocessing_completed_adding_to_rsp_engine_started');
                 console.log(`Adding the event store to the RSP Engine for the stream ${this.stream_name}`);
                 await this.add_event_store_to_rsp_engine(latest_event_store, [this.stream_name], timestamp_epoch);
+                this.logger.info({}, 'latest_event_added_to_rsp_engine');
             }
         });
     }

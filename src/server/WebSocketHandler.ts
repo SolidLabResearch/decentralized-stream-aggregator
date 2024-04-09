@@ -42,6 +42,7 @@ export class WebSocketHandler {
         this.parser = new RSPQLParser();
         this.query_registry = new QueryRegistry();
         this.n3_parser = new Parser({ format: 'N-Triples' });
+        this.logger.info({}, 'websocket_handler_initialized');
     }
 
     /**
@@ -54,6 +55,7 @@ export class WebSocketHandler {
     public handle_wss() {
         // TODO: find the type of the request object
         console.log(`Handling the websocket server.`);
+        this.logger.info({}, 'handling_websocket_server');
         this.websocket_server.on('connect', (request: any) => {
             console.log(`Connection received from ${request.remoteAddress}`);
         });
@@ -68,15 +70,18 @@ export class WebSocketHandler {
                         this.logger.info({ query: ws_message.query }, `new_query_received_from_client_ws`);
                         const query_type = ws_message.type;
                         if (query_type === 'historical+live' || query_type === 'live') {
+                            this.logger.info({}, `query_preprocessing_started`);
                             const { ldes_query, query_hashed, width } = await this.preprocess_query(ws_message.query);
+                            this.logger.info({ query_id: query_hashed }, `query_preprocessed`);
                             this.set_connections(query_hashed, connection);
-                            this.process_query(ldes_query, width, query_type, this.event_emitter);
+                            this.process_query(ldes_query, width, query_type, this.event_emitter, this.logger);
                         }
                         else {
                             throw new Error(`The type of Query is not supported/handled. The type of query is: ${ws_message.type}`);
                         }
                     }
                     else if (Object.keys(ws_message).includes('aggregation_event')) {
+                        this.logger.info({ query_id: ws_message.query_hash }, `aggregation_event_received_now_publishing_to_client_ws`);
                         const query_hash = ws_message.query_hash;
                         for (const [query, connections] of this.connections) {
                             if (query === query_hash) {
@@ -233,7 +238,7 @@ export class WebSocketHandler {
      * @param {EventEmitter} event_emitter - The event emitter object.
      * @memberof WebSocketHandler
      */
-    public process_query(query: string, width: number, query_type: string, event_emitter: EventEmitter) {
+    public process_query(query: string, width: number, query_type: string, event_emitter: EventEmitter, logger: any) {
         QueryHandler.handle_ws_query(query, width, this.query_registry, this.logger, this.connections, query_type, event_emitter);
     }
 
@@ -272,5 +277,6 @@ export class WebSocketHandler {
                 this.connections.set(query_hashed, connections);
             }
         }
+        this.logger.info({ query_id: query_hashed }, `websocket_connection_set_for_query`);
     }
 }

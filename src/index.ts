@@ -1,4 +1,3 @@
-
 import { HTTPServer } from "./server/HTTPServer";
 import * as bunyan from 'bunyan';
 import * as fs from 'fs';
