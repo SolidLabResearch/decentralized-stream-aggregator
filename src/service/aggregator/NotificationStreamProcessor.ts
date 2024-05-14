@@ -40,7 +40,7 @@ export class NotificationStreamProcessor {
      */
     public async subscribe_webhook_events() {
         if (this.ldes_stream !== undefined) {
-            this.logger.info({}, `subscribing_to_ldes_stream_${this.ldes_stream}_for_the_latest_events`);
+            this.logger.info({}, `subscribing_to_ldes_stream_for_the_latest_events`);
             console.log(`Subscribing to the LDES Stream ${this.ldes_stream} for the latest events`);
             const inbox = await extract_ldp_inbox(this.ldes_stream);
             if (inbox !== undefined) {
@@ -50,21 +50,21 @@ export class NotificationStreamProcessor {
                     const server = subscription_server.location;
                     const response_subscription = await create_subscription(server, inbox);
                     if (response_subscription) {
-                        this.logger.info({}, `subscription_to_ldes_stream_${this.ldes_stream}_inbox_${inbox}_was_successful`);
+                        this.logger.info({}, `subscription_to_ldes_stream_was_successful`);
                         console.log(`Subscription to the LDES Stream ${this.ldes_stream}'s inbox ${inbox} was successful`);
                     }
                     else {
-                        this.logger.error({}, `subscription_to_ldes_stream_${this.ldes_stream}_failed`);
+                        this.logger.error({}, `subscription_to_ldes_stream_failed`);
                         console.log(`Subscription to the LDES Stream ${this.ldes_stream} failed. The response object is empty.`);
                     }
                 }
                 else {
-                    this.logger.error({}, `subscription_server_is_undefined_subscription_to_ldes_stream_${this.ldes_stream}_failed`);
+                    this.logger.error({}, `subscription_server_is_undefined_subscription_to_ldes_stream_failed`);
                     console.log(`The subscription server is undefined. The subscription to the LDES Stream ${this.ldes_stream} failed.`);
                 }
             }
             else {
-                this.logger.error({}, `inbox_of_ldes_stream_${this.ldes_stream}_is_undefined_subscription_to_ldes_stream_failed`);
+                this.logger.error({}, `inbox_of_ldes_stream_is_undefined_subscription_to_ldes_stream_failed`);
                 console.log(`The inbox of the LDES Stream ${this.ldes_stream} is undefined. The subscription to the LDES Stream failed.`);
             }
         }

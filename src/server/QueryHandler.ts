@@ -1,5 +1,4 @@
 import { storeToString } from "@treecg/versionawareldesinldp";
-import { SPARQLToRSPQL } from "../service/parsers/SPARQLToRSPQL";
 import { QueryRegistry } from "../service/query-registry/QueryRegistry";
 import { AggregationDispatcher } from "../service/result-dispatcher/AggregationDispatcher";
 import { RequestBody } from "../utils/Types";
@@ -15,13 +14,11 @@ export class QueryHandler {
     static connection: typeof websocketConnection;
     public static client: any;
     static request_body: RequestBody;
-    static sparql_to_rspql: SPARQLToRSPQL;
     /**
      * Creates an instance of QueryHandler.
      * @memberof QueryHandler
      */
     constructor() {
-        QueryHandler.sparql_to_rspql = new SPARQLToRSPQL();
         QueryHandler.connection = websocketConnection;
         QueryHandler.client = new WebSocketClient();
     }
@@ -32,7 +29,7 @@ export class QueryHandler {
      * The non unique query is the query that is already registered in the QueryRegistry, and it uses the Function Ontology Description from the Solid Stream Aggregator's Solid Pod
      * To get the aggregated events and send them to the client.
      * @static
-     * @param {string} query - The query to be handled (RSPQL or SPARQL).
+     * @param {string} query - The query to be handled (in RSPQL).
      * @param {number} width - The width of the window.
      * @param {QueryRegistry} query_registry - The QueryRegistry object.
      * @param {*} logger - The logger object.

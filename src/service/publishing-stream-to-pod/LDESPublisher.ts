@@ -63,8 +63,6 @@ export class LDESPublisher {
         const lil: ILDES = new LDESinLDP(this.lilURL, communication);
         const vlil: VersionAwareLDESinLDP = new VersionAwareLDESinLDP(lil)
         await vlil.initialise(this.config)
-        console.log(`Initialised LDES at ${this.lilURL}`);
-
         try {
             const metadataStore = await lil.readMetadata();
             const ldes = metadataStore.getSubjects(RDF.type, LDES.EventStream, null);
