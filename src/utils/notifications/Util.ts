@@ -3,16 +3,14 @@ import { SubscriptionServerNotification } from '../Types';
 import * as AGGREGATOR_SETUP from '../../config/aggregator_setup.json';
 const N3 = require('n3');
 const parser = new N3.Parser();
-const store = new N3.Store();
 
 /**
  * Extracts the subscription server from the given resource.
  * @param {string} resource - The resource which you want to read the notifications from.
  * @returns {Promise<SubscriptionServerNotification | undefined>} - A promise which returns the subscription server or if not returns undefined.
  */
-export async function extract_subscription_server(resource: string): Promise<SubscriptionServerNotification | undefined> {
-    console.log(`Extracting subscription server from ${resource}`);
-    
+export async function extract_subscription_server(resource: string): Promise<SubscriptionServerNotification | undefined> {    
+    const store = new N3.Store();
     try {
         const response = await axios.head(resource);
         const link_header = response.headers['link'];
@@ -28,9 +26,7 @@ export async function extract_subscription_server(resource: string): Promise<Sub
                         if (quad) {
                             store.addQuad(quad);
                         }
-                    });
-                    console.log(store.getQuads(null, null, null, null));
-                    
+                    });                    
                     const subscription_server = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#subscription', null)[0].object.value;
                     const subscription_type = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#channelType', null)[0].object.value;
                     const channelLocation = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#channelType', null)[0].subject.value;
@@ -57,6 +53,7 @@ export async function extract_subscription_server(resource: string): Promise<Sub
  * @returns {Promise<string>} - A promise which returns the inbox location.
  */
 export async function extract_ldp_inbox(ldes_stream_location: string) {
+    const store = new N3.Store();
     try {
         const response = await fetch(ldes_stream_location);
         if (response) {
