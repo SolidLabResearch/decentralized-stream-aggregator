@@ -43,7 +43,6 @@ export async function extract_subscription_server(resource: string): Promise<Sub
             }
         }
     } catch (error) {
-        console.error(error);
         throw new Error("Error while extracting subscription server.");
     }
 }
