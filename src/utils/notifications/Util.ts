@@ -11,6 +11,8 @@ const store = new N3.Store();
  * @returns {Promise<SubscriptionServerNotification | undefined>} - A promise which returns the subscription server or if not returns undefined.
  */
 export async function extract_subscription_server(resource: string): Promise<SubscriptionServerNotification | undefined> {
+    console.log(`Extracting subscription server from ${resource}`);
+    
     try {
         const response = await axios.head(resource);
         const link_header = response.headers['link'];
