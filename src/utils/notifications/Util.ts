@@ -27,6 +27,8 @@ export async function extract_subscription_server(resource: string): Promise<Sub
                             store.addQuad(quad);
                         }
                     });
+                    console.log(store.getQuads(null, null, null, null));
+                    
                     const subscription_server = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#subscription', null)[0].object.value;
                     const subscription_type = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#channelType', null)[0].object.value;
                     const channelLocation = store.getQuads(null, 'http://www.w3.org/ns/solid/notifications#channelType', null)[0].subject.value;
