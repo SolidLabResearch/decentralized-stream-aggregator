@@ -27,12 +27,12 @@ setInterval(() => {
     logCPUMemoryUsage(logFile);
 }, 500);
 
-child.on('exit', (code) => {
+child.on('exit', (code: any) => {
     console.log(`Child process exited with code ${code}`);
     process.exit(code);
 });
 
-child.on('error', (err) => {
+child.on('error', (err: any) => {
     console.log(`Child process error: ${err}`);
     process.exit(1);
 });
