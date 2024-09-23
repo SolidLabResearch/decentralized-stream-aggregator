@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
 import * as fs from 'fs';
-const child = spawn('node', ['run', 'start', 'aggregation'], {
+const child = spawn('npm', ['run', 'start', 'aggregation'], {
     stdio: 'inherit',
     shell: true
 });
