@@ -24,7 +24,7 @@ function getAndUpdateIteration() {
 const iteration = getAndUpdateIteration();
 const timestamp = getTimestamp();
 
-const log_file = fs.createWriteStream('/logs/aggregator-${iteration}-${timestamp}.log', { flags: 'a' });
+const log_file = fs.createWriteStream(`/logs/aggregator-${iteration}-${timestamp}.log`, { flags: 'a' });
 
 
 const logger = bunyan.createLogger({
