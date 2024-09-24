@@ -5,6 +5,11 @@ const child = spawn('npm', ['run', 'start', 'aggregation'], {
     shell: true
 });
 
+function getTimestamp() {
+    const now = new Date();
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+}
+
 interface MemoryUsage {
     rss: number;
     heapTotal: number;
@@ -19,8 +24,8 @@ function logCPUMemoryUsage(logFile: string) {
     const logData = `${timestamp},${cpuUsage.user},${cpuUsage.system},${memoryUsage.rss},${memoryUsage.heapTotal},${memoryUsage.heapUsed},${memoryUsage.external}\n`;
     fs.appendFileSync(logFile, logData)
 }
-
-const logFile = 'stream-aggregator-resource-usage.csv';
+const timestamp = getTimestamp();
+const logFile = `stream-aggregator-resource-usage-${timestamp}.csv`;
 fs.writeFileSync(logFile, 'timestamp,cpu_user,cpu_system,rss,heapTotal,heapUsed,external\n');
 
 setInterval(() => {
