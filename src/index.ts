@@ -14,9 +14,6 @@ function getAndUpdateIteration() {
     if (fs.existsSync(iterationFilePath)) {
         iteration = parseInt(fs.readFileSync(iterationFilePath, 'utf8'), 10) + 1;
     }
-    else {
-        fs.mkdirSync(path.join('/logs'));
-    }
     fs.writeFileSync(iterationFilePath, iteration.toString());
     return iteration;
 }
