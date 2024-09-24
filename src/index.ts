@@ -9,7 +9,7 @@ function getTimestamp() {
 }
 
 function getAndUpdateIteration() {
-    const iterationFilePath = '/logs/iteration.txt';
+    const iterationFilePath = path.join(__dirname, '/logs/iteration.txt');
     let iteration = 1;
     if (fs.existsSync(iterationFilePath)) {
         iteration = parseInt(fs.readFileSync(iterationFilePath, 'utf8'), 10) + 1;
