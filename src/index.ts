@@ -5,7 +5,7 @@ import * as path from 'path';
 
 function getTimestamp() {
     const now = new Date();
-    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
 }
 
 function getAndUpdateIteration() {
@@ -13,6 +13,9 @@ function getAndUpdateIteration() {
     let iteration = 1;
     if (fs.existsSync(iterationFilePath)) {
         iteration = parseInt(fs.readFileSync(iterationFilePath, 'utf8'), 10) + 1;
+    }
+    else {
+        fs.mkdirSync(path.join(__dirname, '/logs'));
     }
     fs.writeFileSync(iterationFilePath, iteration.toString());
     return iteration;
