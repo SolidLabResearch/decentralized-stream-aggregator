@@ -1,8 +1,10 @@
 import { turtleStringToStore } from "@treecg/ldes-snapshot";
+import { DataFactory } from 'rdf-data-factory';
 import { LDESinLDP, LDPCommunication } from "@treecg/versionawareldesinldp";
 import { RDFStream, RSPEngine } from "rsp-js";
 import { TREE } from "@treecg/versionawareldesinldp";
 import { create_subscription, extract_ldp_inbox, extract_subscription_server } from "../../utils/notifications/Util";
+const DF = new DataFactory();
 
 /**
  * The NotificationStreamProcessor class is responsible for processing the notifications from the LDES Stream.
@@ -96,7 +98,7 @@ export class NotificationStreamProcessor {
              * of the Solid Stream Aggregator (for now, and the support for this will be implemented in the future).
              */
             const latest_event_store = await turtleStringToStore(latest_event);
-            const timestamp = latest_event_store.getQuads(null, bucket_strategy, null, null)[0].object.value;
+            const timestamp = latest_event_store.getQuads(null, DF.namedNode(bucket_strategy), null, null)[0].object.value;
             const timestamp_epoch = Date.parse(timestamp);
             if (this.stream_name) {
                 this.logger.info({}, 'latest_event_received_preprocessing_completed_adding_to_rsp_engine_started');

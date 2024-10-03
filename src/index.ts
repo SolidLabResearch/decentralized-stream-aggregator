@@ -1,27 +1,15 @@
 import { HTTPServer } from "./server/HTTPServer";
 import * as bunyan from 'bunyan';
 import * as fs from 'fs';
-import * as path from 'path';
 
 function getTimestamp() {
     const now = new Date();
     return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
 }
 
-function getAndUpdateIteration() {
-    const iterationFilePath = path.join(__dirname, '/logs/iteration.txt');
-    let iteration = 1;
-    if (fs.existsSync(iterationFilePath)) {
-        iteration = parseInt(fs.readFileSync(iterationFilePath, 'utf8'), 10) + 1;
-    }
-    fs.writeFileSync(iterationFilePath, iteration.toString());
-    return iteration;
-}
-
-const iteration = getAndUpdateIteration();
 const timestamp = getTimestamp();
 
-const log_file = fs.createWriteStream(`aggregator-${iteration}-${timestamp}.log`, { flags: 'a' });
+const log_file = fs.createWriteStream(`aggregator-${timestamp}.log`, { flags: 'a' });
 
 const logger = bunyan.createLogger({
     name: 'solid-stream-aggregator',

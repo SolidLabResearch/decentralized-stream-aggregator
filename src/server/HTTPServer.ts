@@ -43,7 +43,7 @@ export class HTTPServer {
         this.websocket_handler.handle_wss();
         this.websocket_handler.aggregation_event_publisher();
         this.logger.info({}, 'http_server_started');
-        console.log('HTTP Server started on port ' + http_port);
+        console.log(`HTTP Server started on port ${http_port} and the process id is ${process.pid}`);
     }
     /**
      * Handle the request from the client.
